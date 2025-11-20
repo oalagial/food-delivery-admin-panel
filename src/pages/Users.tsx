@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Button } from '../components/ui/button'
 
 type User = {
   id: number | string
@@ -117,7 +118,7 @@ export default function Users() {
           <input placeholder="Email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
           <input placeholder="Username" value={newUsername} onChange={(e) => setNewUsername(e.target.value)} />
           <input placeholder="Password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-          <button className="btn btn-primary" type="submit" disabled={creating}>{creating ? 'Creating…' : 'Add User'}</button>
+          <Button variant="primary" type="submit" disabled={creating}>{creating ? 'Creating…' : 'Add User'}</Button>
         </form>
       </section>
 
@@ -161,13 +162,13 @@ export default function Users() {
                 <td style={{ padding: 8 }}>
                   {editingId === u.id ? (
                     <>
-                      <button className="btn btn-primary btn-small" onClick={() => void saveEdit(u.id)}>Save</button>
-                      <button className="btn btn-ghost btn-small" onClick={() => setEditingId(null)} style={{ marginLeft: 6 }}>Cancel</button>
+                      <Button variant="primary" size="sm" onClick={() => void saveEdit(u.id)}>Save</Button>
+                      <Button variant="ghost" size="sm" onClick={() => setEditingId(null)} style={{ marginLeft: 6 }}>Cancel</Button>
                     </>
                   ) : (
                     <>
-                      <button className="btn btn-ghost btn-small" onClick={() => startEdit(u)}>Edit</button>
-                      <button className="btn btn-danger btn-small" onClick={() => void handleDelete(u.id)} style={{ marginLeft: 6 }}>Delete</button>
+                      <Button variant="ghost" size="sm" onClick={() => startEdit(u)}>Edit</Button>
+                      <Button variant="danger" size="sm" onClick={() => void handleDelete(u.id)} style={{ marginLeft: 6 }}>Delete</Button>
                     </>
                   )}
                 </td>

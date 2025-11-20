@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Button } from '../components/ui/button'
 
 type Role = {
   id: number | string
@@ -115,7 +116,7 @@ export default function Roles() {
         <form onSubmit={handleCreate} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <input placeholder="Name" value={newName} onChange={(e) => setNewName(e.target.value)} />
           <input placeholder="Description" value={newDescription} onChange={(e) => setNewDescription(e.target.value)} />
-          <button className="btn btn-primary" type="submit" disabled={creating}>{creating ? 'Creating…' : 'Add Role'}</button>
+          <Button variant="primary" type="submit" disabled={creating}>{creating ? 'Creating…' : 'Add Role'}</Button>
         </form>
       </section>
 
@@ -159,13 +160,13 @@ export default function Roles() {
                 <td style={{ padding: 8 }}>
                   {editingId === r.id ? (
                     <>
-                      <button className="btn btn-primary btn-small" onClick={() => void saveEdit(r.id)}>Save</button>
-                      <button className="btn btn-ghost btn-small" onClick={() => setEditingId(null)} style={{ marginLeft: 6 }}>Cancel</button>
+                      <Button variant="primary" size="sm" onClick={() => void saveEdit(r.id)}>Save</Button>
+                      <Button variant="ghost" size="sm" onClick={() => setEditingId(null)} style={{ marginLeft: 6 }}>Cancel</Button>
                     </>
                   ) : (
                     <>
-                      <button className="btn btn-ghost btn-small" onClick={() => startEdit(r)}>Edit</button>
-                      <button className="btn btn-danger btn-small" onClick={() => void handleDelete(r.id)} style={{ marginLeft: 6 }}>Delete</button>
+                      <Button variant="ghost" size="sm" onClick={() => startEdit(r)}>Edit</Button>
+                      <Button variant="danger" size="sm" onClick={() => void handleDelete(r.id)} style={{ marginLeft: 6 }}>Delete</Button>
                     </>
                   )}
                 </td>

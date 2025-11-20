@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { login as apiLogin } from '../utils/api'
+import { Button } from '../components/ui/button'
 
 export default function Login(){
   const [email, setEmail] = useState('')
@@ -52,9 +53,9 @@ export default function Login(){
         {error && <div className="text-sm text-red-600">{error}</div>}
 
         <div className="flex justify-between items-center">
-          <button className="btn" disabled={loading} type="submit">
+          <Button disabled={loading} type="submit">
             {loading ? 'Signing in...' : 'Sign in'}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

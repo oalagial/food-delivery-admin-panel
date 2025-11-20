@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getToken, clearToken } from '../utils/api'
+import { Button } from './ui/button'
 
 export default function Header(){
   const time = useMemo(()=> new Date().toLocaleString(), [])
@@ -32,9 +33,9 @@ export default function Header(){
       <div className="flex items-center gap-3">
         <div className="text-sm text-gray-500">{time}</div>
         {token ? (
-          <button className="btn btn-ghost" onClick={handleLogout}>Logout</button>
+          <Button variant="ghost" onClick={handleLogout}>Logout</Button>
         ) : (
-          <button className="btn btn-ghost" onClick={handleLogin}>Login</button>
+          <Button variant="ghost" onClick={handleLogin}>Login</Button>
         )}
       </div>
     </header>

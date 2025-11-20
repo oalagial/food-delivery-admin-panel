@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { createRestaurant, getRestaurantsList } from '../utils/api'
 import type { CreateRestaurantPayload } from '../utils/api'
 import { Input } from '../components/ui/input'
+import { Button } from '../components/ui/button'
 
 export default function RestaurantCreate() {
   const [creating, setCreating] = useState(false)
@@ -195,14 +196,14 @@ export default function RestaurantCreate() {
           <div>Add Images</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <input id="images" type="file" multiple style={{ display: 'none' }} onChange={(e) => setFiles(e.target.files)} />
-            <div htmlFor="images" className="btn btn-primary">Choose Images</div>
+            <label htmlFor="images"><Button variant="primary">Choose Images</Button></label>
             <div style={{ color: '#6b7280' }}>{files && files.length > 0 ? `${files.length} file(s) selected` : 'No files selected'}</div>
           </div>
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
-          <Link to="/restaurant"><button type="button" className="btn btn-ghost">You go out</button></Link>
-          <button className="btn btn-primary" type="submit" disabled={creating}>{creating ? 'Saving...' : 'Save'}</button>
+          <Link to="/restaurant"><Button variant="ghost" type="button">You go out</Button></Link>
+          <Button variant="primary" type="submit" disabled={creating}>{creating ? 'Saving...' : 'Save'}</Button>
         </div>
       </form>
 

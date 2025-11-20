@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Button } from '../components/ui/button'
 import { getRestaurantsList, getRestaurantByToken } from '../utils/api'
 import type { Restaurant as RestaurantType } from '../utils/api'
 
@@ -55,7 +56,7 @@ export default function Restaurant() {
 
       <section style={{ marginTop: 16 }}>
         <div style={{ marginTop: 8 }}>
-          <Link to="/restaurant/creation"><button className="btn btn-primary">Create new restaurant</button></Link>
+          <Link to="/restaurant/creation"><Button variant="primary">Create new restaurant</Button></Link>
         </div>
       </section>
       {loading && <p>Loading...</p>}
@@ -96,8 +97,8 @@ export default function Restaurant() {
                 <td style={{ padding: 8 }}>{r.longitude ?? ''}</td>
                 <td style={{ padding: 8 }}>{r.createdAt ? new Date(String(r.createdAt)).toLocaleString() : ''}</td>
                 <td style={{ padding: 8 }}>
-                  <Link to={`/restaurant/creation`} style={{ marginRight: 8 }}><button className="btn btn-ghost btn-small">Edit</button></Link>
-                  <button className="btn btn-danger btn-small">Delete</button>
+                  <Link to={`/restaurant/creation`} style={{ marginRight: 8 }}><Button variant="ghost" size="sm">Edit</Button></Link>
+                  <Button variant="danger" size="sm">Delete</Button>
                 </td>
               </tr>
             ))}
