@@ -25,7 +25,7 @@ export default function Header(){
   }
 
   return (
-    <header className="flex justify-between items-center mb-4">
+    <header className="flex justify-between items-center mb-4 min-w-[800px]">
       <div>
         <h3 className="text-xl font-semibold m-0">Administration</h3>
         <div className="text-sm text-gray-500 mb-4">Manage your application</div>
