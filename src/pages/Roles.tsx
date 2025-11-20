@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Button } from '../components/ui/button'
+import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 
 type Role = {
   id: number | string
@@ -122,42 +123,42 @@ export default function Roles() {
 
       {error && <div style={{ color: 'crimson' }}><strong>Error:</strong> {error}</div>}
 
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ textAlign: 'left', borderBottom: '1px solid #ddd' }}>
-              <th style={{ padding: '8px' }}>ID</th>
-              <th style={{ padding: '8px' }}>Name</th>
-              <th style={{ padding: '8px' }}>Description</th>
-              <th style={{ padding: '8px' }}>Created</th>
-              <th style={{ padding: '8px' }}>Actions</th>
+      <div>
+        <Table>
+          <TableHead>
+            <tr>
+              <TableHeadCell>ID</TableHeadCell>
+              <TableHeadCell>Name</TableHeadCell>
+              <TableHeadCell>Description</TableHeadCell>
+              <TableHeadCell>Created</TableHeadCell>
+              <TableHeadCell>Actions</TableHeadCell>
             </tr>
-          </thead>
-          <tbody>
+          </TableHead>
+          <TableBody>
             {roles.length === 0 && (
-              <tr>
-                <td colSpan={5} style={{ padding: 12 }}>No roles found.</td>
-              </tr>
+              <TableRow>
+                <TableCell colSpan={5}>No roles found.</TableCell>
+              </TableRow>
             )}
             {roles.map((r) => (
-              <tr key={r.id} style={{ borderBottom: '1px solid #f3f3f3' }}>
-                <td style={{ padding: 8 }}>{String(r.id)}</td>
-                <td style={{ padding: 8 }}>
+              <TableRow key={r.id}>
+                <TableCell>{String(r.id)}</TableCell>
+                <TableCell>
                   {editingId === r.id ? (
                     <input value={editValues.name ?? ''} onChange={(e) => setEditValues(v => ({ ...v, name: e.target.value }))} />
                   ) : (
                     r.name
                   )}
-                </td>
-                <td style={{ padding: 8 }}>
+                </TableCell>
+                <TableCell>
                   {editingId === r.id ? (
                     <input value={editValues.description ?? ''} onChange={(e) => setEditValues(v => ({ ...v, description: e.target.value }))} />
                   ) : (
                     r.description ?? ''
                   )}
-                </td>
-                <td style={{ padding: 8 }}>{r.createdAt ? new Date(r.createdAt).toLocaleString() : ''}</td>
-                <td style={{ padding: 8 }}>
+                </TableCell>
+                <TableCell>{r.createdAt ? new Date(r.createdAt).toLocaleString() : ''}</TableCell>
+                <TableCell>
                   {editingId === r.id ? (
                     <>
                       <Button variant="primary" size="sm" onClick={() => void saveEdit(r.id)}>Save</Button>
@@ -169,11 +170,11 @@ export default function Roles() {
                       <Button variant="danger" size="sm" onClick={() => void handleDelete(r.id)} style={{ marginLeft: 6 }}>Delete</Button>
                     </>
                   )}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </div>
   )

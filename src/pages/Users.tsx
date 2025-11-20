@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Button } from '../components/ui/button'
+import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 
 type User = {
   id: number | string
@@ -124,42 +125,42 @@ export default function Users() {
 
       {error && <div style={{ color: 'crimson' }}><strong>Error:</strong> {error}</div>}
 
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ textAlign: 'left', borderBottom: '1px solid #ddd' }}>
-              <th style={{ padding: 8 }}>ID</th>
-              <th style={{ padding: 8 }}>Email</th>
-              <th style={{ padding: 8 }}>Username</th>
-              <th style={{ padding: 8 }}>Created</th>
-              <th style={{ padding: 8 }}>Actions</th>
+      <div>
+        <Table>
+          <TableHead>
+            <tr>
+              <TableHeadCell>ID</TableHeadCell>
+              <TableHeadCell>Email</TableHeadCell>
+              <TableHeadCell>Username</TableHeadCell>
+              <TableHeadCell>Created</TableHeadCell>
+              <TableHeadCell>Actions</TableHeadCell>
             </tr>
-          </thead>
-          <tbody>
+          </TableHead>
+          <TableBody>
             {users.length === 0 && (
-              <tr>
-                <td colSpan={5} style={{ padding: 12 }}>No users found.</td>
-              </tr>
+              <TableRow>
+                <TableCell colSpan={5}>No users found.</TableCell>
+              </TableRow>
             )}
             {users.map((u) => (
-              <tr key={u.id} style={{ borderBottom: '1px solid #f3f3f3' }}>
-                <td style={{ padding: 8 }}>{String(u.id)}</td>
-                <td style={{ padding: 8 }}>
+              <TableRow key={u.id}>
+                <TableCell>{String(u.id)}</TableCell>
+                <TableCell>
                   {editingId === u.id ? (
                     <input value={editValues.email ?? ''} onChange={(e) => setEditValues(v => ({ ...v, email: e.target.value }))} />
                   ) : (
                     u.email
                   )}
-                </td>
-                <td style={{ padding: 8 }}>
+                </TableCell>
+                <TableCell>
                   {editingId === u.id ? (
                     <input value={editValues.username ?? ''} onChange={(e) => setEditValues(v => ({ ...v, username: e.target.value }))} />
                   ) : (
                     u.username
                   )}
-                </td>
-                <td style={{ padding: 8 }}>{u.createdAt ? new Date(u.createdAt).toLocaleString() : ''}</td>
-                <td style={{ padding: 8 }}>
+                </TableCell>
+                <TableCell>{u.createdAt ? new Date(u.createdAt).toLocaleString() : ''}</TableCell>
+                <TableCell>
                   {editingId === u.id ? (
                     <>
                       <Button variant="primary" size="sm" onClick={() => void saveEdit(u.id)}>Save</Button>
@@ -171,11 +172,11 @@ export default function Users() {
                       <Button variant="danger" size="sm" onClick={() => void handleDelete(u.id)} style={{ marginLeft: 6 }}>Delete</Button>
                     </>
                   )}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </div>
   )

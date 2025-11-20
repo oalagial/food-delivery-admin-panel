@@ -1,16 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '../components/ui/button'
-import { getRestaurantsList, getRestaurantByToken } from '../utils/api'
+import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
+import { getRestaurantsList } from '../utils/api'
 import type { Restaurant as RestaurantType } from '../utils/api'
 
 export default function Restaurant() {
   const [restaurants, setRestaurants] = useState<RestaurantType[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [tokenInput, setTokenInput] = useState('')
-  const [fetchedByToken, setFetchedByToken] = useState<RestaurantType | null>(null)
-
   useEffect(() => {
     let mounted = true
     getRestaurantsList()
@@ -33,20 +31,6 @@ export default function Restaurant() {
     }
   }, [])
 
-  async function handleFetchByToken(e?: React.FormEvent) {
-    e?.preventDefault()
-    setFetchedByToken(null)
-    if (!tokenInput) return setError('Please provide a token')
-    setError(null)
-    try {
-      const res = await getRestaurantByToken(tokenInput)
-      setFetchedByToken(res)
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err)
-      setError(msg || 'Failed to fetch by token')
-    }
-  }
-
   
  
 
@@ -61,50 +45,50 @@ export default function Restaurant() {
       </section>
       {loading && <p>Loading...</p>}
       {error && <p style={{ color: 'red' }}>{error}</p>}
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ textAlign: 'left', borderBottom: '1px solid #ddd' }}>
-              <th style={{ padding: 8 }}>ID</th>
-              <th style={{ padding: 8 }}>Name</th>
-              <th style={{ padding: 8 }}>Address</th>
-              <th style={{ padding: 8 }}>City</th>
-              <th style={{ padding: 8 }}>Province</th>
-              <th style={{ padding: 8 }}>Zip</th>
-              <th style={{ padding: 8 }}>Country</th>
-              <th style={{ padding: 8 }}>Lat</th>
-              <th style={{ padding: 8 }}>Lon</th>
-              <th style={{ padding: 8 }}>Created</th>
-              <th style={{ padding: 8 }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {restaurants.length === 0 && (
+        <div>
+          <Table>
+            <TableHead>
               <tr>
-                <td colSpan={11} style={{ padding: 12 }}>No restaurants found.</td>
+                <TableHeadCell>ID</TableHeadCell>
+                <TableHeadCell>Name</TableHeadCell>
+                <TableHeadCell>Address</TableHeadCell>
+                <TableHeadCell>City</TableHeadCell>
+                <TableHeadCell>Province</TableHeadCell>
+                <TableHeadCell>Zip</TableHeadCell>
+                <TableHeadCell>Country</TableHeadCell>
+                <TableHeadCell>Lat</TableHeadCell>
+                <TableHeadCell>Lon</TableHeadCell>
+                <TableHeadCell>Created</TableHeadCell>
+                <TableHeadCell>Actions</TableHeadCell>
               </tr>
-            )}
-            {restaurants.map((r) => (
-              <tr key={r.id || r.name} style={{ borderBottom: '1px solid #f3f3f3' }}>
-                <td style={{ padding: 8 }}>{String(r.id ?? '')}</td>
-                <td style={{ padding: 8 }}>{r.name ?? ''}</td>
-                <td style={{ padding: 8 }}>{r.address ?? ''}</td>
-                <td style={{ padding: 8 }}>{r.city ?? r?.address?.city ?? ''}</td>
-                <td style={{ padding: 8 }}>{r.province ?? ''}</td>
-                <td style={{ padding: 8 }}>{r.zipCode ?? ''}</td>
-                <td style={{ padding: 8 }}>{r.country ?? ''}</td>
-                <td style={{ padding: 8 }}>{r.latitude ?? ''}</td>
-                <td style={{ padding: 8 }}>{r.longitude ?? ''}</td>
-                <td style={{ padding: 8 }}>{r.createdAt ? new Date(String(r.createdAt)).toLocaleString() : ''}</td>
-                <td style={{ padding: 8 }}>
-                  <Link to={`/restaurant/creation`} style={{ marginRight: 8 }}><Button variant="ghost" size="sm">Edit</Button></Link>
-                  <Button variant="danger" size="sm">Delete</Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </TableHead>
+            <TableBody>
+              {restaurants.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={11}>No restaurants found.</TableCell>
+                </TableRow>
+              )}
+              {restaurants.map((r) => (
+                <TableRow key={r.id || r.name}>
+                  <TableCell>{String(r.id ?? '')}</TableCell>
+                  <TableCell>{r.name ?? ''}</TableCell>
+                  <TableCell>{r.address ?? ''}</TableCell>
+                  <TableCell>{r.city ?? r?.address?.city ?? ''}</TableCell>
+                  <TableCell>{r.province ?? ''}</TableCell>
+                  <TableCell>{r.zipCode ?? ''}</TableCell>
+                  <TableCell>{r.country ?? ''}</TableCell>
+                  <TableCell>{r.latitude ?? ''}</TableCell>
+                  <TableCell>{r.longitude ?? ''}</TableCell>
+                  <TableCell>{r.createdAt ? new Date(String(r.createdAt)).toLocaleString() : ''}</TableCell>
+                  <TableCell>
+                    <Link to={`/restaurant/creation`} style={{ marginRight: 8 }}><Button variant="ghost" size="sm">Edit</Button></Link>
+                    <Button variant="danger" size="sm">Delete</Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
     </div>
   )
 }

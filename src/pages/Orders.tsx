@@ -1,29 +1,31 @@
+import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
+
 export default function Orders() {
   // Placeholder table for orders; wire to API when available
   const orders: unknown[] = []
   return (
     <div>
       <h1>Orders</h1>
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ textAlign: 'left', borderBottom: '1px solid #ddd' }}>
-              <th style={{ padding: 8 }}>ID</th>
-              <th style={{ padding: 8 }}>Customer</th>
-              <th style={{ padding: 8 }}>Status</th>
-              <th style={{ padding: 8 }}>Total</th>
-              <th style={{ padding: 8 }}>Created</th>
-              <th style={{ padding: 8 }}>Actions</th>
+      <div>
+        <Table>
+          <TableHead>
+            <tr>
+              <TableHeadCell>ID</TableHeadCell>
+              <TableHeadCell>Customer</TableHeadCell>
+              <TableHeadCell>Status</TableHeadCell>
+              <TableHeadCell>Total</TableHeadCell>
+              <TableHeadCell>Created</TableHeadCell>
+              <TableHeadCell>Actions</TableHeadCell>
             </tr>
-          </thead>
-          <tbody>
+          </TableHead>
+          <TableBody>
             {orders.length === 0 && (
-              <tr>
-                <td colSpan={6} style={{ padding: 12 }}>No orders found.</td>
-              </tr>
+              <TableRow>
+                <TableCell colSpan={6}>No orders found.</TableCell>
+              </TableRow>
             )}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </div>
   )
