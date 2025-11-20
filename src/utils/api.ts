@@ -174,3 +174,37 @@ export async function createRestaurant(payload: CreateRestaurantPayload) {
   const data = await res.json().catch(() => null)
   return data
 }
+
+export async function updateRestaurant(token: string, payload: CreateRestaurantPayload) {
+  if (!token) throw new Error('token is required')
+  const res = await authFetch(`/restaurants/${encodeURIComponent(token)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+
+  if (!res.ok) {
+    let bodyText = ''
+    try {
+      const json = await res.json()
+      if (json) {
+        if (Array.isArray(json.messages)) {
+          bodyText = json.messages.join('; ')
+        } else if (Array.isArray(json.errors)) {
+          bodyText = json.errors.map((e: any) => (typeof e === 'string' ? e : e?.message || JSON.stringify(e))).join('; ')
+        } else if (typeof json.message === 'string') {
+          bodyText = json.message
+        } else {
+          bodyText = JSON.stringify(json)
+        }
+      }
+    } catch {
+      try { bodyText = await res.text() } catch { bodyText = '' }
+    }
+
+    throw new Error(bodyText || `PUT /restaurants/${token} failed (${res.status})`)
+  }
+
+  const data = await res.json().catch(() => null)
+  return data
+}

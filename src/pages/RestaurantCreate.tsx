@@ -1,11 +1,14 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { createRestaurant, getRestaurantsList } from '../utils/api'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { createRestaurant, getRestaurantsList, getRestaurantByToken, updateRestaurant } from '../utils/api'
 import type { CreateRestaurantPayload } from '../utils/api'
 import { Input } from '../components/ui/input'
 import { Button } from '../components/ui/button'
 
 export default function RestaurantCreate() {
+  const { token } = useParams<{ token?: string }>()
+  const navigate = useNavigate()
+
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
   const [createResult, setCreateResult] = useState<unknown | null>(null)
@@ -74,21 +77,67 @@ export default function RestaurantCreate() {
     }
 
     try {
-      const res = await createRestaurant(payload)
-      setCreateResult(res)
-      // Optionally refresh: call getRestaurantsList to warm cache if needed
+      let res
+      if (token) {
+        // Edit mode: use PUT
+        res = await updateRestaurant(token, payload)
+        setCreateResult(res)
+      } else {
+        res = await createRestaurant(payload)
+        setCreateResult(res)
+      }
+
+      // Optionally refresh list
       await getRestaurantsList()
+
+      // After success, navigate back to list
+      navigate('/restaurant')
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)
-      setCreateError(msg || 'Create failed')
+      setCreateError(msg || (token ? 'Update failed' : 'Create failed'))
     } finally {
       setCreating(false)
     }
   }
 
+  useEffect(() => {
+    if (!token) return
+    let mounted = true
+
+    getRestaurantByToken(token)
+      .then((data) => {
+        if (!mounted) return
+        if (data) {
+          setForm((s) => ({
+            ...s,
+            name: String(data.name ?? ''),
+            address: String(data.address ?? ''),
+            streetNumber: String(data.streetNumber ?? ''),
+            city: String(data.city ?? ''),
+            province: String(data.province ?? ''),
+            zipCode: String(data.zipCode ?? ''),
+            country: String(data.country ?? ''),
+            image: String(data.image ?? ''),
+            description: String(data.description ?? ''),
+            latitude: data.latitude != null ? String(data.latitude) : '',
+            longitude: data.longitude != null ? String(data.longitude) : '',
+          }))
+        } else {
+          setCreateError('Restaurant not found')
+        }
+      })
+      .catch((err) => {
+        setCreateError(err?.message || 'Failed to load restaurant')
+      })
+
+    return () => {
+      mounted = false
+    }
+  }, [token])
+
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Create Restaurant</h1>
+      <h1 className="text-2xl font-semibold">{token ? 'Edit Restaurant' : 'Create Restaurant'}</h1>
 
       <form onSubmit={handleCreate} className="space-y-6 bg-white p-6 rounded-md shadow-sm border">
         <div>
@@ -225,7 +274,7 @@ export default function RestaurantCreate() {
       {createError && <div className="text-red-600">{createError}</div>}
       {(() => {
         const createResultText = createResult ? (typeof createResult === 'string' ? createResult : JSON.stringify(createResult)) : null
-        return createResultText ? <div className="text-green-600">Created: {createResultText}</div> : null
+        return createResultText ? <div className="text-green-600">{token ? 'Updated' : 'Created'}: {createResultText}</div> : null
       })()}
     </div>
   )

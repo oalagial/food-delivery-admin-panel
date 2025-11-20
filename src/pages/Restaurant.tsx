@@ -81,7 +81,7 @@ export default function Restaurant() {
                   <TableCell>{r.longitude ?? ''}</TableCell>
                   <TableCell>{r.createdAt ? new Date(String(r.createdAt)).toLocaleString() : ''}</TableCell>
                   <TableCell>
-                    <Link to={`/restaurant/creation`} style={{ marginRight: 8 }}><Button variant="ghost" size="sm">Edit</Button></Link>
+                    <Link to={`/restaurant/creation/${encodeURIComponent(String(r.id ?? ''))}`} style={{ marginRight: 8 }}><Button variant="ghost" size="sm">Edit</Button></Link>
                     <Button variant="danger" size="sm">Delete</Button>
                   </TableCell>
                 </TableRow>

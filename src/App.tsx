@@ -180,6 +180,7 @@ function App() {
               <Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} />
               <Route path="/restaurant" element={<RequireAuth><Restaurant /></RequireAuth>} />
               <Route path="/restaurant/creation" element={<RequireAuth><RestaurantCreate /></RequireAuth>} />
+              <Route path="/restaurant/creation/:token" element={<RequireAuth><RestaurantCreate /></RequireAuth>} />
               <Route path="/delivery-locations" element={<RequireAuth><DeliveryLocations /></RequireAuth>} />
               <Route path="/users" element={<RequireAuth><Users /></RequireAuth>} />
               <Route path="/customer-collection" element={<RequireAuth><CustomerCollection /></RequireAuth>} />
