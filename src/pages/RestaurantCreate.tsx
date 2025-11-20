@@ -87,13 +87,14 @@ export default function RestaurantCreate() {
   }
 
   return (
-    <div>
-      <h1>Create Restaurant</h1>
-      <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div className="space-y-6">
+      <h1 className="text-2xl font-semibold">Create Restaurant</h1>
+
+      <form onSubmit={handleCreate} className="space-y-6 bg-white p-6 rounded-md shadow-sm border">
         <div>
-        <div className="p-2 bg-gray-100">Name</div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
           <Input
-            className='p-4'
+            className="w-full"
             name="name"
             value={form.name}
             onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
@@ -102,74 +103,86 @@ export default function RestaurantCreate() {
           />
         </div>
 
-        <div style={{ display: 'flex', gap: 12 }}>
-          <div style={{ flex: 1 }}>
-            <div>Address</div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
             <Input
               name="address"
               value={form.address}
               onChange={(e) => setForm((s) => ({ ...s, address: e.target.value }))}
               placeholder="Address"
+              className="w-full"
             />
           </div>
-          <div style={{ width: 180 }}>
-            <div>House Number</div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">House Number</label>
             <Input
               name="streetNumber"
               value={form.streetNumber}
               onChange={(e) => setForm((s) => ({ ...s, streetNumber: e.target.value }))}
               placeholder="Number"
+              className="w-full"
             />
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          <div style={{ flexGrow: 1 }}>
-            <div>City</div>
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
             <Input
               name="city"
               value={form.city}
               onChange={(e) => setForm((s) => ({ ...s, city: e.target.value }))}
               placeholder="City"
+              className="w-full"
             />
           </div>
-          <div style={{ width: 140 }}>
-            <div>ZIP CODE</div>
+          <div className="md:col-span-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">ZIP CODE</label>
             <Input
               name="zipCode"
               value={form.zipCode}
               onChange={(e) => setForm((s) => ({ ...s, zipCode: e.target.value }))}
               placeholder="ZIP CODE"
+              className="w-full"
             />
           </div>
-          <div style={{ flexGrow: 1 }}>
-            <div>Province</div>
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Province</label>
             <Input
               name="province"
               value={form.province}
               onChange={(e) => setForm((s) => ({ ...s, province: e.target.value }))}
               placeholder="Province"
+              className="w-full"
             />
           </div>
-          <div style={{ width: 150 }}>
-            <div>Country</div>
+          <div className="md:col-span-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
             <Input
               name="country"
               value={form.country}
               onChange={(e) => setForm((s) => ({ ...s, country: e.target.value }))}
               placeholder="Country"
+              className="w-full"
             />
           </div>
         </div>
 
         <div>
-          <div>Description</div>
-          <textarea name="description" value={form.description} onChange={(e) => setForm((s) => ({ ...s, description: e.target.value }))} placeholder="Description..." style={{ width: '100%', minHeight: 90 }} />
+          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <textarea
+            name="description"
+            value={form.description}
+            onChange={(e) => setForm((s) => ({ ...s, description: e.target.value }))}
+            placeholder="Description..."
+            className="w-full min-h-[90px] rounded-md border px-3 py-2 text-sm"
+          />
         </div>
 
-        <div style={{ display: 'flex', gap: 12 }}>
-          <div style={{ flex: 1 }}>
-            <div>Latitude</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Latitude</label>
             <Input
               name="latitude"
               value={form.latitude}
@@ -177,10 +190,11 @@ export default function RestaurantCreate() {
               placeholder="Latitude"
               type="number"
               step="any"
+              className="w-full"
             />
           </div>
-          <div style={{ flex: 1 }}>
-            <div>Longitude</div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Longitude</label>
             <Input
               name="longitude"
               value={form.longitude}
@@ -188,29 +202,30 @@ export default function RestaurantCreate() {
               placeholder="Longitude"
               type="number"
               step="any"
+              className="w-full"
             />
           </div>
         </div>
 
         <div>
-          <div>Add Images</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <input id="images" type="file" multiple style={{ display: 'none' }} onChange={(e) => setFiles(e.target.files)} />
+          <label className="block text-sm font-medium text-gray-700 mb-1">Add Images</label>
+          <div className="flex items-center gap-4">
+            <input id="images" type="file" multiple className="hidden" onChange={(e) => setFiles(e.target.files)} />
             <label htmlFor="images"><Button variant="primary">Choose Images</Button></label>
-            <div style={{ color: '#6b7280' }}>{files && files.length > 0 ? `${files.length} file(s) selected` : 'No files selected'}</div>
+            <div className="text-sm text-gray-500">{files && files.length > 0 ? `${files.length} file(s) selected` : 'No files selected'}</div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
-          <Link to="/restaurant"><Button variant="ghost" type="button">You go out</Button></Link>
+        <div className="flex justify-end gap-3">
+          <Link to="/restaurant"><Button variant="ghost" type="button">Cancel</Button></Link>
           <Button variant="primary" type="submit" disabled={creating}>{creating ? 'Saving...' : 'Save'}</Button>
         </div>
       </form>
 
-      {createError && <div style={{ color: 'red', marginTop: 12 }}>{createError}</div>}
+      {createError && <div className="text-red-600">{createError}</div>}
       {(() => {
         const createResultText = createResult ? (typeof createResult === 'string' ? createResult : JSON.stringify(createResult)) : null
-        return createResultText ? <div style={{ color: 'green', marginTop: 12 }}>Created: {createResultText}</div> : null
+        return createResultText ? <div className="text-green-600">Created: {createResultText}</div> : null
       })()}
     </div>
   )
