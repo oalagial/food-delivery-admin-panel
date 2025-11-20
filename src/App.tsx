@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Dashboard from './pages/Dashboard'
 import Orders from './pages/Orders'
 import Restaurant from './pages/Restaurant'
+import RestaurantCreate from './pages/RestaurantCreate'
 import DeliveryLocations from './pages/DeliveryLocations'
 import Users from './pages/Users'
 import CustomerCollection from './pages/CustomerCollection'
@@ -97,6 +98,7 @@ function App() {
               <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
               <Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} />
               <Route path="/restaurant" element={<RequireAuth><Restaurant /></RequireAuth>} />
+              <Route path="/restaurant/creation" element={<RequireAuth><RestaurantCreate /></RequireAuth>} />
               <Route path="/delivery-locations" element={<RequireAuth><DeliveryLocations /></RequireAuth>} />
               <Route path="/users" element={<RequireAuth><Users /></RequireAuth>} />
               <Route path="/customer-collection" element={<RequireAuth><CustomerCollection /></RequireAuth>} />

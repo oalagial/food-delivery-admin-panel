@@ -27,7 +27,7 @@ export default function Header(){
     <header className="flex justify-between items-center mb-4">
       <div>
         <h3 className="text-xl font-semibold m-0">Administration</h3>
-        <div className="text-sm text-gray-500">Manage your application</div>
+        <div className="text-sm text-gray-500 mb-4">Manage your application</div>
       </div>
       <div className="flex items-center gap-3">
         <div className="text-sm text-gray-500">{time}</div>
