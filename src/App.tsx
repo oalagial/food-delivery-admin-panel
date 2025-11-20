@@ -42,7 +42,7 @@ function App() {
   if (!token) {
     return (
       <BrowserRouter>
-        <div className="app-root">
+        <div >
           <main className="main">
             <Header />
             <div className="panel">
