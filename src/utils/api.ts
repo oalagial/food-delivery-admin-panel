@@ -37,6 +37,23 @@ export function clearToken() {
   try { if (typeof window !== 'undefined') window.dispatchEvent(new Event('auth')) } catch { /* ignore */ }
 }
 
+function handleUnauthorized() {
+  try {
+    clearToken()
+    if (typeof window !== 'undefined') {
+      // notify listeners
+      try { window.dispatchEvent(new Event('auth')) } catch {}
+      // avoid redirect loop if already on /login
+      try {
+        const current = window.location.pathname || ''
+        if (!current.startsWith('/login')) window.location.href = '/login'
+      } catch {}
+    }
+  } catch {
+    // ignore
+  }
+}
+
 export function getToken(): string | null {
   try { return localStorage.getItem('access_token') } catch { return null }
 }
@@ -51,10 +68,20 @@ export function authFetch(input: RequestInfo, init?: RequestInit) {
   if (typeof input === 'string') {
     const isAbsolute = /^https?:\/\//i.test(input)
     const normalized = isAbsolute ? input : `${API_BASE.replace(/\/$/, '')}/${input.replace(/^\/+/, '')}`
-    return fetch(normalized, newInit)
+    return fetch(normalized, newInit).then((res) => {
+      if (res.status === 401) {
+        handleUnauthorized()
+      }
+      return res
+    })
   }
 
-  return fetch(input, newInit)
+  return fetch(input, newInit).then((res) => {
+    if (res.status === 401) {
+      handleUnauthorized()
+    }
+    return res
+  })
 }
 
 // Monkey-patch global fetch so all requests automatically include the Bearer header
@@ -78,7 +105,12 @@ export function attachAuthToFetch() {
     const headers = new Headers(init?.headers || {})
     if (token) headers.set('Authorization', `Bearer ${token}`)
     const newInit = { ...(init || {}), headers }
-    return originalFetch(finalInput, newInit)
+    return originalFetch(finalInput, newInit).then((res) => {
+      if (res && (res as Response).status === 401) {
+        handleUnauthorized()
+      }
+      return res
+    })
   }
 
   ;(wrapped as unknown as { __auth_wrapped?: boolean }).__auth_wrapped = true
