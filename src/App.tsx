@@ -6,6 +6,7 @@ import Orders from './pages/Orders'
 import Restaurant from './pages/Restaurant'
 import RestaurantCreate from './pages/RestaurantCreate'
 import DeliveryLocations from './pages/DeliveryLocations'
+import DeliveryLocationCreate from './pages/DeliveryLocationCreate'
 import Users from './pages/Users'
 import CustomerCollection from './pages/CustomerCollection'
 import Roles from './pages/Roles'
@@ -182,6 +183,7 @@ function App() {
               <Route path="/restaurant/creation" element={<RequireAuth><RestaurantCreate /></RequireAuth>} />
               <Route path="/restaurant/creation/:token" element={<RequireAuth><RestaurantCreate /></RequireAuth>} />
               <Route path="/delivery-locations" element={<RequireAuth><DeliveryLocations /></RequireAuth>} />
+              <Route path="/delivery-locations/creation" element={<RequireAuth><DeliveryLocationCreate /></RequireAuth>} />
               <Route path="/users" element={<RequireAuth><Users /></RequireAuth>} />
               <Route path="/customer-collection" element={<RequireAuth><CustomerCollection /></RequireAuth>} />
               <Route path="/roles" element={<RequireAuth><Roles /></RequireAuth>} />

@@ -135,6 +135,18 @@ export async function getRestaurantsList(): Promise<Restaurant[]> {
   return Array.isArray(data) ? data : (data?.items || data?.data || [])
 }
 
+export async function getDeliveryLocationsList(): Promise<Restaurant[]> {
+  const res = await authFetch('/delivery-locations/list')
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(text || `GET /delivery-locations/list failed (${res.status})`)
+  }
+
+  const data = await res.json().catch(() => null)
+  return Array.isArray(data) ? data : (data?.items || data?.data || [])
+}
+
 export type OpeningHour = {
   day?: string
   open?: string
@@ -201,6 +213,56 @@ export async function createRestaurant(payload: CreateRestaurantPayload) {
     }
 
     throw new Error(bodyText || `POST /restaurants/create failed (${res.status})`)
+  }
+
+  const data = await res.json().catch(() => null)
+  return data
+}
+
+export type CreateDeliveryLocationPayload = {
+  name: string
+  address?: string
+  streetNumber?: string
+  city?: string
+  province?: string
+  image?: string
+  zipCode?: string
+  country?: string
+  description?: string
+  latitude?: string | number
+  longitude?: string | number
+  isActive?: boolean
+  restaurantIds?: Array<number | string>
+  [k: string]: unknown
+}
+
+export async function createDeliveryLocation(payload: CreateDeliveryLocationPayload) {
+  const res = await authFetch('/delivery-locations/create', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+
+  if (!res.ok) {
+    let bodyText = ''
+    try {
+      const json = await res.json()
+      if (json) {
+        if (Array.isArray(json.messages)) {
+          bodyText = json.messages.join('; ')
+        } else if (Array.isArray((json as any).errors)) {
+          bodyText = (json as any).errors.map((e: any) => (typeof e === 'string' ? e : e?.message || JSON.stringify(e))).join('; ')
+        } else if (typeof (json as any).message === 'string') {
+          bodyText = (json as any).message
+        } else {
+          bodyText = JSON.stringify(json)
+        }
+      }
+    } catch {
+      try { bodyText = await res.text() } catch { bodyText = '' }
+    }
+
+    throw new Error(bodyText || `POST /delivery-locations/create failed (${res.status})`)
   }
 
   const data = await res.json().catch(() => null)
