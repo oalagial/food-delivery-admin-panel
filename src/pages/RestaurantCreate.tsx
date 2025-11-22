@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { createRestaurant, getRestaurantsList, getRestaurantByToken, updateRestaurant } from '../utils/api'
+import { createRestaurant, getRestaurantsList, getRestaurantById, updateRestaurant } from '../utils/api'
 import type { CreateRestaurantPayload } from '../utils/api'
 import { Input } from '../components/ui/input'
 import { Button } from '../components/ui/button'
 
 export default function RestaurantCreate() {
-  const { token } = useParams<{ token?: string }>()
+  const { id } = useParams<{ id?: string }>()
   const navigate = useNavigate()
 
   const [creating, setCreating] = useState(false)
@@ -78,9 +78,9 @@ export default function RestaurantCreate() {
 
     try {
       let res
-      if (token) {
+      if (id) {
         // Edit mode: use PUT
-        res = await updateRestaurant(token, payload)
+        res = await updateRestaurant(id, payload)
         setCreateResult(res)
       } else {
         res = await createRestaurant(payload)
@@ -94,17 +94,17 @@ export default function RestaurantCreate() {
       navigate('/restaurant')
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)
-      setCreateError(msg || (token ? 'Update failed' : 'Create failed'))
+      setCreateError(msg || (id ? 'Update failed' : 'Create failed'))
     } finally {
       setCreating(false)
     }
   }
 
   useEffect(() => {
-    if (!token) return
+    if (!id) return
     let mounted = true
 
-    getRestaurantByToken(token)
+    getRestaurantById(id)
       .then((data) => {
         if (!mounted) return
         if (data) {
@@ -133,11 +133,11 @@ export default function RestaurantCreate() {
     return () => {
       mounted = false
     }
-  }, [token])
+  }, [id])
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">{token ? 'Edit Restaurant' : 'Create Restaurant'}</h1>
+      <h1 className="text-2xl font-semibold">{id ? 'Edit Restaurant' : 'Create Restaurant'}</h1>
 
       <form onSubmit={handleCreate} className="space-y-6 bg-white p-6 rounded-md shadow-sm border">
         <div>
@@ -274,7 +274,7 @@ export default function RestaurantCreate() {
       {createError && <div className="text-red-600">{createError}</div>}
       {(() => {
         const createResultText = createResult ? (typeof createResult === 'string' ? createResult : JSON.stringify(createResult)) : null
-        return createResultText ? <div className="text-green-600">{token ? 'Updated' : 'Created'}: {createResultText}</div> : null
+        return createResultText ? <div className="text-green-600">{id ? 'Updated' : 'Created'}: {createResultText}</div> : null
       })()}
     </div>
   )

@@ -168,6 +168,12 @@ export async function getRestaurantByToken(token: string): Promise<Restaurant | 
   return data || null
 }
 
+// Alias using clearer name when the identifier is a numeric id
+export async function getRestaurantById(id: string | number): Promise<Restaurant | null> {
+  if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
+  return getRestaurantByToken(String(id))
+}
+
 export type CreateRestaurantPayload = {
   name: string
   address?: string
