@@ -225,6 +225,233 @@ export async function createRestaurant(payload: CreateRestaurantPayload) {
   return data
 }
 
+export type TypeItem = {
+  id?: string | number
+  name?: string
+  tag?: string
+  description?: string
+  createdAt?: string | number
+  [k: string]: any
+}
+
+export async function getTypesList(): Promise<TypeItem[]> {
+  const res = await authFetch('/types/list')
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(text || `GET /types/list failed (${res.status})`)
+  }
+
+  const data = await res.json().catch(() => null)
+  return Array.isArray(data) ? data : (data?.items || data?.data || [])
+}
+
+export type CreateTypePayload = {
+  name: string
+  tag?: string
+  description?: string
+  [k: string]: unknown
+}
+
+export async function createType(payload: CreateTypePayload) {
+  const res = await authFetch('/types/create', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+
+  if (!res.ok) {
+    let bodyText = ''
+    try {
+      const json = await res.json()
+      if (json) {
+        if (Array.isArray(json.messages)) {
+          bodyText = json.messages.join('; ')
+        } else if (Array.isArray(json.errors)) {
+          bodyText = json.errors.map((e: any) => (typeof e === 'string' ? e : e?.message || JSON.stringify(e))).join('; ')
+        } else if (typeof json.message === 'string') {
+          bodyText = json.message
+        } else {
+          bodyText = JSON.stringify(json)
+        }
+      }
+    } catch {
+      try { bodyText = await res.text() } catch { bodyText = '' }
+    }
+
+    throw new Error(bodyText || `POST /types/create failed (${res.status})`)
+  }
+
+  const data = await res.json().catch(() => null)
+  return data
+}
+
+export async function getTypeById(id: string | number): Promise<TypeItem | null> {
+  if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
+  const res = await authFetch(`/types/${encodeURIComponent(String(id))}`)
+
+  if (res.status === 404) return null
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(text || `GET /types/${id} failed (${res.status})`)
+  }
+
+  const data = await res.json().catch(() => null)
+  return data || null
+}
+
+export async function updateType(id: string | number, payload: CreateTypePayload) {
+  if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
+  const res = await authFetch(`/types/${encodeURIComponent(String(id))}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+
+  if (!res.ok) {
+    let bodyText = ''
+    try {
+      const json = await res.json()
+      if (json) {
+        if (Array.isArray(json.messages)) {
+          bodyText = json.messages.join('; ')
+        } else if (Array.isArray(json.errors)) {
+          bodyText = json.errors.map((e: any) => (typeof e === 'string' ? e : e?.message || JSON.stringify(e))).join('; ')
+        } else if (typeof json.message === 'string') {
+          bodyText = json.message
+        } else {
+          bodyText = JSON.stringify(json)
+        }
+      }
+    } catch {
+      try { bodyText = await res.text() } catch { bodyText = '' }
+    }
+
+    throw new Error(bodyText || `PUT /types/${id} failed (${res.status})`)
+  }
+
+  const data = await res.json().catch(() => null)
+  return data
+}
+
+// Product types + APIs
+export type Product = {
+  id?: string | number
+  name?: string
+  description?: string
+  image?: string
+  typeId?: number | string
+  ingredients?: string[]
+  price?: number
+  isAvailable?: boolean
+  createdAt?: string | number
+  [k: string]: any
+}
+
+export type CreateProductPayload = {
+  name: string
+  description?: string
+  image?: string
+  typeId?: number | string
+  ingredients?: string[]
+  price?: number
+  isAvailable?: boolean
+  [k: string]: unknown
+}
+
+export async function getProductsList(): Promise<Product[]> {
+  const res = await authFetch('/products/list')
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(text || `GET /products/list failed (${res.status})`)
+  }
+
+  const data = await res.json().catch(() => null)
+  return Array.isArray(data) ? data : (data?.items || data?.data || [])
+}
+
+export async function getProductById(id: string | number): Promise<Product | null> {
+  if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
+  const res = await authFetch(`/products/${encodeURIComponent(String(id))}`)
+
+  if (res.status === 404) return null
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(text || `GET /products/${id} failed (${res.status})`)
+  }
+
+  const data = await res.json().catch(() => null)
+  return data || null
+}
+
+export async function createProduct(payload: CreateProductPayload) {
+  const res = await authFetch('/products/create', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+
+  if (!res.ok) {
+    let bodyText = ''
+    try {
+      const json = await res.json()
+      if (json) {
+        if (Array.isArray(json.messages)) {
+          bodyText = json.messages.join('; ')
+        } else if (Array.isArray(json.errors)) {
+          bodyText = json.errors.map((e: any) => (typeof e === 'string' ? e : e?.message || JSON.stringify(e))).join('; ')
+        } else if (typeof json.message === 'string') {
+          bodyText = json.message
+        } else {
+          bodyText = JSON.stringify(json)
+        }
+      }
+    } catch {
+      try { bodyText = await res.text() } catch { bodyText = '' }
+    }
+
+    throw new Error(bodyText || `POST /products/create failed (${res.status})`)
+  }
+
+  const data = await res.json().catch(() => null)
+  return data
+}
+
+export async function updateProduct(id: string | number, payload: CreateProductPayload) {
+  if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
+  const res = await authFetch(`/products/${encodeURIComponent(String(id))}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+
+  if (!res.ok) {
+    let bodyText = ''
+    try {
+      const json = await res.json()
+      if (json) {
+        if (Array.isArray(json.messages)) {
+          bodyText = json.messages.join('; ')
+        } else if (Array.isArray(json.errors)) {
+          bodyText = json.errors.map((e: any) => (typeof e === 'string' ? e : e?.message || JSON.stringify(e))).join('; ')
+        } else if (typeof json.message === 'string') {
+          bodyText = json.message
+        } else {
+          bodyText = JSON.stringify(json)
+        }
+      }
+    } catch {
+      try { bodyText = await res.text() } catch { bodyText = '' }
+    }
+
+    throw new Error(bodyText || `PUT /products/${id} failed (${res.status})`)
+  }
+
+  const data = await res.json().catch(() => null)
+  return data
+}
+
 export type CreateDeliveryLocationPayload = {
   name: string
   address?: string

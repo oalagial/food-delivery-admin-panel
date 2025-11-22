@@ -12,6 +12,10 @@ import CustomerCollection from './pages/CustomerCollection'
 import Roles from './pages/Roles'
 import Permits from './pages/Permits'
 import SettingsPage from './pages/Settings'
+import Types from './pages/Types'
+import TypeCreate from './pages/TypeCreate'
+import Products from './pages/Products'
+import ProductCreate from './pages/ProductCreate'
 import Header from './components/Header'
 import Login from './pages/Login'
 import RequireAuth from './components/RequireAuth'
@@ -249,6 +253,12 @@ function App() {
               <Route path="/restaurant/creation/:id" element={<RequireAuth><RestaurantCreate /></RequireAuth>} />
               <Route path="/delivery-locations" element={<RequireAuth><DeliveryLocations /></RequireAuth>} />
               <Route path="/delivery-locations/creation" element={<RequireAuth><DeliveryLocationCreate /></RequireAuth>} />
+              <Route path="/types" element={<RequireAuth><Types /></RequireAuth>} />
+              <Route path="/types/creation" element={<RequireAuth><TypeCreate /></RequireAuth>} />
+              <Route path="/types/creation/:id" element={<RequireAuth><TypeCreate /></RequireAuth>} />
+              <Route path="/products" element={<RequireAuth><Products /></RequireAuth>} />
+              <Route path="/products/creation" element={<RequireAuth><ProductCreate /></RequireAuth>} />
+              <Route path="/products/creation/:id" element={<RequireAuth><ProductCreate /></RequireAuth>} />
               <Route path="/users" element={<RequireAuth><Users /></RequireAuth>} />
               <Route path="/customer-collection" element={<RequireAuth><CustomerCollection /></RequireAuth>} />
               <Route path="/roles" element={<RequireAuth><Roles /></RequireAuth>} />
