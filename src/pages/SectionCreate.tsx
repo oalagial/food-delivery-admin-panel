@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Input } from '../components/ui/input'
 import { Button } from '../components/ui/button'
-import { getSectionsList, getSectionById, createSection, updateSection, getTypesList } from '../utils/api'
+import { getSectionById, createSection, updateSection, getTypesList } from '../utils/api'
 import type { SectionItem } from '../utils/api'
 
 export default function SectionCreate(){
