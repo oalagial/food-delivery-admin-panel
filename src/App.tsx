@@ -170,6 +170,71 @@ function App() {
               </li>
             </ul>
           </NavSection>
+
+          <NavSection title="CONTENT">
+            <ul className="space-y-1">
+              <li>
+                <NavLink
+                  to="/types"
+                  className={({ isActive }) =>
+                    `block px-3 py-2 rounded-md text-sm font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
+                  }
+                >
+                  Types
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  to="/products"
+                  className={({ isActive }) =>
+                    `block px-3 py-2 rounded-md text-sm font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
+                  }
+                >
+                  Products
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  to="/menus"
+                  className={({ isActive }) =>
+                    `block px-3 py-2 rounded-md text-sm font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
+                  }
+                >
+                  Menus
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  to="/opening-hours"
+                  className={({ isActive }) =>
+                    `block px-3 py-2 rounded-md text-sm font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
+                  }
+                >
+                  Opening Hours
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  to="/sections"
+                  className={({ isActive }) =>
+                    `block px-3 py-2 rounded-md text-sm font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
+                  }
+                >
+                  Sections
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  to="/customers"
+                  className={({ isActive }) =>
+                    `block px-3 py-2 rounded-md text-sm font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
+                  }
+                >
+                  Customers
+                </NavLink>
+              </li>
+            </ul>
+          </NavSection>
         </aside>
 
         <main className="main">
