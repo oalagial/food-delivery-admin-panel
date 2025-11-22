@@ -3,14 +3,14 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { Input } from '../components/ui/input'
 import { Button } from '../components/ui/button'
 import { createProduct, getProductById, updateProduct, getTypesList } from '../utils/api'
-import type { CreateProductPayload, Product } from '../utils/api'
+import type { CreateProductPayload } from '../utils/api'
 
 export default function ProductCreate() {
   const { id } = useParams<{ id?: string }>()
   const navigate = useNavigate()
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [result, setResult] = useState<unknown | null>(null)
+  
 
   const [types, setTypes] = useState<any[]>([])
   const [typesLoading, setTypesLoading] = useState(true)
@@ -60,26 +60,23 @@ export default function ProductCreate() {
     e.preventDefault()
     setSaving(true)
     setError(null)
-    setResult(null)
 
     const payload: CreateProductPayload = {
       name: String(form.name ?? '').trim(),
       description: String(form.description ?? '').trim(),
       image: String(form.image ?? '').trim(),
       typeId: form.typeId,
-      ingredients: Array.isArray(form.ingredients) ? form.ingredients : (typeof form.ingredients === 'string' ? String(form.ingredients).split(',').map(s=>s.trim()) : []),
+      ingredients: Array.isArray(form.ingredients) ? form.ingredients : [],
       price: form.price !== undefined ? Number(form.price) : undefined,
       isAvailable: !!form.isAvailable,
     }
 
     try {
-      let res
       if (id) {
-        res = await updateProduct(id, payload)
+        await updateProduct(id, payload)
       } else {
-        res = await createProduct(payload)
+        await createProduct(payload)
       }
-      setResult(res)
       navigate('/products')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err))
@@ -129,7 +126,12 @@ export default function ProductCreate() {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Ingredients (comma separated)</label>
-          <Input value={Array.isArray(form.ingredients) ? (form.ingredients as string[]).join(', ') : (form.ingredients as string || '')} onChange={(e)=> setForm(s=>({...s, ingredients: e.target.value}))} placeholder="Tomato, Cheese" className="w-full" />
+          <Input
+            value={Array.isArray(form.ingredients) ? (form.ingredients as string[]).join(', ') : ''}
+            onChange={(e)=> setForm(s=>({...s, ingredients: String(e.target.value).split(',').map(x=>x.trim()).filter(Boolean)}))}
+            placeholder="Tomato, Cheese"
+            className="w-full"
+          />
         </div>
 
         <div>

@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
+import type { FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Input } from '../components/ui/input'
 import { Button } from '../components/ui/button'
 import { getSectionById, createSection, updateSection, getTypesList } from '../utils/api'
-import type { SectionItem } from '../utils/api'
+import type { TypeItem } from '../utils/api'
 
 export default function SectionCreate(){
   const params = useParams<{id?: string}>()
@@ -14,23 +15,24 @@ export default function SectionCreate(){
   const [productsIds, setProductsIds] = useState<number[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [types, setTypes] = useState<{id:number;name:string}[]>([])
+  const [types, setTypes] = useState<TypeItem[]>([])
 
   useEffect(()=>{
     let mounted = true
     getTypesList().then(d=>{ if(mounted) setTypes(d)}).catch(()=>{})
     if(params.id){
-      getSectionById(Number(params.id)).then((s: SectionItem) => {
+      getSectionById(Number(params.id)).then((s) => {
+        if (!s) return
         setName(s.name || '')
         setDescription(String(s.description || ''))
-        setTypeId(s.typeId ?? '')
-        setProductsIds(s.productsIds || [])
+        setTypeId(s.typeId !== undefined && s.typeId !== null && String(s.typeId) !== '' ? Number(s.typeId) : '')
+        setProductsIds((s.productsIds || []).map(p => Number(p)))
       }).catch(e=>setError(String(e)))
     }
     return ()=>{ mounted = false }
   }, [params.id])
 
-  async function onSubmit(e: any){
+  async function onSubmit(e: FormEvent<HTMLFormElement>){
     e.preventDefault()
     setLoading(true)
     setError(null)
@@ -42,7 +44,7 @@ export default function SectionCreate(){
         await createSection(payload)
       }
       navigate('/sections')
-    }catch(err){ setError(String(err)) }
+    }catch(err: unknown){ setError(String(err)) }
     setLoading(false)
   }
 

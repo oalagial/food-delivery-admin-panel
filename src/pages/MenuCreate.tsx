@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { Input } from '../components/ui/input'
 import { Button } from '../components/ui/button'
 import { getRestaurantsList, getSectionsList, getMenuById, createMenu, updateMenu } from '../utils/api'
-import type { CreateMenuPayload } from '../utils/api'
+import type { CreateMenuPayload, Restaurant, SectionItem } from '../utils/api'
 
 export default function MenuCreate() {
   const { id } = useParams<{ id?: string }>()
@@ -15,8 +15,8 @@ export default function MenuCreate() {
   const [restaurantIds, setRestaurantIds] = useState<Array<number | string>>([])
   const [sectionIds, setSectionIds] = useState<Array<number | string>>([])
 
-  const [restaurants, setRestaurants] = useState<any[]>([])
-  const [sections, setSections] = useState<any[]>([])
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([])
+  const [sections, setSections] = useState<SectionItem[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -34,8 +34,8 @@ export default function MenuCreate() {
       if (menu) {
         setName(menu.name || '')
         setDescription(menu.description || '')
-        setRestaurantIds((menu.restaurantIds || []).map((v: any) => Number(v)))
-        setSectionIds((menu.sectionIds || []).map((v: any) => Number(v)))
+        setRestaurantIds((menu.restaurantIds || []).map(v => Number(v)))
+        setSectionIds((menu.sectionIds || []).map(v => Number(v)))
       }
     }).catch((e) => { if (mounted) setError(String(e)) })
       .finally(() => { if (mounted) setLoading(false) })
