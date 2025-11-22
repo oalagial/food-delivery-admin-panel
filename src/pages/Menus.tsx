@@ -1,0 +1,61 @@
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { Table, TableBody, TableHead, TableRow, TableCell, TableHeadCell } from '../components/ui/table'
+import { Button } from '../components/ui/button'
+import { getMenusList } from '../utils/api'
+import type { MenuItem } from '../utils/api'
+
+export default function Menus() {
+  const [menus, setMenus] = useState<MenuItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let mounted = true
+    getMenusList()
+      .then((d) => { if (mounted) setMenus(d) })
+      .catch((e) => { if (mounted) setError(String(e)) })
+      .finally(() => { if (mounted) setLoading(false) })
+    return () => { mounted = false }
+  }, [])
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Menus</h1>
+        <Link to="/menus/creation"><Button variant="primary">Create Menu</Button></Link>
+      </div>
+
+      {loading ? <div>Loading...</div> : error ? <div className="text-red-600">{error}</div> : (
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableHeadCell>ID</TableHeadCell>
+              <TableHeadCell>Name</TableHeadCell>
+              <TableHeadCell>Description</TableHeadCell>
+              <TableHeadCell>Sections</TableHeadCell>
+              <TableHeadCell>Restaurants</TableHeadCell>
+              <TableHeadCell>Created</TableHeadCell>
+              <TableHeadCell>Actions</TableHeadCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {menus.map((m) => (
+              <TableRow key={String(m.id)}>
+                <TableCell>{m.id}</TableCell>
+                <TableCell>{m.name}</TableCell>
+                <TableCell>{m.description}</TableCell>
+                <TableCell>{(m.sectionIds || []).length}</TableCell>
+                <TableCell>{(m.restaurantIds || []).length}</TableCell>
+                <TableCell>{m.createdAt ? new Date(String(m.createdAt)).toLocaleString() : ''}</TableCell>
+                <TableCell>
+                  <Link to={`/menus/creation/${m.id}`}><Button size="sm" variant="ghost">Edit</Button></Link>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </div>
+  )
+}

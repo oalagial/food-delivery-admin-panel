@@ -16,6 +16,12 @@ import Types from './pages/Types'
 import TypeCreate from './pages/TypeCreate'
 import Products from './pages/Products'
 import ProductCreate from './pages/ProductCreate'
+import Menus from './pages/Menus'
+import MenuCreate from './pages/MenuCreate'
+import OpeningHours from './pages/OpeningHours'
+import OpeningHourCreate from './pages/OpeningHourCreate'
+import Sections from './pages/Sections'
+import SectionCreate from './pages/SectionCreate'
 import Header from './components/Header'
 import Login from './pages/Login'
 import RequireAuth from './components/RequireAuth'
@@ -259,6 +265,15 @@ function App() {
               <Route path="/products" element={<RequireAuth><Products /></RequireAuth>} />
               <Route path="/products/creation" element={<RequireAuth><ProductCreate /></RequireAuth>} />
               <Route path="/products/creation/:id" element={<RequireAuth><ProductCreate /></RequireAuth>} />
+              <Route path="/menus" element={<RequireAuth><Menus /></RequireAuth>} />
+              <Route path="/menus/creation" element={<RequireAuth><MenuCreate /></RequireAuth>} />
+              <Route path="/menus/creation/:id" element={<RequireAuth><MenuCreate /></RequireAuth>} />
+              <Route path="/opening-hours" element={<RequireAuth><OpeningHours /></RequireAuth>} />
+              <Route path="/opening-hours/creation" element={<RequireAuth><OpeningHourCreate /></RequireAuth>} />
+              <Route path="/opening-hours/creation/:id" element={<RequireAuth><OpeningHourCreate /></RequireAuth>} />
+              <Route path="/sections" element={<RequireAuth><Sections /></RequireAuth>} />
+              <Route path="/sections/creation" element={<RequireAuth><SectionCreate /></RequireAuth>} />
+              <Route path="/sections/creation/:id" element={<RequireAuth><SectionCreate /></RequireAuth>} />
               <Route path="/users" element={<RequireAuth><Users /></RequireAuth>} />
               <Route path="/customer-collection" element={<RequireAuth><CustomerCollection /></RequireAuth>} />
               <Route path="/roles" element={<RequireAuth><Roles /></RequireAuth>} />
