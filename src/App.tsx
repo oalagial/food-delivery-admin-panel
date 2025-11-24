@@ -259,6 +259,7 @@ function App() {
               <Route path="/restaurant/creation/:id" element={<RequireAuth><RestaurantCreate /></RequireAuth>} />
               <Route path="/delivery-locations" element={<RequireAuth><DeliveryLocations /></RequireAuth>} />
               <Route path="/delivery-locations/creation" element={<RequireAuth><DeliveryLocationCreate /></RequireAuth>} />
+              <Route path="/delivery-locations/creation/:id" element={<RequireAuth><DeliveryLocationCreate /></RequireAuth>} />
               <Route path="/types" element={<RequireAuth><Types /></RequireAuth>} />
               <Route path="/types/creation" element={<RequireAuth><TypeCreate /></RequireAuth>} />
               <Route path="/types/creation/:id" element={<RequireAuth><TypeCreate /></RequireAuth>} />

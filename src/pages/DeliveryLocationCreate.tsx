@@ -1,13 +1,20 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { Input } from '../components/ui/input'
 import { Button } from '../components/ui/button'
-import { createDeliveryLocation } from '../utils/api'
-import { getRestaurantsList } from '../utils/api'
+import { createDeliveryLocation, getDeliveryLocationById, updateDeliveryLocation, getRestaurantsList } from '../utils/api'
 import type { CreateDeliveryLocationPayload, Restaurant as RestaurantType } from '../utils/api'
+
+type DeliveredByEntry = {
+  restaurantId: number
+  deliveryFee: number
+  minOrder: number
+  isActive?: boolean
+}
 
 export default function DeliveryLocationCreate() {
   const navigate = useNavigate()
+  const params = useParams<{ id?: string }>()
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<unknown | null>(null)
@@ -25,8 +32,9 @@ export default function DeliveryLocationCreate() {
     latitude: '',
     longitude: '',
     isActive: true,
-    restaurantIds: [],
   })
+
+  const [selectedDeliveredBy, setSelectedDeliveredBy] = useState<DeliveredByEntry[]>([])
 
   const [restaurants, setRestaurants] = useState<RestaurantType[]>([])
   const [restaurantsLoading, setRestaurantsLoading] = useState(true)
@@ -34,23 +42,68 @@ export default function DeliveryLocationCreate() {
 
   useEffect(() => {
     let mounted = true
-    getRestaurantsList()
-      .then((data) => {
+
+    async function load() {
+      try {
+        if (params.id) {
+          const data = await getDeliveryLocationById(params.id)
+          if (!mounted) return
+          if (data) {
+            setForm({
+              name: data.name ?? '',
+              address: data.address ?? '',
+              streetNumber: data.streetNumber ?? '',
+              city: data.city ?? '',
+              province: data.province ?? '',
+              image: data.image ?? '',
+              zipCode: data.zipCode ?? '',
+              country: data.country ?? '',
+              description: data.description ?? '',
+              latitude: data.latitude !== undefined && data.latitude !== null ? String(data.latitude) : '',
+              longitude: data.longitude !== undefined && data.longitude !== null ? String(data.longitude) : '',
+              isActive: data.isActive ?? true,
+            })
+
+            if (Array.isArray((data as unknown as Record<string, unknown>)?.deliveredBy)) {
+              const entries = ((data as unknown as Record<string, unknown>)?.deliveredBy as unknown[]).map((d) => {
+                const entry = d as Record<string, unknown>
+                return {
+                  restaurantId: Number(String(entry['restaurantId'] ?? '')),
+                  deliveryFee: entry['deliveryFee'] ? Number(entry['deliveryFee']) : 0,
+                  minOrder: entry['minOrder'] ? Number(entry['minOrder']) : 0,
+                  isActive: entry['isActive'] === undefined ? true : Boolean(entry['isActive']),
+                } as DeliveredByEntry
+              })
+              setSelectedDeliveredBy(entries)
+            }
+          }
+        }
+
+        const rest = await getRestaurantsList()
         if (!mounted) return
-        setRestaurants(data)
+        setRestaurants(rest)
         setRestaurantsError(null)
-      })
-      .catch((err) => {
+      } catch (err: unknown) {
         if (!mounted) return
-        setRestaurantsError(err?.message || 'Failed to load restaurants')
+        setRestaurantsError(err instanceof Error ? err.message : String(err))
         setRestaurants([])
-      })
-      .finally(() => {
+      } finally {
         if (mounted) setRestaurantsLoading(false)
-      })
+      }
+    }
+
+    load()
 
     return () => { mounted = false }
-  }, [])
+  }, [params.id])
+
+  function handleSelectChange(selectedIds: number[]) {
+    const next = selectedIds.map((id) => {
+      const found = selectedDeliveredBy.find((e) => e.restaurantId === id)
+      return found ?? { restaurantId: id, deliveryFee: 0, minOrder: 0, isActive: true }
+    })
+    setSelectedDeliveredBy(next)
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -58,8 +111,6 @@ export default function DeliveryLocationCreate() {
     setError(null)
     setResult(null)
 
-    // Normalize restaurantIds: allow comma-separated input in form.restaurantIds (string)
-    // Validate and normalize latitude/longitude to numbers
     const latRaw = String(form.latitude ?? '').trim()
     const lonRaw = String(form.longitude ?? '').trim()
 
@@ -109,16 +160,21 @@ export default function DeliveryLocationCreate() {
       latitude,
       longitude,
       isActive: !!form.isActive,
-      restaurantIds: Array.isArray(form.restaurantIds)
-        ? form.restaurantIds.map((v) => (typeof v === 'string' ? Number(v) : Number(v))).filter((n) => !Number.isNaN(n))
-        : (typeof form.restaurantIds === 'string'
-          ? String(form.restaurantIds).split(',').map((s) => Number(s.trim())).filter((n) => !Number.isNaN(n))
-          : []),
+      deliveredBy: selectedDeliveredBy.map((entry) => ({
+        restaurantId: entry.restaurantId,
+        deliveryFee: entry.deliveryFee,
+        minOrder: entry.minOrder,
+        isActive: entry.isActive,
+      })),
     }
 
     try {
-      const res = await createDeliveryLocation(payload)
-      setResult(res)
+      if (params.id) {
+        await updateDeliveryLocation(params.id, payload)
+      } else {
+        const res = await createDeliveryLocation(payload)
+        setResult(res)
+      }
       navigate('/delivery-locations')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err))
@@ -199,10 +255,10 @@ export default function DeliveryLocationCreate() {
             ) : (
               <select
                 multiple
-                value={Array.isArray(form.restaurantIds) ? (form.restaurantIds as Array<number | string>).map(String) : []}
+                value={selectedDeliveredBy.map((d) => String(d.restaurantId))}
                 onChange={(e) => {
                   const vals = Array.from(e.target.selectedOptions).map((o) => Number(o.value)).filter((n) => !Number.isNaN(n))
-                  setForm((s) => ({ ...s, restaurantIds: vals }))
+                  handleSelectChange(vals)
                 }}
                 className="w-full rounded-md border px-3 py-2 text-sm"
               >
@@ -214,6 +270,45 @@ export default function DeliveryLocationCreate() {
             <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd (or use shift) to select multiple restaurants.</p>
           </div>
         </div>
+
+        {selectedDeliveredBy.length > 0 && (
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium">Delivery settings per restaurant</h3>
+            {selectedDeliveredBy.map((entry, idx) => {
+              const rest = restaurants.find((r) => String(r.id) === String(entry.restaurantId))
+              return (
+                <div key={entry.restaurantId} className="grid grid-cols-1 md:grid-cols-6 gap-2 items-center">
+                  <div className="md:col-span-2">
+                    <div className="text-sm font-medium">{rest?.name ?? entry.restaurantId}</div>
+                  </div>
+                  <div className="md:col-span-1">
+                    <label className="block text-xs text-gray-600">Fee</label>
+                    <Input type="number" step="0.01" value={String(entry.deliveryFee)} onChange={(e) => {
+                      const v = Number(e.target.value)
+                      setSelectedDeliveredBy((s) => s.map((it, i) => i === idx ? { ...it, deliveryFee: Number.isNaN(v) ? 0 : v } : it))
+                    }} />
+                  </div>
+                  <div className="md:col-span-1">
+                    <label className="block text-xs text-gray-600">Min order</label>
+                    <Input type="number" step="0.01" value={String(entry.minOrder)} onChange={(e) => {
+                      const v = Number(e.target.value)
+                      setSelectedDeliveredBy((s) => s.map((it, i) => i === idx ? { ...it, minOrder: Number.isNaN(v) ? 0 : v } : it))
+                    }} />
+                  </div>
+                  <div className="md:col-span-1">
+                    <label className="flex items-center gap-2">
+                      <input type="checkbox" checked={!!entry.isActive} onChange={(e) => setSelectedDeliveredBy((s) => s.map((it, i) => i === idx ? { ...it, isActive: e.target.checked } : it))} />
+                      <span className="text-sm">Active</span>
+                    </label>
+                  </div>
+                  <div className="md:col-span-1">
+                    <button type="button" className="text-sm text-red-600" onClick={() => setSelectedDeliveredBy((s) => s.filter((it) => it.restaurantId !== entry.restaurantId))}>Remove</button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
 
         <div className="flex justify-end gap-3">
           <Button variant="ghost" type="button" onClick={() => navigate('/delivery-locations')}>Cancel</Button>

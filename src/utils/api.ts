@@ -1,7 +1,7 @@
 type LoginResponse = {
   token?: string
   accessToken?: string
-  [k: string]: any
+  [k: string]: unknown
 }
 const API_BASE = 'https://delivery-app-backend-production-64f2.up.railway.app'
 
@@ -18,8 +18,9 @@ export async function login(email: string, password: string): Promise<LoginRespo
   }
 
   const data: LoginResponse = await res.json()
-  const token = data.access_token || data.accessToken || data.token || data?.bearer
-  if (token) setToken(token)
+  const obj = data as unknown as Record<string, unknown>
+  const tokenVal = obj['access_token'] ?? obj['accessToken'] ?? obj['token'] ?? obj['bearer']
+  if (typeof tokenVal === 'string') setToken(tokenVal)
   return data
 }
 
@@ -84,6 +85,25 @@ export function authFetch(input: RequestInfo, init?: RequestInit) {
   })
 }
 
+function parseErrorJson(json: unknown): string {
+  if (!json) return ''
+  if (Array.isArray(json)) return json.map(String).join('; ')
+  if (typeof json === 'object') {
+    const obj = json as Record<string, unknown>
+    if (Array.isArray(obj.messages)) return (obj.messages as unknown[]).map(String).join('; ')
+    if (Array.isArray(obj.errors)) {
+      return (obj.errors as unknown[]).map((e) => {
+        if (typeof e === 'string') return e
+        if (typeof e === 'object' && e && 'message' in (e as Record<string, unknown>)) return String((e as Record<string, unknown>).message)
+        return JSON.stringify(e)
+      }).join('; ')
+    }
+    if (typeof obj.message === 'string') return obj.message
+    try { return JSON.stringify(obj) } catch { return String(obj) }
+  }
+  return String(json)
+}
+
 // Monkey-patch global fetch so all requests automatically include the Bearer header
 export function attachAuthToFetch() {
   if (typeof window === 'undefined' || typeof window.fetch !== 'function') return
@@ -120,7 +140,7 @@ export function attachAuthToFetch() {
 export type Restaurant = {
   id?: string
   name?: string
-  [k: string]: any
+  [k: string]: unknown
 }
 
 export async function getRestaurantsList(): Promise<Restaurant[]> {
@@ -187,7 +207,7 @@ export type CreateRestaurantPayload = {
   latitude?: string | number
   longitude?: string | number
   openingHours?: OpeningHour[]
-  [k: string]: any
+  [k: string]: unknown
 }
 
 export async function createRestaurant(payload: CreateRestaurantPayload) {
@@ -198,22 +218,10 @@ export async function createRestaurant(payload: CreateRestaurantPayload) {
   })
 
   if (!res.ok) {
-    // Try to parse structured JSON error body, otherwise fallback to text
     let bodyText = ''
     try {
       const json = await res.json()
-      // Common patterns: { message: '...', errors: [...] } or { messages: [...] }
-      if (json) {
-        if (Array.isArray(json.messages)) {
-          bodyText = json.messages.join('; ')
-        } else if (Array.isArray(json.errors)) {
-          bodyText = json.errors.map((e: any) => (typeof e === 'string' ? e : e?.message || JSON.stringify(e))).join('; ')
-        } else if (typeof json.message === 'string') {
-          bodyText = json.message
-        } else {
-          bodyText = JSON.stringify(json)
-        }
-      }
+      bodyText = parseErrorJson(json)
     } catch {
       try { bodyText = await res.text() } catch { bodyText = '' }
     }
@@ -231,7 +239,7 @@ export type TypeItem = {
   tag?: string
   description?: string
   createdAt?: string | number
-  [k: string]: any
+  [k: string]: unknown
 }
 
 export async function getTypesList(): Promise<TypeItem[]> {
@@ -264,17 +272,7 @@ export async function createType(payload: CreateTypePayload) {
     let bodyText = ''
     try {
       const json = await res.json()
-      if (json) {
-        if (Array.isArray(json.messages)) {
-          bodyText = json.messages.join('; ')
-        } else if (Array.isArray(json.errors)) {
-          bodyText = json.errors.map((e: any) => (typeof e === 'string' ? e : e?.message || JSON.stringify(e))).join('; ')
-        } else if (typeof json.message === 'string') {
-          bodyText = json.message
-        } else {
-          bodyText = JSON.stringify(json)
-        }
-      }
+      bodyText = parseErrorJson(json)
     } catch {
       try { bodyText = await res.text() } catch { bodyText = '' }
     }
@@ -312,17 +310,7 @@ export async function updateType(id: string | number, payload: CreateTypePayload
     let bodyText = ''
     try {
       const json = await res.json()
-      if (json) {
-        if (Array.isArray(json.messages)) {
-          bodyText = json.messages.join('; ')
-        } else if (Array.isArray(json.errors)) {
-          bodyText = json.errors.map((e: any) => (typeof e === 'string' ? e : e?.message || JSON.stringify(e))).join('; ')
-        } else if (typeof json.message === 'string') {
-          bodyText = json.message
-        } else {
-          bodyText = JSON.stringify(json)
-        }
-      }
+      bodyText = parseErrorJson(json)
     } catch {
       try { bodyText = await res.text() } catch { bodyText = '' }
     }
@@ -345,7 +333,7 @@ export type Product = {
   price?: number
   isAvailable?: boolean
   createdAt?: string | number
-  [k: string]: any
+  [k: string]: unknown
 }
 
 export type CreateProductPayload = {
@@ -396,17 +384,7 @@ export async function createProduct(payload: CreateProductPayload) {
     let bodyText = ''
     try {
       const json = await res.json()
-      if (json) {
-        if (Array.isArray(json.messages)) {
-          bodyText = json.messages.join('; ')
-        } else if (Array.isArray(json.errors)) {
-          bodyText = json.errors.map((e: any) => (typeof e === 'string' ? e : e?.message || JSON.stringify(e))).join('; ')
-        } else if (typeof json.message === 'string') {
-          bodyText = json.message
-        } else {
-          bodyText = JSON.stringify(json)
-        }
-      }
+      bodyText = parseErrorJson(json)
     } catch {
       try { bodyText = await res.text() } catch { bodyText = '' }
     }
@@ -430,17 +408,7 @@ export async function updateProduct(id: string | number, payload: CreateProductP
     let bodyText = ''
     try {
       const json = await res.json()
-      if (json) {
-        if (Array.isArray(json.messages)) {
-          bodyText = json.messages.join('; ')
-        } else if (Array.isArray(json.errors)) {
-          bodyText = json.errors.map((e: any) => (typeof e === 'string' ? e : e?.message || JSON.stringify(e))).join('; ')
-        } else if (typeof json.message === 'string') {
-          bodyText = json.message
-        } else {
-          bodyText = JSON.stringify(json)
-        }
-      }
+      bodyText = parseErrorJson(json)
     } catch {
       try { bodyText = await res.text() } catch { bodyText = '' }
     }
@@ -460,7 +428,7 @@ export type MenuItem = {
   sectionIds?: Array<number | string>
   restaurantIds?: Array<number | string>
   createdAt?: string | number
-  [k: string]: any
+  [k: string]: unknown
 }
 
 export type CreateMenuPayload = {
@@ -551,7 +519,7 @@ export type OpeningHourItem = {
   open?: string
   close?: string
   createdAt?: string | number
-  [k: string]: any
+  [k: string]: unknown
 }
 
 export async function getOpeningHoursList(): Promise<OpeningHourItem[]> {
@@ -633,7 +601,7 @@ export type SectionItem = {
   typeId?: number | string
   productsIds?: Array<number | string>
   createdAt?: string | number
-  [k: string]: any
+  [k: string]: unknown
 }
 
 export type CreateSectionPayload = {
@@ -719,14 +687,14 @@ export async function updateSection(id: string | number, payload: CreateSectionP
 export type OrderProductItem = {
   productId: number | string
   quantity: number
-  [k: string]: any
+  [k: string]: unknown
 }
 
 export type OrderCustomer = {
   name?: string
   email?: string
   phone?: string
-  [k: string]: any
+  [k: string]: unknown
 }
 
 export type OrderItem = {
@@ -738,7 +706,7 @@ export type OrderItem = {
   notes?: string
   orderProducts?: OrderProductItem[]
   createdAt?: string | number
-  [k: string]: any
+  [k: string]: unknown
 }
 
 export type CreateOrderPayload = {
@@ -827,7 +795,13 @@ export type CreateDeliveryLocationPayload = {
   latitude?: string | number
   longitude?: string | number
   isActive?: boolean
-  restaurantIds?: Array<number | string>
+  deliveredBy?: Array<{
+    restaurantId: number | string
+    deliveryFee?: number
+    minOrder?: number
+    isActive?: boolean
+    [k: string]: unknown
+  }>
   [k: string]: unknown
 }
 
@@ -842,22 +816,50 @@ export async function createDeliveryLocation(payload: CreateDeliveryLocationPayl
     let bodyText = ''
     try {
       const json = await res.json()
-      if (json) {
-        if (Array.isArray(json.messages)) {
-          bodyText = json.messages.join('; ')
-        } else if (Array.isArray((json as any).errors)) {
-          bodyText = (json as any).errors.map((e: any) => (typeof e === 'string' ? e : e?.message || JSON.stringify(e))).join('; ')
-        } else if (typeof (json as any).message === 'string') {
-          bodyText = (json as any).message
-        } else {
-          bodyText = JSON.stringify(json)
-        }
-      }
+      bodyText = parseErrorJson(json)
     } catch {
       try { bodyText = await res.text() } catch { bodyText = '' }
     }
 
     throw new Error(bodyText || `POST /delivery-locations/create failed (${res.status})`)
+  }
+
+  const data = await res.json().catch(() => null)
+  return data
+}
+
+export async function getDeliveryLocationById(id: string | number): Promise<CreateDeliveryLocationPayload | null> {
+  if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
+  const res = await authFetch(`/delivery-locations/${encodeURIComponent(String(id))}`)
+
+  if (res.status === 404) return null
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(text || `GET /delivery-locations/${id} failed (${res.status})`)
+  }
+
+  const data = await res.json().catch(() => null)
+  return data || null
+}
+
+export async function updateDeliveryLocation(id: string | number, payload: CreateDeliveryLocationPayload) {
+  if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
+  const res = await authFetch(`/delivery-locations/update/${encodeURIComponent(String(id))}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+
+  if (!res.ok) {
+    let bodyText = ''
+    try {
+      const json = await res.json()
+      bodyText = parseErrorJson(json)
+    } catch {
+      try { bodyText = await res.text() } catch { bodyText = '' }
+    }
+
+    throw new Error(bodyText || `PUT /delivery-locations/${id} failed (${res.status})`)
   }
 
   const data = await res.json().catch(() => null)
