@@ -32,7 +32,7 @@ TableBody.displayName = 'TableBody'
 
 export const TableRow = React.forwardRef<HTMLTableRowElement, TrProps>(
   ({ className, ...props }, ref) => (
-    <tr ref={ref} className={cn('odd:bg-white even:bg-gray-50', className)} {...props} />
+    <tr ref={ref} className={cn('odd:bg-white even:bg-gray-50 hover:bg-gray-50', className)} {...props} />
   )
 )
 TableRow.displayName = 'TableRow'
@@ -42,7 +42,7 @@ export const TableHeadCell = React.forwardRef<HTMLTableCellElement, ThProps>(
     <th
       ref={ref}
       scope="col"
-      className={cn('px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider', className)}
+      className={cn('px-4 py-3 text-left text-sm font-semibold text-gray-600 uppercase tracking-wide', className)}
       {...props}
     />
   )
@@ -51,7 +51,7 @@ TableHeadCell.displayName = 'TableHeadCell'
 
 export const TableCell = React.forwardRef<HTMLTableCellElement, TdProps>(
   ({ className, ...props }, ref) => (
-    <td ref={ref} className={cn('px-4 py-2 text-sm text-gray-700', className)} {...props} />
+    <td ref={ref} className={cn('px-4 py-4 text-base text-gray-700', className)} {...props} />
   )
 )
 TableCell.displayName = 'TableCell'
