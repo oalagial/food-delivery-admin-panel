@@ -26,11 +26,12 @@ import Header from './components/Header'
 import Login from './pages/Login'
 import RequireAuth from './components/RequireAuth'
 import { getToken } from './utils/api'
+import { FiHome, FiShoppingCart, FiCoffee, FiMapPin, FiUsers, FiDatabase, FiShield, FiKey, FiSettings, FiTag, FiBox, FiList, FiClock, FiLayers } from 'react-icons/fi'
 
 function NavSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="mt-4">
-      <div className="text-xs text-gray-400 mb-2">{title}</div>
+    <div className="mt-6">
+      <div className="text-sm font-semibold text-gray-500 mb-3">{title}</div>
       <div>{children}</div>
     </div>
   )
@@ -71,176 +72,191 @@ function App() {
   return (
     <BrowserRouter>
       <div className="app-root">
-        <aside className="w-64 bg-white rounded-md p-4 shadow border">
+        <aside className="w-80 md:w-96 bg-white rounded-md p-6 shadow border h-[calc(100vh-32px)] sticky top-4 overflow-auto">
           <div className="mb-4">
-            <div className="text-lg font-semibold text-blue-600">Delivery Food - Admin Panel</div>
+            <div className="text-xl font-bold text-blue-600 flex items-center gap-3"><FiMapPin className="w-6 h-6 text-sky-600" /> Delivery Food - Admin Panel</div>
           </div>
 
           <NavSection title="MANAGEMENT">
-            <ul className="space-y-1">
-              <li>
-                <NavLink
-                  to="/dashboard"
-                  className={({ isActive }) =>
-                    `block px-3 py-2 rounded-md text-sm font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
-                  }
-                >
-                  Dashboard
-                </NavLink>
-              </li>
+            <ul className="space-y-3">
+                <li>
+                  <NavLink
+                    to="/dashboard"
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
+                    }
+                  >
+                    <FiHome className="w-5 h-5" />
+                    <span>Dashboard</span>
+                  </NavLink>
+                </li>
               <li>
                 <NavLink
                   to="/orders"
                   className={({ isActive }) =>
-                    `block px-3 py-2 rounded-md text-sm font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
+                    `flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
                   }
                 >
-                  Orders
+                  <FiShoppingCart className="w-5 h-5" />
+                  <span>Orders</span>
                 </NavLink>
               </li>
               <li>
                 <NavLink
                   to="/restaurant"
                   className={({ isActive }) =>
-                    `block px-3 py-2 rounded-md text-sm font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
+                    `flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
                   }
                 >
-                  Restaurant
+                  <FiCoffee className="w-5 h-5" />
+                  <span>Restaurant</span>
                 </NavLink>
               </li>
               <li>
                 <NavLink
                   to="/delivery-locations"
                   className={({ isActive }) =>
-                    `block px-3 py-2 rounded-md text-sm font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
+                    `flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
                   }
                 >
-                  Delivery Locations
+                  <FiMapPin className="w-5 h-5" />
+                  <span>Delivery Locations</span>
                 </NavLink>
               </li>
             </ul>
           </NavSection>
 
           <NavSection title="USER">
-            <ul className="space-y-1">
+            <ul className="space-y-3">
               <li>
                 <NavLink
                   to="/users"
                   className={({ isActive }) =>
-                    `block px-3 py-2 rounded-md text-sm font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
+                    `flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
                   }
                 >
-                  Users
+                  <FiUsers className="w-5 h-5" />
+                  <span>Users</span>
                 </NavLink>
               </li>
               <li>
                 <NavLink
                   to="/customer-collection"
                   className={({ isActive }) =>
-                    `block px-3 py-2 rounded-md text-sm font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
+                    `flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
                   }
                 >
-                  Customer Collection
+                  <FiDatabase className="w-5 h-5" />
+                  <span>Customer Collection</span>
                 </NavLink>
               </li>
             </ul>
           </NavSection>
 
           <NavSection title="SETTINGS">
-            <ul className="space-y-1">
+            <ul className="space-y-3">
               <li>
                 <NavLink
                   to="/roles"
                   className={({ isActive }) =>
-                    `block px-3 py-2 rounded-md text-sm font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
+                    `flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
                   }
                 >
-                  Roles
+                  <FiShield className="w-5 h-5" />
+                  <span>Roles</span>
                 </NavLink>
               </li>
               <li>
                 <NavLink
                   to="/permits"
                   className={({ isActive }) =>
-                    `block px-3 py-2 rounded-md text-sm font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
+                    `flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
                   }
                 >
-                  Permits
+                  <FiKey className="w-5 h-5" />
+                  <span>Permits</span>
                 </NavLink>
               </li>
               <li>
                 <NavLink
                   to="/settings"
                   className={({ isActive }) =>
-                    `block px-3 py-2 rounded-md text-sm font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
+                    `flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
                   }
                 >
-                  Settings
+                  <FiSettings className="w-5 h-5" />
+                  <span>Settings</span>
                 </NavLink>
               </li>
             </ul>
           </NavSection>
 
           <NavSection title="CONTENT">
-            <ul className="space-y-1">
+            <ul className="space-y-3">
               <li>
                 <NavLink
                   to="/types"
                   className={({ isActive }) =>
-                    `block px-3 py-2 rounded-md text-sm font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
+                    `flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
                   }
                 >
-                  Types
+                  <FiTag className="w-5 h-5" />
+                  <span>Types</span>
                 </NavLink>
               </li>
               <li>
                 <NavLink
                   to="/products"
                   className={({ isActive }) =>
-                    `block px-3 py-2 rounded-md text-sm font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
+                    `flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
                   }
                 >
-                  Products
+                  <FiBox className="w-5 h-5" />
+                  <span>Products</span>
                 </NavLink>
               </li>
               <li>
                 <NavLink
                   to="/menus"
                   className={({ isActive }) =>
-                    `block px-3 py-2 rounded-md text-sm font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
+                    `flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
                   }
                 >
-                  Menus
+                  <FiList className="w-5 h-5" />
+                  <span>Menus</span>
                 </NavLink>
               </li>
               <li>
                 <NavLink
                   to="/opening-hours"
                   className={({ isActive }) =>
-                    `block px-3 py-2 rounded-md text-sm font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
+                    `flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
                   }
                 >
-                  Opening Hours
+                  <FiClock className="w-5 h-5" />
+                  <span>Opening Hours</span>
                 </NavLink>
               </li>
               <li>
                 <NavLink
                   to="/sections"
                   className={({ isActive }) =>
-                    `block px-3 py-2 rounded-md text-sm font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
+                    `flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
                   }
                 >
-                  Sections
+                  <FiLayers className="w-5 h-5" />
+                  <span>Sections</span>
                 </NavLink>
               </li>
               <li>
                 <NavLink
                   to="/customers"
                   className={({ isActive }) =>
-                    `block px-3 py-2 rounded-md text-sm font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
+                    `flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
                   }
                 >
-                  Customers
+                  <FiUsers className="w-5 h-5" />
+                  <span>Customers</span>
                 </NavLink>
               </li>
             </ul>
