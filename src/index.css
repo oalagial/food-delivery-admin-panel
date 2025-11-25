@@ -14,3 +14,38 @@ body {
 code {
   @apply bg-slate-100 px-1 rounded text-sm;
 }
+
+/* App-wide variables and helper classes */
+:root {
+  --app-max-width: 1100px;
+  --app-accent: #0ea5e9; /* sky-500 */
+  --card-bg: #ffffff;
+}
+
+.app-container {
+  max-width: var(--app-max-width);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.card {
+  background: var(--card-bg);
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  padding: 1rem;
+}
+
+.table-row-hover tbody tr:hover {
+  background: rgba(15,23,42,0.03);
+}
+
+.icon {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.btn-icon {
+  @apply inline-flex items-center justify-center gap-2 px-3 py-1 rounded-md;
+}

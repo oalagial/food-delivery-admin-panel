@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Button } from '../components/ui/button'
+import { FiPlus, FiEdit, FiTrash } from 'react-icons/fi'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 
 type User = {
@@ -119,7 +120,7 @@ export default function Users() {
           <input placeholder="Email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
           <input placeholder="Username" value={newUsername} onChange={(e) => setNewUsername(e.target.value)} />
           <input placeholder="Password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-          <Button variant="primary" type="submit" disabled={creating}>{creating ? 'Creating…' : 'Add User'}</Button>
+          <Button variant="primary" type="submit" disabled={creating} icon={<FiPlus className="w-4 h-4" />}>{creating ? 'Creating…' : 'Add User'}</Button>
         </form>
       </section>
 
@@ -168,8 +169,8 @@ export default function Users() {
                     </>
                   ) : (
                     <>
-                      <Button variant="ghost" size="sm" onClick={() => startEdit(u)}>Edit</Button>
-                      <Button variant="danger" size="sm" onClick={() => void handleDelete(u.id)} style={{ marginLeft: 6 }}>Delete</Button>
+                      <Button variant="ghost" size="sm" onClick={() => startEdit(u)} icon={<FiEdit className="w-4 h-4" />}>Edit</Button>
+                      <Button variant="danger" size="sm" onClick={() => void handleDelete(u.id)} style={{ marginLeft: 6 }} icon={<FiTrash className="w-4 h-4" />}>Delete</Button>
                     </>
                   )}
                 </TableCell>

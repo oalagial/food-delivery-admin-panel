@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '../components/ui/button'
+import { FiPlus, FiEdit, FiTrash } from 'react-icons/fi'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { getRestaurantsList } from '../utils/api'
 import type { Restaurant as RestaurantType } from '../utils/api'
@@ -40,7 +41,7 @@ export default function Restaurant() {
 
       <section style={{ marginTop: 16 }}>
         <div style={{ marginTop: 8 }}>
-          <Link to="/restaurant/creation"><Button variant="primary">Create new restaurant</Button></Link>
+          <Link to="/restaurant/creation"><Button variant="primary" icon={<FiPlus className="w-4 h-4" />}>Create new restaurant</Button></Link>
         </div>
       </section>
       {loading && <p>Loading...</p>}
@@ -81,8 +82,8 @@ export default function Restaurant() {
                   <TableCell>{r.longitude ?? ''}</TableCell>
                   <TableCell>{r.createdAt ? new Date(String(r.createdAt)).toLocaleString() : ''}</TableCell>
                   <TableCell>
-                    <Link to={`/restaurant/creation/${encodeURIComponent(String(r.id ?? ''))}`} style={{ marginRight: 8 }}><Button variant="ghost" size="sm">Edit</Button></Link>
-                    <Button variant="danger" size="sm">Delete</Button>
+                    <Link to={`/restaurant/creation/${encodeURIComponent(String(r.id ?? ''))}`} style={{ marginRight: 8 }}><Button variant="ghost" size="sm" icon={<FiEdit className="w-4 h-4" />}>Edit</Button></Link>
+                    <Button variant="danger" size="sm" icon={<FiTrash className="w-4 h-4" />}>Delete</Button>
                   </TableCell>
                 </TableRow>
               ))}

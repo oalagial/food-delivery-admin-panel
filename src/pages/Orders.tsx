@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Table, TableBody, TableHead, TableRow, TableCell, TableHeadCell } from '../components/ui/table'
 import { Button } from '../components/ui/button'
+import { FiPlus, FiEdit } from 'react-icons/fi'
 import { getOrdersList } from '../utils/api'
 import type { OrderItem } from '../utils/api'
 
@@ -20,7 +21,7 @@ export default function Orders(){
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Orders</h1>
-        <Link to="/orders/creation"><Button variant="primary">Create Order</Button></Link>
+        <Link to="/orders/creation"><Button variant="primary" icon={<FiPlus className="w-4 h-4" />}>Create Order</Button></Link>
       </div>
 
       {loading ? <div>Loading...</div> : error ? <div className="text-red-600">{error}</div> : (
@@ -46,7 +47,7 @@ export default function Orders(){
                 <TableCell>{it.customer?.name}</TableCell>
                 <TableCell>{(it.orderProducts || []).length}</TableCell>
                 <TableCell>
-                  <Link to={`/orders/creation/${it.id}`}><Button size="sm" variant="ghost">Edit</Button></Link>
+                  <Link to={`/orders/creation/${it.id}`}><Button size="sm" variant="ghost" icon={<FiEdit className="w-4 h-4" />}>Edit</Button></Link>
                 </TableCell>
               </TableRow>
             ))}

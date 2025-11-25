@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { Button } from '../components/ui/button'
+import { FiPlus, FiEdit, FiTrash } from 'react-icons/fi'
 import { getProductsList } from '../utils/api'
 import type { Product } from '../utils/api'
 
@@ -34,7 +35,7 @@ export default function Products() {
 
       <section className="mt-3">
         <div className="mt-2">
-          <Link to="/products/creation"><Button variant="primary">Create new product</Button></Link>
+          <Link to="/products/creation"><Button variant="primary" icon={<FiPlus className="w-4 h-4" />}>Create new product</Button></Link>
         </div>
       </section>
 
@@ -70,8 +71,8 @@ export default function Products() {
                 <TableCell>{p.isAvailable ? 'Yes' : 'No'}</TableCell>
                 <TableCell>{p.createdAt ? new Date(String(p.createdAt)).toLocaleString() : ''}</TableCell>
                 <TableCell>
-                  <Link to={`/products/creation/${encodeURIComponent(String(p.id ?? ''))}`} style={{ marginRight: 8 }}><Button variant="ghost" size="sm">Edit</Button></Link>
-                  <Button variant="danger" size="sm">Delete</Button>
+                  <Link to={`/products/creation/${encodeURIComponent(String(p.id ?? ''))}`} style={{ marginRight: 8 }}><Button variant="ghost" size="sm" icon={<FiEdit className="w-4 h-4" />}>Edit</Button></Link>
+                  <Button variant="danger" size="sm" icon={<FiTrash className="w-4 h-4" />}>Delete</Button>
                 </TableCell>
               </TableRow>
             ))}

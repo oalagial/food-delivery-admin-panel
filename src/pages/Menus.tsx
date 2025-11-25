@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Table, TableBody, TableHead, TableRow, TableCell, TableHeadCell } from '../components/ui/table'
 import { Button } from '../components/ui/button'
+import { FiPlus, FiEdit } from 'react-icons/fi'
 import { getMenusList } from '../utils/api'
 import type { MenuItem } from '../utils/api'
 
@@ -23,7 +24,7 @@ export default function Menus() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Menus</h1>
-        <Link to="/menus/creation"><Button variant="primary">Create Menu</Button></Link>
+        <Link to="/menus/creation"><Button variant="primary" icon={<FiPlus className="w-4 h-4" />}>Create Menu</Button></Link>
       </div>
 
       {loading ? <div>Loading...</div> : error ? <div className="text-red-600">{error}</div> : (
@@ -49,7 +50,7 @@ export default function Menus() {
                 <TableCell>{(m.restaurantIds || []).length}</TableCell>
                 <TableCell>{m.createdAt ? new Date(String(m.createdAt)).toLocaleString() : ''}</TableCell>
                 <TableCell>
-                  <Link to={`/menus/creation/${m.id}`}><Button size="sm" variant="ghost">Edit</Button></Link>
+                  <Link to={`/menus/creation/${m.id}`}><Button size="sm" variant="ghost" icon={<FiEdit className="w-4 h-4" />}>Edit</Button></Link>
                 </TableCell>
               </TableRow>
             ))}

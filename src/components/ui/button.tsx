@@ -7,6 +7,10 @@ type Size = 'default' | 'sm'
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant
   size?: Size
+  /** Optional icon to render inside the button (use react-icons) */
+  icon?: React.ReactElement
+  /** Position of the icon relative to children */
+  iconPosition?: 'left' | 'right'
 }
 
 const base = 'inline-flex items-center gap-2 rounded-md border font-medium transition-colors focus:outline-none focus:ring-1 disabled:opacity-50 disabled:pointer-events-none'
@@ -24,13 +28,22 @@ const sizeClasses: Record<Size, string> = {
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = 'default', size = 'default', ...props }, ref) => {
+  ({ className, variant = 'default', size = 'default', icon, iconPosition = 'left', children, ...props }, ref) => {
+    // ensure icon gets a consistent size class
+    const renderIcon = icon
+      ? React.cloneElement(icon, { className: cn('inline-block', (icon.props && (icon.props as any).className) || 'w-4 h-4') })
+      : null
+
     return (
       <button
         ref={ref}
         className={cn(base, variantClasses[variant], sizeClasses[size], className)}
         {...props}
-      />
+      >
+        {renderIcon && iconPosition === 'left' ? renderIcon : null}
+        {children}
+        {renderIcon && iconPosition === 'right' ? renderIcon : null}
+      </button>
     )
   }
 )

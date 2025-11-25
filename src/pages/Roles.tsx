@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Button } from '../components/ui/button'
+import { FiPlus, FiEdit, FiTrash } from 'react-icons/fi'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 
 type Role = {
@@ -117,7 +118,7 @@ export default function Roles() {
         <form onSubmit={handleCreate} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <input placeholder="Name" value={newName} onChange={(e) => setNewName(e.target.value)} />
           <input placeholder="Description" value={newDescription} onChange={(e) => setNewDescription(e.target.value)} />
-          <Button variant="primary" type="submit" disabled={creating}>{creating ? 'Creating…' : 'Add Role'}</Button>
+          <Button variant="primary" type="submit" disabled={creating} icon={<FiPlus className="w-4 h-4" />}>{creating ? 'Creating…' : 'Add Role'}</Button>
         </form>
       </section>
 
@@ -166,8 +167,8 @@ export default function Roles() {
                     </>
                   ) : (
                     <>
-                      <Button variant="ghost" size="sm" onClick={() => startEdit(r)}>Edit</Button>
-                      <Button variant="danger" size="sm" onClick={() => void handleDelete(r.id)} style={{ marginLeft: 6 }}>Delete</Button>
+                      <Button variant="ghost" size="sm" onClick={() => startEdit(r)} icon={<FiEdit className="w-4 h-4" />}>Edit</Button>
+                      <Button variant="danger" size="sm" onClick={() => void handleDelete(r.id)} style={{ marginLeft: 6 }} icon={<FiTrash className="w-4 h-4" />}>Delete</Button>
                     </>
                   )}
                 </TableCell>

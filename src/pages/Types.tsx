@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { Button } from '../components/ui/button'
+import { FiPlus, FiEdit, FiTrash } from 'react-icons/fi'
 import { getTypesList } from '../utils/api'
 import type { TypeItem } from '../utils/api'
 
@@ -34,7 +35,7 @@ export default function Types() {
 
       <section className="mt-3">
         <div className="mt-2">
-          <Link to="/types/creation"><Button variant="primary">Create new type</Button></Link>
+          <Link to="/types/creation"><Button variant="primary" icon={<FiPlus className="w-4 h-4" />}>Create new type</Button></Link>
         </div>
       </section>
 
@@ -68,8 +69,8 @@ export default function Types() {
                 <TableCell>{t.description ?? ''}</TableCell>
                 <TableCell>{t.createdAt ? new Date(String(t.createdAt)).toLocaleString() : ''}</TableCell>
                 <TableCell>
-                  <Link to={`/types/creation/${encodeURIComponent(String(t.id ?? ''))}`} style={{ marginRight: 8 }}><Button variant="ghost" size="sm">Edit</Button></Link>
-                  <Button variant="danger" size="sm">Delete</Button>
+                  <Link to={`/types/creation/${encodeURIComponent(String(t.id ?? ''))}`} style={{ marginRight: 8 }}><Button variant="ghost" size="sm" icon={<FiEdit className="w-4 h-4" />}>Edit</Button></Link>
+                  <Button variant="danger" size="sm" icon={<FiTrash className="w-4 h-4" />}>Delete</Button>
                 </TableCell>
               </TableRow>
             ))}

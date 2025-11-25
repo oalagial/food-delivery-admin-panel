@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getToken, clearToken } from '../utils/api'
 import { Button } from './ui/button'
+import { FiMapPin } from 'react-icons/fi'
 
 export default function Header(){
   const time = useMemo(()=> new Date().toLocaleString(), [])
@@ -27,7 +28,10 @@ export default function Header(){
   return (
     <header className="flex justify-between items-center mb-4 min-w-[800px]">
       <div>
-        <h3 className="text-xl font-semibold m-0">Administration</h3>
+        <h3 className="text-xl font-semibold m-0 flex items-center">
+          <FiMapPin className="w-5 h-5 mr-2 text-sky-600" />
+          Administration
+        </h3>
         <div className="text-sm text-gray-500 mb-4">Manage your application</div>
       </div>
       <div className="flex items-center gap-3">

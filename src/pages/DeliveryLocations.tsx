@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { FiPlus, FiEdit, FiTrash } from 'react-icons/fi'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { Button } from '../components/ui/button'
 import { getDeliveryLocationsList, getRestaurantsList } from '../utils/api'
@@ -57,7 +58,7 @@ export default function DeliveryLocations() {
 
       <section className="mt-3">
         <div className="mt-2">
-          <Link to="/delivery-locations/creation"><Button variant="primary">Create new delivery location</Button></Link>
+          <Link to="/delivery-locations/creation"><Button variant="primary" icon={<FiPlus className="w-4 h-4" />}>Create new delivery location</Button></Link>
         </div>
       </section>
 
@@ -113,8 +114,8 @@ export default function DeliveryLocations() {
                   : ''}</TableCell>
                 <TableCell>{loc.createdAt ? new Date(String(loc.createdAt)).toLocaleString() : ''}</TableCell>
                 <TableCell>
-                  <Link to={`/delivery-locations/creation/${encodeURIComponent(String(loc.id ?? ''))}`} style={{ marginRight: 8 }}><Button variant="ghost" size="sm">Edit</Button></Link>
-                  <Button variant="danger" size="sm">Delete</Button>
+                  <Link to={`/delivery-locations/creation/${encodeURIComponent(String(loc.id ?? ''))}`} style={{ marginRight: 8 }}><Button variant="ghost" size="sm" icon={<FiEdit className="w-4 h-4" />}>Edit</Button></Link>
+                  <Button variant="danger" size="sm" icon={<FiTrash className="w-4 h-4" />}>Delete</Button>
                 </TableCell>
               </TableRow>
             ))}
