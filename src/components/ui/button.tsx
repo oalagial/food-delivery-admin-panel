@@ -30,8 +30,8 @@ const sizeClasses: Record<Size, string> = {
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'default', size = 'default', icon, iconPosition = 'left', children, ...props }, ref) => {
     // ensure icon gets a consistent size class
-    const renderIcon = icon
-      ? React.cloneElement(icon, { className: cn('inline-block', (icon.props && (icon.props as any).className) || 'w-4 h-4') })
+    const renderIcon = icon && React.isValidElement(icon)
+      ? React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: cn('inline-block', (icon.props && (icon.props as any).className) || 'w-4 h-4') })
       : null
 
     return (
