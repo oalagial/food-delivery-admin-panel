@@ -73,7 +73,7 @@ export default function Restaurant() {
                   <TableCell>{String(r.id ?? '')}</TableCell>
                   <TableCell>{r.name ?? ''}</TableCell>
                   <TableCell>{r.address ?? ''}</TableCell>
-                  <TableCell>{r.city ?? r?.address?.city ?? ''}</TableCell>
+                  <TableCell>{r.city ?? ''}</TableCell>
                   <TableCell>{r.province ?? ''}</TableCell>
                   <TableCell>{r.zipCode ?? ''}</TableCell>
                   <TableCell>{r.country ?? ''}</TableCell>

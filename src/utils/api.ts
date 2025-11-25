@@ -140,6 +140,18 @@ export function attachAuthToFetch() {
 export type Restaurant = {
   id?: string
   name?: string
+  address?: string
+  streetNumber?: string
+  city?: string
+  province?: string
+  image?: string
+  zipCode?: string
+  country?: string
+  description?: string
+  latitude?: string | number
+  longitude?: string | number
+  openingHours?: OpeningHour[]
+  createdAt?: string | number
   [k: string]: unknown
 }
 
