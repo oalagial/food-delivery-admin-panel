@@ -5,6 +5,7 @@ import { FiPlus, FiEdit, FiTrash } from 'react-icons/fi'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { getRestaurantsList } from '../utils/api'
 import type { Restaurant as RestaurantType } from '../utils/api'
+import { Skeleton } from '../components/ui/skeleton'
 
 export default function Restaurant() {
   const [restaurants, setRestaurants] = useState<RestaurantType[]>([])
@@ -37,16 +38,40 @@ export default function Restaurant() {
 
   return (
     <div>
-      <h1>Restaurants</h1>
-
-      <section style={{ marginTop: 16 }}>
-        <div style={{ marginTop: 8 }}>
-          <Link to="/restaurant/creation"><Button variant="primary" icon={<FiPlus className="w-4 h-4" />}>Create new restaurant</Button></Link>
-        </div>
-      </section>
-      {loading && <p>Loading...</p>}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Restaurants</h1>
+        <Link to="/restaurant/creation"><Button variant="primary" icon={<FiPlus className="w-4 h-4" />}>Create</Button></Link>
+      </div>
+      {loading && (
+        <Table>
+          <TableHead>
+            <tr>
+              <TableHeadCell>ID</TableHeadCell>
+              <TableHeadCell>Name</TableHeadCell>
+              <TableHeadCell>Address</TableHeadCell>
+              <TableHeadCell>City</TableHeadCell>
+              <TableHeadCell>Province</TableHeadCell>
+              <TableHeadCell>Zip</TableHeadCell>
+              <TableHeadCell>Country</TableHeadCell>
+              <TableHeadCell>Lat</TableHeadCell>
+              <TableHeadCell>Lon</TableHeadCell>
+              <TableHeadCell>Created</TableHeadCell>
+              <TableHeadCell>Actions</TableHeadCell>
+            </tr>
+          </TableHead>
+          <TableBody>
+            {Array.from({ length: 6 }).map((_, r) => (
+              <TableRow key={r} className="animate-pulse">
+                {Array.from({ length: 11 }).map((__, c) => (
+                  <TableCell key={c}><Skeleton className="h-4 w-full bg-gray-200" /></TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
       {error && <p style={{ color: 'red' }}>{error}</p>}
-        <div>
+       {!loading && <div>
           <Table>
             <TableHead>
               <tr>
@@ -89,7 +114,7 @@ export default function Restaurant() {
               ))}
             </TableBody>
           </Table>
-        </div>
+        </div>}
     </div>
   )
 }

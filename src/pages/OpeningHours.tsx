@@ -4,6 +4,7 @@ import { Table, TableBody, TableHead, TableRow, TableCell, TableHeadCell } from 
 import { Button } from '../components/ui/button'
 import { FiPlus, FiEdit } from 'react-icons/fi'
 import { getOpeningHoursList } from '../utils/api'
+import { Skeleton } from '../components/ui/skeleton'
 
 export default function OpeningHours() {
   const [items, setItems] = useState<any[]>([])
@@ -26,7 +27,28 @@ export default function OpeningHours() {
         <Link to="/opening-hours/creation"><Button variant="primary" icon={<FiPlus className="w-4 h-4" />}>Create</Button></Link>
       </div>
 
-      {loading ? <div>Loading...</div> : error ? <div className="text-red-600">{error}</div> : (
+      {loading ? (
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableHeadCell>ID</TableHeadCell>
+              <TableHeadCell>Day</TableHeadCell>
+              <TableHeadCell>Open</TableHeadCell>
+              <TableHeadCell>Close</TableHeadCell>
+              <TableHeadCell>Actions</TableHeadCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {Array.from({ length: 6 }).map((_, r) => (
+              <TableRow key={r} className="animate-pulse">
+                {Array.from({ length: 5 }).map((__, c) => (
+                  <TableCell key={c}><Skeleton className="h-4 w-full bg-gray-200" /></TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      ) : error ? <div className="text-red-600">{error}</div> : (
         <Table>
           <TableHead>
             <TableRow>

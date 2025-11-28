@@ -5,6 +5,7 @@ import { Button } from '../components/ui/button'
 import { FiPlus, FiEdit } from 'react-icons/fi'
 import { getOrdersList } from '../utils/api'
 import type { OrderItem } from '../utils/api'
+import { Skeleton } from '../components/ui/skeleton'
 
 export default function Orders(){
   const [items, setItems] = useState<OrderItem[]>([])
@@ -24,7 +25,32 @@ export default function Orders(){
         <Link to="/orders/creation"><Button variant="primary" icon={<FiPlus className="w-4 h-4" />}>Create Order</Button></Link>
       </div>
 
-      {loading ? <div>Loading...</div> : error ? <div className="text-red-600">{error}</div> : (
+      {loading ? (
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableHeadCell>ID</TableHeadCell>
+              <TableHeadCell>Restaurant</TableHeadCell>
+              <TableHeadCell>Delivery Location</TableHeadCell>
+              <TableHeadCell>Status</TableHeadCell>
+              <TableHeadCell>Customer</TableHeadCell>
+              <TableHeadCell>Products</TableHeadCell>
+              <TableHeadCell>Actions</TableHeadCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {Array.from({ length: 6 }).map((_, r) => (
+              <TableRow key={r} className="animate-pulse">
+                {Array.from({ length: 7 }).map((__, c) => (
+                  <TableCell key={c}><Skeleton className="h-4 w-full bg-gray-200" /></TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      ) : error ? (
+        <div className="text-red-600">{error}</div>
+      ) : (
         <Table>
           <TableHead>
             <TableRow>

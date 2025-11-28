@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Button } from '../components/ui/button'
+import { Link } from 'react-router-dom'
+import { Skeleton } from '../components/ui/skeleton'
 import { FiPlus, FiEdit, FiTrash } from 'react-icons/fi'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 
@@ -18,10 +20,7 @@ export default function Users() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const [newEmail, setNewEmail] = useState('')
-  const [newUsername, setNewUsername] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [creating, setCreating] = useState(false)
+  
 
   const [editingId, setEditingId] = useState<number | string | null>(null)
   const [editValues, setEditValues] = useState<{ email?: string; username?: string }>({})
@@ -47,29 +46,38 @@ export default function Users() {
     void fetchUsers()
   }, [])
 
-  async function handleCreate(e?: React.FormEvent) {
-    e?.preventDefault()
-    if (!newEmail || !newUsername) return setError('Email and username are required')
-    setCreating(true)
-    setError(null)
-    try {
-      const res = await fetch(`${API_BASE}/users`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: newEmail, username: newUsername, password: newPassword }),
-      })
-      if (!res.ok) throw new Error(`Create failed ${res.status}`)
-      setNewEmail('')
-      setNewUsername('')
-      setNewPassword('')
-      await fetchUsers()
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err)
-      setError(msg)
-    } finally {
-      setCreating(false)
-    }
+  if (loading && users.length === 0) {
+    return (
+      <div>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-semibold">Users</h1>
+          <Link to="/users/creation"><Button variant="primary" icon={<FiPlus className="w-4 h-4" />}>Create</Button></Link>
+        </div>
+        <Table>
+          <TableHead>
+            <tr>
+              <TableHeadCell>ID</TableHeadCell>
+              <TableHeadCell>Email</TableHeadCell>
+              <TableHeadCell>Username</TableHeadCell>
+              <TableHeadCell>Created</TableHeadCell>
+              <TableHeadCell>Actions</TableHeadCell>
+            </tr>
+          </TableHead>
+          <TableBody>
+            {Array.from({ length: 6 }).map((_, r) => (
+              <TableRow key={r} className="animate-pulse">
+                {Array.from({ length: 5 }).map((__, c) => (
+                  <TableCell key={c}><Skeleton className="h-4 w-full bg-gray-200" /></TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    )
   }
+
+  
 
   async function handleDelete(id: number | string) {
     if (!confirm('Delete this user?')) return
@@ -107,27 +115,19 @@ export default function Users() {
     }
   }
 
-  if(loading && users.length === 0){
-    return <p>Loading users…</p>
-  }
+  
 
   return (
     <div>
-      <h1>Users</h1>
-
-      <section style={{ marginBottom: 20 }}>
-        <form onSubmit={handleCreate} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <input placeholder="Email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
-          <input placeholder="Username" value={newUsername} onChange={(e) => setNewUsername(e.target.value)} />
-          <input placeholder="Password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-          <Button variant="primary" type="submit" disabled={creating} icon={<FiPlus className="w-4 h-4" />}>{creating ? 'Creating…' : 'Add User'}</Button>
-        </form>
-      </section>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Users</h1>
+        <Link to="/users/creation"><Button variant="primary" icon={<FiPlus className="w-4 h-4" />}>Create</Button></Link>
+      </div>
 
       {error && <div style={{ color: 'crimson' }}><strong>Error:</strong> {error}</div>}
 
       <div>
-        <Table>
+          <Table>
           <TableHead>
             <tr>
               <TableHeadCell>ID</TableHeadCell>

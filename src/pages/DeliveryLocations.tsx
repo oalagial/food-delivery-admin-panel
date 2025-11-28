@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { FiPlus, FiEdit, FiTrash } from 'react-icons/fi'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { Button } from '../components/ui/button'
+import { Skeleton } from '../components/ui/skeleton'
 import { getDeliveryLocationsList, getRestaurantsList } from '../utils/api'
 import type { CreateDeliveryLocationPayload as DeliveryLocation, Restaurant as RestaurantType } from '../utils/api'
 
@@ -54,73 +55,101 @@ export default function DeliveryLocations() {
 
   return (
     <div>
-      <h1>Delivery Locations</h1>
 
-      <section className="mt-3">
-        <div className="mt-2">
-          <Link to="/delivery-locations/creation"><Button variant="primary" icon={<FiPlus className="w-4 h-4" />}>Create new delivery location</Button></Link>
-        </div>
-      </section>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Delivery Locations</h1>
+        <Link to="/delivery-locations/creation"><Button variant="primary" icon={<FiPlus className="w-4 h-4" />}>Create</Button></Link>
+      </div>
 
-      {loading && <p>Loading...</p>}
       {error && <p className="text-red-600">{error}</p>}
 
       <div className="mt-4">
-        <Table>
-          <TableHead>
-            <tr>
-              <TableHeadCell>ID</TableHeadCell>
-              <TableHeadCell>Name</TableHeadCell>
-              <TableHeadCell>Address</TableHeadCell>
-              <TableHeadCell>City</TableHeadCell>
-              <TableHeadCell>Province</TableHeadCell>
-              <TableHeadCell>Zip</TableHeadCell>
-              <TableHeadCell>Country</TableHeadCell>
-              <TableHeadCell>Lat</TableHeadCell>
-              <TableHeadCell>Lon</TableHeadCell>
-              <TableHeadCell>Active</TableHeadCell>
-              <TableHeadCell>Restaurants</TableHeadCell>
-              <TableHeadCell>Created</TableHeadCell>
-              <TableHeadCell>Actions</TableHeadCell>
-            </tr>
-          </TableHead>
-          <TableBody>
-            {(!loading && locations.length === 0) && (
-              <TableRow>
-                <TableCell colSpan={13}>No delivery locations found.</TableCell>
-              </TableRow>
-            )}
+        {loading ? (
+          <Table>
+            <TableHead>
+              <tr>
+                <TableHeadCell>ID</TableHeadCell>
+                <TableHeadCell>Name</TableHeadCell>
+                <TableHeadCell>Address</TableHeadCell>
+                <TableHeadCell>City</TableHeadCell>
+                <TableHeadCell>Province</TableHeadCell>
+                <TableHeadCell>Zip</TableHeadCell>
+                <TableHeadCell>Country</TableHeadCell>
+                <TableHeadCell>Lat</TableHeadCell>
+                <TableHeadCell>Lon</TableHeadCell>
+                <TableHeadCell>Active</TableHeadCell>
+                <TableHeadCell>Restaurants</TableHeadCell>
+                <TableHeadCell>Created</TableHeadCell>
+                <TableHeadCell>Actions</TableHeadCell>
+              </tr>
+            </TableHead>
+            <TableBody>
+              {Array.from({ length: 6 }).map((_, r) => (
+                <TableRow key={r} className="animate-pulse">
+                  {Array.from({ length: 13 }).map((__, c) => (
+                    <TableCell key={c}><Skeleton className="h-4 w-full bg-gray-200" /></TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        ) : (
+          <Table>
+            <TableHead>
+              <tr>
+                <TableHeadCell>ID</TableHeadCell>
+                <TableHeadCell>Name</TableHeadCell>
+                <TableHeadCell>Address</TableHeadCell>
+                <TableHeadCell>City</TableHeadCell>
+                <TableHeadCell>Province</TableHeadCell>
+                <TableHeadCell>Zip</TableHeadCell>
+                <TableHeadCell>Country</TableHeadCell>
+                <TableHeadCell>Lat</TableHeadCell>
+                <TableHeadCell>Lon</TableHeadCell>
+                <TableHeadCell>Active</TableHeadCell>
+                <TableHeadCell>Restaurants</TableHeadCell>
+                <TableHeadCell>Created</TableHeadCell>
+                <TableHeadCell>Actions</TableHeadCell>
+              </tr>
+            </TableHead>
+            <TableBody>
+              {(!loading && locations.length === 0) && (
+                <TableRow>
+                  <TableCell colSpan={13}>No delivery locations found.</TableCell>
+                </TableRow>
+              )}
 
-            {locations.map((loc) => (
-              <TableRow key={String(loc.id ?? '') + String(loc.name ?? '')}>
-                <TableCell>{String(loc.id ?? '')}</TableCell>
-                <TableCell>{loc.name ?? ''}</TableCell>
-                <TableCell>{loc.address ?? ''}</TableCell>
-                <TableCell>{loc.city ?? ''}</TableCell>
-                <TableCell>{loc.province ?? ''}</TableCell>
-                <TableCell>{loc.zipCode ?? ''}</TableCell>
-                <TableCell>{loc.country ?? ''}</TableCell>
-                <TableCell>{loc.latitude ?? ''}</TableCell>
-                <TableCell>{loc.longitude ?? ''}</TableCell>
-                <TableCell>{loc.isActive ? 'Yes' : 'No'}</TableCell>
-                <TableCell>{Array.isArray((loc as Partial<DeliveryLocation>).deliveredBy)
-                  ? ((loc as Partial<DeliveryLocation>).deliveredBy as Array<{restaurantId?: number | string, deliveryFee?: number, minOrder?: number, isActive?: boolean}>).map(d => {
-                    const name = restaurantsMap[String(d.restaurantId ?? '')] ?? String(d.restaurantId ?? '')
-                    const fee = d.deliveryFee !== undefined ? ` fee:${d.deliveryFee}` : ''
-                    const min = d.minOrder !== undefined ? ` min:${d.minOrder}` : ''
-                    const act = d.isActive === false ? ' (inactive)' : ''
-                    return `${name}${fee}${min}${act}`
-                  }).join(', ')
-                  : ''}</TableCell>
-                <TableCell>{loc.createdAt ? new Date(String(loc.createdAt)).toLocaleString() : ''}</TableCell>
-                <TableCell>
-                  <Link to={`/delivery-locations/creation/${encodeURIComponent(String(loc.id ?? ''))}`} style={{ marginRight: 8 }}><Button variant="ghost" size="sm" icon={<FiEdit className="w-4 h-4" />}>Edit</Button></Link>
-                  <Button variant="danger" size="sm" icon={<FiTrash className="w-4 h-4" />}>Delete</Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+              {locations.map((loc) => (
+                <TableRow key={String(loc.id ?? '') + String(loc.name ?? '')}>
+                  <TableCell>{String(loc.id ?? '')}</TableCell>
+                  <TableCell>{loc.name ?? ''}</TableCell>
+                  <TableCell>{loc.address ?? ''}</TableCell>
+                  <TableCell>{loc.city ?? ''}</TableCell>
+                  <TableCell>{loc.province ?? ''}</TableCell>
+                  <TableCell>{loc.zipCode ?? ''}</TableCell>
+                  <TableCell>{loc.country ?? ''}</TableCell>
+                  <TableCell>{loc.latitude ?? ''}</TableCell>
+                  <TableCell>{loc.longitude ?? ''}</TableCell>
+                  <TableCell>{loc.isActive ? 'Yes' : 'No'}</TableCell>
+                  <TableCell>{Array.isArray((loc as Partial<DeliveryLocation>).deliveredBy)
+                    ? ((loc as Partial<DeliveryLocation>).deliveredBy as Array<{restaurantId?: number | string, deliveryFee?: number, minOrder?: number, isActive?: boolean}>).map(d => {
+                      const name = restaurantsMap[String(d.restaurantId ?? '')] ?? String(d.restaurantId ?? '')
+                      const fee = d.deliveryFee !== undefined ? ` fee:${d.deliveryFee}` : ''
+                      const min = d.minOrder !== undefined ? ` min:${d.minOrder}` : ''
+                      const act = d.isActive === false ? ' (inactive)' : ''
+                      return `${name}${fee}${min}${act}`
+                    }).join(', ')
+                    : ''}</TableCell>
+                  <TableCell>{loc.createdAt ? new Date(String(loc.createdAt)).toLocaleString() : ''}</TableCell>
+                  <TableCell>
+                    <Link to={`/delivery-locations/creation/${encodeURIComponent(String(loc.id ?? ''))}`} style={{ marginRight: 8 }}><Button variant="ghost" size="sm" icon={<FiEdit className="w-4 h-4" />}>Edit</Button></Link>
+                    <Button variant="danger" size="sm" icon={<FiTrash className="w-4 h-4" />}>Delete</Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </div>
     </div>
   )

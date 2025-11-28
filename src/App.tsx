@@ -8,8 +8,10 @@ import RestaurantCreate from './pages/RestaurantCreate'
 import DeliveryLocations from './pages/DeliveryLocations'
 import DeliveryLocationCreate from './pages/DeliveryLocationCreate'
 import Users from './pages/Users'
+import UserCreate from './pages/UserCreate'
 import CustomerCollection from './pages/CustomerCollection'
 import Roles from './pages/Roles'
+import RoleCreate from './pages/RoleCreate'
 import Permits from './pages/Permits'
 import SettingsPage from './pages/Settings'
 import Types from './pages/Types'
@@ -292,8 +294,12 @@ function App() {
               <Route path="/sections/creation" element={<RequireAuth><SectionCreate /></RequireAuth>} />
               <Route path="/sections/creation/:id" element={<RequireAuth><SectionCreate /></RequireAuth>} />
               <Route path="/users" element={<RequireAuth><Users /></RequireAuth>} />
+              <Route path="/users/creation" element={<RequireAuth><UserCreate /></RequireAuth>} />
+              <Route path="/users/creation/:id" element={<RequireAuth><UserCreate /></RequireAuth>} />
               <Route path="/customer-collection" element={<RequireAuth><CustomerCollection /></RequireAuth>} />
               <Route path="/roles" element={<RequireAuth><Roles /></RequireAuth>} />
+              <Route path="/roles/creation" element={<RequireAuth><RoleCreate /></RequireAuth>} />
+              <Route path="/roles/creation/:id" element={<RequireAuth><RoleCreate /></RequireAuth>} />
               <Route path="/permits" element={<RequireAuth><Permits /></RequireAuth>} />
               <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
               <Route path="/" element={<RequireAuth><Dashboard /></RequireAuth>} />

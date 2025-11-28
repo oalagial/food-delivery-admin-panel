@@ -5,6 +5,7 @@ import { Button } from '../components/ui/button'
 import { FiPlus, FiEdit } from 'react-icons/fi'
 import { getMenusList } from '../utils/api'
 import type { MenuItem } from '../utils/api'
+import { Skeleton } from '../components/ui/skeleton'
 
 export default function Menus() {
   const [menus, setMenus] = useState<MenuItem[]>([])
@@ -27,7 +28,30 @@ export default function Menus() {
         <Link to="/menus/creation"><Button variant="primary" icon={<FiPlus className="w-4 h-4" />}>Create Menu</Button></Link>
       </div>
 
-      {loading ? <div>Loading...</div> : error ? <div className="text-red-600">{error}</div> : (
+      {loading ? (
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableHeadCell>ID</TableHeadCell>
+              <TableHeadCell>Name</TableHeadCell>
+              <TableHeadCell>Description</TableHeadCell>
+              <TableHeadCell>Sections</TableHeadCell>
+              <TableHeadCell>Restaurants</TableHeadCell>
+              <TableHeadCell>Created</TableHeadCell>
+              <TableHeadCell>Actions</TableHeadCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {Array.from({ length: 6 }).map((_, r) => (
+              <TableRow key={r} className="animate-pulse">
+                {Array.from({ length: 7 }).map((__, c) => (
+                  <TableCell key={c}><Skeleton className="h-4 w-full bg-gray-200" /></TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      ) : error ? <div className="text-red-600">{error}</div> : (
         <Table>
           <TableHead>
             <TableRow>

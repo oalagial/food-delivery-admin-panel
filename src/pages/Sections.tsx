@@ -5,6 +5,7 @@ import { Button } from '../components/ui/button'
 import { FiPlus, FiEdit } from 'react-icons/fi'
 import { getSectionsList } from '../utils/api'
 import type { SectionItem } from '../utils/api'
+import { Skeleton } from '../components/ui/skeleton'
 
 export default function Sections() {
   const [items, setItems] = useState<SectionItem[]>([])
@@ -24,10 +25,31 @@ export default function Sections() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Sections</h1>
-        <Link to="/sections/creation"><Button variant="primary" icon={<FiPlus className="w-4 h-4" />}>Create Section</Button></Link>
+        <Link to="/sections/creation"><Button variant="primary" icon={<FiPlus className="w-4 h-4" />}>Create</Button></Link>
       </div>
 
-      {loading ? <div>Loading...</div> : error ? <div className="text-red-600">{error}</div> : (
+      {loading ? (
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableHeadCell>ID</TableHeadCell>
+              <TableHeadCell>Name</TableHeadCell>
+              <TableHeadCell>Type</TableHeadCell>
+              <TableHeadCell>Products</TableHeadCell>
+              <TableHeadCell>Actions</TableHeadCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {Array.from({ length: 6 }).map((_, r) => (
+              <TableRow key={r} className="animate-pulse">
+                {Array.from({ length: 5 }).map((__, c) => (
+                  <TableCell key={c}><Skeleton className="h-4 w-full bg-gray-200" /></TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      ) : error ? <div className="text-red-600">{error}</div> : (
         <Table>
           <TableHead>
             <TableRow>

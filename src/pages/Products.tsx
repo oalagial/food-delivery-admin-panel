@@ -5,6 +5,7 @@ import { Button } from '../components/ui/button'
 import { FiPlus, FiEdit, FiTrash } from 'react-icons/fi'
 import { getProductsList } from '../utils/api'
 import type { Product } from '../utils/api'
+import { Skeleton } from '../components/ui/skeleton'
 
 export default function Products() {
   const [items, setItems] = useState<Product[]>([])
@@ -31,19 +32,38 @@ export default function Products() {
 
   return (
     <div>
-      <h1>Products</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Products</h1>
+        <Link to="/products/creation"><Button variant="primary" icon={<FiPlus className="w-4 h-4" />}>Create</Button></Link>
+      </div>
 
-      <section className="mt-3">
-        <div className="mt-2">
-          <Link to="/products/creation"><Button variant="primary" icon={<FiPlus className="w-4 h-4" />}>Create new product</Button></Link>
-        </div>
-      </section>
-
-      {loading && <p>Loading...</p>}
+      {loading && (
+        <Table>
+          <TableHead>
+            <tr>
+              <TableHeadCell>ID</TableHeadCell>
+              <TableHeadCell>Name</TableHeadCell>
+              <TableHeadCell>Type</TableHeadCell>
+              <TableHeadCell>Price</TableHeadCell>
+              <TableHeadCell>Available</TableHeadCell>
+              <TableHeadCell>Created</TableHeadCell>
+              <TableHeadCell>Actions</TableHeadCell>
+            </tr>
+          </TableHead>
+          <TableBody>
+            {Array.from({ length: 6 }).map((_, r) => (
+              <TableRow key={r} className="animate-pulse">
+                {Array.from({ length: 7 }).map((__, c) => (
+                  <TableCell key={c}><Skeleton className="h-4 w-full bg-gray-200" /></TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
       {error && <p className="text-red-600">{error}</p>}
 
-      <div className="mt-4">
-        <Table>
+        {!loading && (<Table>
           <TableHead>
             <tr>
               <TableHeadCell>ID</TableHeadCell>
@@ -78,7 +98,7 @@ export default function Products() {
             ))}
           </TableBody>
         </Table>
-      </div>
+      )}
     </div>
   )
 }
