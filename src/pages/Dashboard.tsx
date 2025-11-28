@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '../components/ui/button'
-import { FiPlus, FiShoppingCart, FiCoffee, FiUsers, FiMapPin, FiList } from 'react-icons/fi'
+import { FiShoppingCart, FiCoffee, FiUsers, FiMapPin, FiList } from 'react-icons/fi'
 import Table, { TableBody, TableHead, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { Skeleton } from '../components/ui/skeleton'
 
