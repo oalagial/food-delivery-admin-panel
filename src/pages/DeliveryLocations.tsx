@@ -79,7 +79,6 @@ export default function DeliveryLocations() {
                 <TableHeadCell>Lon</TableHeadCell>
                 <TableHeadCell>Active</TableHeadCell>
                 <TableHeadCell>Restaurants</TableHeadCell>
-                <TableHeadCell>Created</TableHeadCell>
                 <TableHeadCell>Actions</TableHeadCell>
               </tr>
             </TableHead>
@@ -131,16 +130,31 @@ export default function DeliveryLocations() {
                   <TableCell>{loc.latitude ?? ''}</TableCell>
                   <TableCell>{loc.longitude ?? ''}</TableCell>
                   <TableCell>{loc.isActive ? 'Yes' : 'No'}</TableCell>
-                  <TableCell>{Array.isArray((loc as Partial<DeliveryLocation>).deliveredBy)
-                    ? ((loc as Partial<DeliveryLocation>).deliveredBy as Array<{restaurantId?: number | string, deliveryFee?: number, minOrder?: number, isActive?: boolean}>).map(d => {
-                      const name = restaurantsMap[String(d.restaurantId ?? '')] ?? String(d.restaurantId ?? '')
-                      const fee = d.deliveryFee !== undefined ? ` fee:${d.deliveryFee}` : ''
-                      const min = d.minOrder !== undefined ? ` min:${d.minOrder}` : ''
-                      const act = d.isActive === false ? ' (inactive)' : ''
+                  <TableCell>{(() => {
+                    const anyLoc = loc as unknown as Record<string, unknown>
+                    // Try several possible shapes returned by different API versions
+                    const maybeArray = (key: string): unknown[] | null => {
+                      const v = anyLoc[key]
+                      return Array.isArray(v) ? (v as unknown[]) : null
+                    }
+                    const list = maybeArray('deliveredBy') ?? maybeArray('deliveredByRestaurants') ?? maybeArray('delivedByRestaurants') ?? []
+
+                    return list.map((d) => {
+                      const item = d as Record<string, unknown>
+                      // d can be either: { restaurantId, deliveryFee, minOrder, isActive }
+                      // or a full restaurant object with { id, name, ... }
+                      let name = ''
+                      if (typeof item.name === 'string' || item.id !== undefined) {
+                        name = String(item.name ?? item.id)
+                      } else if (item.restaurantId !== undefined) {
+                        name = restaurantsMap[String(item.restaurantId ?? '')] ?? String(item.restaurantId ?? '')
+                      }
+                      const fee = (typeof item.deliveryFee === 'number' || typeof item.deliveryFee === 'string') ? ` fee:${String(item.deliveryFee)}` : ''
+                      const min = (typeof item.minOrder === 'number' || typeof item.minOrder === 'string') ? ` min:${String(item.minOrder)}` : ''
+                      const act = item.isActive === false ? ' (inactive)' : ''
                       return `${name}${fee}${min}${act}`
                     }).join(', ')
-                    : ''}</TableCell>
-                  <TableCell>{loc.createdAt ? new Date(String(loc.createdAt)).toLocaleString() : ''}</TableCell>
+                  })()}</TableCell>
                   <TableCell>
                     <Link to={`/delivery-locations/creation/${encodeURIComponent(String(loc.id ?? ''))}`} className='mr-2' ><Button variant="ghost" className='p-2' size="sm" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
                     <Button variant="danger" size="sm" className='p-2' icon={<FiTrash className="w-4 h-4" />}></Button>
