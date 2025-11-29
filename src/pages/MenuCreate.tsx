@@ -12,7 +12,8 @@ export default function MenuCreate() {
 
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [restaurantIds, setRestaurantIds] = useState<Array<number | string>>([])
+  // allow selecting only one restaurant for a menu
+  const [restaurantId, setRestaurantId] = useState<string>('')
   const [sectionIds, setSectionIds] = useState<Array<number | string>>([])
 
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
@@ -34,7 +35,8 @@ export default function MenuCreate() {
       if (menu) {
         setName(menu.name || '')
         setDescription(menu.description || '')
-        setRestaurantIds((menu.restaurantIds || []).map(v => Number(v)))
+        // take the first restaurant id if returned as an array
+        setRestaurantId(((menu.restaurantIds || [])[0] ?? '') + '')
         setSectionIds((menu.sectionIds || []).map(v => Number(v)))
       }
     }).catch((e) => { if (mounted) setError(String(e)) })
@@ -50,7 +52,8 @@ export default function MenuCreate() {
       name: String(name).trim(),
       description: description || undefined,
       sectionIds: sectionIds.map(Number),
-      restaurantIds: restaurantIds.map(Number),
+      // backend expects an array of restaurant ids; wrap selected id if present
+      restaurantIds: restaurantId ? [Number(restaurantId)] : [],
     }
     try {
       setSaving(true)
@@ -85,12 +88,10 @@ export default function MenuCreate() {
 
           <div className="flex gap-4">
             <div className="flex-1">
-              <label className="block text-sm font-medium mb-1">Restaurants</label>
-              <select multiple value={restaurantIds.map(String)} onChange={(e) => {
-                const opts = Array.from(e.currentTarget.selectedOptions).map(o=> Number(o.value))
-                setRestaurantIds(opts)
-              }} className="w-full rounded-md border px-3 py-2 text-sm">
-                {restaurants.map(r => <option key={r.id} value={r.id}>{r.name || r.id}</option>)}
+              <label className="block text-sm font-medium mb-1">Restaurant</label>
+              <select value={restaurantId} onChange={(e) => setRestaurantId(e.currentTarget.value)} className="w-full rounded-md border px-3 py-2 text-sm">
+                <option value="">-- Select restaurant --</option>
+                {restaurants.map(r => <option key={r.id} value={String(r.id)}>{r.name || r.id}</option>)}
               </select>
             </div>
 
