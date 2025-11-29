@@ -36,7 +36,7 @@ export default function MenuCreate() {
         setName(menu.name || '')
         setDescription(menu.description || '')
         // take the first restaurant id if returned as an array
-        setRestaurantId(((menu.restaurantIds || [])[0] ?? '') + '')
+        setRestaurantId(((menu.restaurants || [])[0] ?? '') + '')
         setSectionIds((menu.sectionIds || []).map(v => Number(v)))
       }
     }).catch((e) => { if (mounted) setError(String(e)) })

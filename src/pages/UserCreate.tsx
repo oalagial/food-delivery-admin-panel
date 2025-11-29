@@ -4,6 +4,7 @@ import { Input } from '../components/ui/input'
 import { Button } from '../components/ui/button'
 
 import { API_BASE } from '../config'
+import { getRolesList } from '../utils/api'
 
 export default function UserCreate() {
   const { id } = useParams<{ id?: string }>()
@@ -12,29 +13,45 @@ export default function UserCreate() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState({ email: '', username: '', password: '' })
+  const [roles, setRoles] = useState<Array<{ id?: string | number; name?: string }>>([])
+  const [roleId, setRoleId] = useState<string | number | ''>('')
 
   useEffect(() => {
-    if (!id) return
     let mounted = true
-    ;(async () => {
-      try {
-        const res = await fetch(`${API_BASE}/users/${id}`)
-        if (!res.ok) throw new Error(`Failed to load user: ${res.status}`)
-        const json = await res.json()
-        if (!mounted) return
-        setForm({
-          email: String(json.email ?? ''),
-          username: String(json.username ?? ''),
-          password: '',
-        })
-      } catch (err: unknown) {
-        if (!mounted) return
-        setError(err instanceof Error ? err.message : String(err))
-      }
-    })()
+
+    // If editing, load the user
+    if (id) {
+      ;(async () => {
+        try {
+          const res = await fetch(`${API_BASE}/users/${id}`)
+          if (!res.ok) throw new Error(`Failed to load user: ${res.status}`)
+          const json = await res.json()
+          if (!mounted) return
+          setForm({
+            email: String(json.email ?? ''),
+            username: String(json.username ?? ''),
+            password: '',
+          })
+          // try to populate role selection from returned user object
+          const roleFromApi = (json && (json.role?.id ?? json.roleId ?? json.role_id)) ?? ''
+          if (roleFromApi !== undefined && roleFromApi !== null) setRoleId(String(roleFromApi))
+        } catch (err: unknown) {
+          if (!mounted) return
+          setError(err instanceof Error ? err.message : String(err))
+        }
+      })()
+    }
+
+    // fetch roles for the select using API helper (always fetch roles)
+    let mountedRoles = true
+    getRolesList().then((data) => {
+      if (!mountedRoles) return
+      setRoles(data || [])
+    }).catch(() => {})
 
     return () => {
       mounted = false
+      mountedRoles = false
     }
   }, [id])
 
@@ -47,6 +64,7 @@ export default function UserCreate() {
         email: String(form.email).trim(),
         username: String(form.username).trim(),
       }
+        if (roleId !== '' && roleId !== undefined) payload.roleId = Number(roleId)
       if (!payload.email || !payload.username) {
         setError('Email and username are required')
         setSaving(false)
@@ -102,6 +120,14 @@ export default function UserCreate() {
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
           <Input value={form.username} onChange={(e) => setForm((s) => ({ ...s, username: e.target.value }))} placeholder="Username" required className="w-full" />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+          <select value={String(roleId ?? '')} onChange={(e) => setRoleId(e.target.value)} className="w-full rounded border px-2 py-1">
+            <option value="">(No role)</option>
+            {roles.map(r => <option key={String(r.id)} value={String(r.id)}>{r.name ?? String(r.id)}</option>)}
+          </select>
         </div>
 
         <div>

@@ -297,6 +297,42 @@ export async function createType(payload: CreateTypePayload) {
   return data
 }
 
+// Roles API
+export type RoleItem = {
+  id?: string | number
+  name?: string
+  description?: string
+  createdAt?: string | number
+  [k: string]: unknown
+}
+
+export async function getRolesList(): Promise<RoleItem[]> {
+  // Try authenticated fetch first (works when user is logged in)
+  try {
+    const res = await authFetch('/roles/list')
+    if (res.ok) {
+      const data = await res.json().catch(() => null)
+      return Array.isArray(data) ? data : (data?.items || data?.data || [])
+    }
+  } catch {
+    // ignore and fallback to unauthenticated fetch below
+  }
+
+  // Fallback: try a plain fetch to the full API URL (some deployments expose roles publicly)
+  try {
+    const url = API_BASE.replace(/\/$/, '') + '/roles/list'
+    const res2 = await fetch(url)
+    if (!res2.ok) {
+      const text = await res2.text().catch(() => '')
+      throw new Error(text || `GET /roles/list failed (${res2.status})`)
+    }
+    const data2 = await res2.json().catch(() => null)
+    return Array.isArray(data2) ? data2 : (data2?.items || data2?.data || [])
+  } catch (err) {
+    throw err
+  }
+}
+
 export async function getTypeById(id: string | number): Promise<TypeItem | null> {
   if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
   const res = await authFetch(`/types/${encodeURIComponent(String(id))}`)
@@ -895,7 +931,7 @@ export async function updateRestaurant(token: string, payload: CreateRestaurantP
         if (Array.isArray(json.messages)) {
           bodyText = json.messages.join('; ')
         } else if (Array.isArray(json.errors)) {
-          bodyText = json.errors.map((e: any) => (typeof e === 'string' ? e : e?.message || JSON.stringify(e))).join('; ')
+          bodyText = (json.errors as unknown[]).map((e) => (typeof e === 'string' ? e : (e && (e as Record<string, unknown>).message) || JSON.stringify(e))).join('; ')
         } else if (typeof json.message === 'string') {
           bodyText = json.message
         } else {
