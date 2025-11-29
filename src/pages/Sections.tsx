@@ -33,6 +33,7 @@ export default function Sections() {
           <TableHead>
             <TableRow>
               <TableHeadCell>Name</TableHeadCell>
+              <TableHeadCell>Description</TableHeadCell>
               <TableHeadCell>Type</TableHeadCell>
               <TableHeadCell>Products</TableHeadCell>
               <TableHeadCell>Actions</TableHeadCell>
@@ -41,7 +42,7 @@ export default function Sections() {
           <TableBody>
             {Array.from({ length: 6 }).map((_, r) => (
               <TableRow key={r} className="animate-pulse">
-                {Array.from({ length: 5 }).map((__, c) => (
+                {Array.from({ length: 6 }).map((__, c) => (
                   <TableCell key={c}><Skeleton className="h-4 w-full bg-gray-200" /></TableCell>
                 ))}
               </TableRow>
@@ -55,6 +56,7 @@ export default function Sections() {
               <TableHeadCell>Name</TableHeadCell>
               <TableHeadCell>Type</TableHeadCell>
               <TableHeadCell>Products</TableHeadCell>
+            <TableHeadCell>Description</TableHeadCell>
               <TableHeadCell>Actions</TableHeadCell>
             </TableRow>
           </TableHead>
@@ -63,7 +65,15 @@ export default function Sections() {
               <TableRow key={String(it.id)}>
                 <TableCell>{it.name}</TableCell>
                 <TableCell>{it.typeId}</TableCell>
-                <TableCell>{(it.productsIds || []).length}</TableCell>
+                <TableCell>{(() => {
+                  const rec = it as unknown as Record<string, unknown>
+                  const prods = rec.products
+                  if (Array.isArray(prods)) {
+                    return (prods as Array<Record<string, unknown>>).map(p => String(p.name ?? p.id ?? '')).join(', ')
+                  }
+                  return (it.productsIds || []).length
+                })()}</TableCell>
+                <TableCell>{it.description ?? ''}</TableCell>
                 <TableCell>
                   <Link to={`/sections/creation/${it.id}`}><Button size="sm" variant="ghost" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
                 </TableCell>

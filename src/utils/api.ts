@@ -439,7 +439,7 @@ export type MenuItem = {
   name?: string
   description?: string
   sectionIds?: Array<number | string>
-  restaurantIds?: Array<number | string>
+  restaurants?: Array<number>
   createdAt?: string | number
   [k: string]: unknown
 }

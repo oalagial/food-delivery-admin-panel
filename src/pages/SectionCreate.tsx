@@ -3,8 +3,8 @@ import type { FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Input } from '../components/ui/input'
 import { Button } from '../components/ui/button'
-import { getSectionById, createSection, updateSection, getTypesList } from '../utils/api'
-import type { TypeItem } from '../utils/api'
+import { getSectionById, createSection, updateSection, getTypesList, getProductsList } from '../utils/api'
+import type { TypeItem, Product } from '../utils/api'
 
 export default function SectionCreate(){
   const params = useParams<{id?: string}>()
@@ -16,10 +16,12 @@ export default function SectionCreate(){
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [types, setTypes] = useState<TypeItem[]>([])
+  const [products, setProducts] = useState<Product[]>([])
 
   useEffect(()=>{
     let mounted = true
     getTypesList().then(d=>{ if(mounted) setTypes(d)}).catch(()=>{})
+    getProductsList().then(d=>{ if(mounted) setProducts(d)}).catch(()=>{})
     if(params.id){
       getSectionById(Number(params.id)).then((s) => {
         if (!s) return
@@ -71,8 +73,15 @@ export default function SectionCreate(){
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Product IDs (comma separated)</label>
-          <Input value={productsIds.join(',')} onChange={e=>setProductsIds(e.target.value.split(',').map(s=>Number(s.trim())).filter(Boolean))} />
+          <label className="block text-sm font-medium mb-1">Products</label>
+          <select multiple value={productsIds.map(String)} onChange={e=>{
+            const opts = Array.from(e.currentTarget.selectedOptions).map(o => Number(o.value))
+            setProductsIds(opts)
+          }} className="w-full rounded border px-2 py-1">
+            {products.map(p => (
+              <option key={p.id} value={p.id}>{p.name ?? String(p.id)}</option>
+            ))}
+          </select>
         </div>
 
         {error && <div className="text-red-600">{error}</div>}
