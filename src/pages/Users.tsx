@@ -78,18 +78,18 @@ export default function Users() {
 
   
 
-  async function handleDelete(id: number | string) {
-    if (!confirm('Delete this user?')) return
-    setError(null)
-    try {
-      const res = await fetch(`${API_BASE}/users/${id}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error(`Delete failed ${res.status}`)
-      await fetchUsers()
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err)
-      setError(msg)
-    }
-  }
+  // async function handleDelete(id: number | string) {
+  //   if (!confirm('Delete this user?')) return
+  //   setError(null)
+  //   try {
+  //     const res = await fetch(`${API_BASE}/users/${id}`, { method: 'DELETE' })
+  //     if (!res.ok) throw new Error(`Delete failed ${res.status}`)
+  //     await fetchUsers()
+  //   } catch (err: unknown) {
+  //     const msg = err instanceof Error ? err.message : String(err)
+  //     setError(msg)
+  //   }
+  // }
 
   // Editing now handled by `/users/creation/:id` page
 

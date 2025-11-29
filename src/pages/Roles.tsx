@@ -44,18 +44,18 @@ export default function Roles() {
     void fetchRoles()
   }, [])
 
-  async function handleDelete(id: number | string) {
-    if (!confirm('Delete this role?')) return
-    setError(null)
-    try {
-      const res = await fetch(`${API_BASE}/roles/delete/${id}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error(`Delete failed ${res.status}`)
-      await fetchRoles()
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err)
-      setError(msg)
-    }
-  }
+  // async function handleDelete(id: number | string) {
+  //   if (!confirm('Delete this role?')) return
+  //   setError(null)
+  //   try {
+  //     const res = await fetch(`${API_BASE}/roles/delete/${id}`, { method: 'DELETE' })
+  //     if (!res.ok) throw new Error(`Delete failed ${res.status}`)
+  //     await fetchRoles()
+  //   } catch (err: unknown) {
+  //     const msg = err instanceof Error ? err.message : String(err)
+  //     setError(msg)
+  //   }
+  // }
 
   // Editing handled by `/roles/creation/:id`
 
