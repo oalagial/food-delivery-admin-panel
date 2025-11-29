@@ -43,17 +43,20 @@ export default function Products() {
             <tr>
               <TableHeadCell>ID</TableHeadCell>
               <TableHeadCell>Name</TableHeadCell>
+              <TableHeadCell>Image</TableHeadCell>
               <TableHeadCell>Type</TableHeadCell>
+              <TableHeadCell>Ingredients</TableHeadCell>
               <TableHeadCell>Price</TableHeadCell>
               <TableHeadCell>Available</TableHeadCell>
               <TableHeadCell>Created</TableHeadCell>
+              <TableHeadCell>Updated</TableHeadCell>
               <TableHeadCell>Actions</TableHeadCell>
             </tr>
           </TableHead>
           <TableBody>
             {Array.from({ length: 6 }).map((_, r) => (
               <TableRow key={r} className="animate-pulse">
-                {Array.from({ length: 7 }).map((__, c) => (
+                {Array.from({ length: 10 }).map((__, c) => (
                   <TableCell key={c}><Skeleton className="h-4 w-full bg-gray-200" /></TableCell>
                 ))}
               </TableRow>
@@ -68,17 +71,20 @@ export default function Products() {
             <tr>
               <TableHeadCell>ID</TableHeadCell>
               <TableHeadCell>Name</TableHeadCell>
+              <TableHeadCell>Image</TableHeadCell>
               <TableHeadCell>Type</TableHeadCell>
+              <TableHeadCell>Ingredients</TableHeadCell>
               <TableHeadCell>Price</TableHeadCell>
               <TableHeadCell>Available</TableHeadCell>
               <TableHeadCell>Created</TableHeadCell>
+              <TableHeadCell>Updated</TableHeadCell>
               <TableHeadCell>Actions</TableHeadCell>
             </tr>
           </TableHead>
           <TableBody>
             {(!loading && items.length === 0) && (
               <TableRow>
-                <TableCell colSpan={7}>No products found.</TableCell>
+                <TableCell colSpan={10}>No products found.</TableCell>
               </TableRow>
             )}
 
@@ -86,7 +92,15 @@ export default function Products() {
               <TableRow key={p.id ?? p.name}>
                 <TableCell>{String(p.id ?? '')}</TableCell>
                 <TableCell>{p.name ?? ''}</TableCell>
+                <TableCell>
+                  {p.image ? (
+                    <img src={p.image} alt={p.name ?? 'product'} className="w-12 h-12 object-cover rounded" />
+                  ) : (
+                    <div className="w-12 h-12 bg-gray-100 rounded" />
+                  )}
+                </TableCell>
                 <TableCell>{p.typeId ?? ''}</TableCell>
+                <TableCell>{Array.isArray(p.ingredients) ? p.ingredients.join(', ') : ''}</TableCell>
                 <TableCell>{p.price != null ? String(p.price) : ''}</TableCell>
                 <TableCell className="text-center">
                   <span className="inline-flex items-center justify-center">
@@ -96,6 +110,7 @@ export default function Products() {
                   </span>
                 </TableCell>
                 <TableCell>{p.createdAt ? new Date(String(p.createdAt)).toLocaleString() : ''}</TableCell>
+                <TableCell>{p.updatedAt ? new Date(String(p.updatedAt)).toLocaleString() : ''}</TableCell>
                 <TableCell>
                     <Link to={`/products/creation/${encodeURIComponent(String(p.id ?? ''))}`} className='mr-2' ><Button variant="ghost" className='p-2' size="sm" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
                     <Button variant="danger" size="sm" className='p-2' icon={<FiTrash className="w-4 h-4" />}></Button>
