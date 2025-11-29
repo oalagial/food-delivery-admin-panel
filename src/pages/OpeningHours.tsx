@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Table, TableBody, TableHead, TableRow, TableCell, TableHeadCell } from '../components/ui/table'
 import { Button } from '../components/ui/button'
-import { FiPlus, FiEdit } from 'react-icons/fi'
+import { FiPlus, FiEdit, FiTrash } from 'react-icons/fi'
 import { getOpeningHoursList } from '../utils/api'
 import { Skeleton } from '../components/ui/skeleton'
 
@@ -67,7 +67,8 @@ export default function OpeningHours() {
                 <TableCell>{it.open}</TableCell>
                 <TableCell>{it.close}</TableCell>
                 <TableCell>
-                  <Link to={`/opening-hours/creation/${it.id}`}><Button size="sm" variant="ghost" icon={<FiEdit className="w-4 h-4" />}>Edit</Button></Link>
+                  <Link to={`/opening-hours/creation/${encodeURIComponent(String(it.id ?? ''))}`} className='mr-2' ><Button variant="ghost" className='p-2' size="sm" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
+                  <Button variant="danger" size="sm" className='p-2' icon={<FiTrash className="w-4 h-4" />}></Button>
                 </TableCell>
               </TableRow>
             ))}

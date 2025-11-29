@@ -70,11 +70,15 @@ export default function Menus() {
                 <TableCell>{m.id}</TableCell>
                 <TableCell>{m.name}</TableCell>
                 <TableCell>{m.description}</TableCell>
-                <TableCell>{(m.sectionIds || []).length}</TableCell>
+                <TableCell>
+                  {Array.isArray((m as any).sections) && (m as any).sections.length > 0
+                    ? (m as any).sections.map((s: any) => s?.name ?? s?.id).join(', ')
+                    : (m.sectionIds || []).length}
+                </TableCell>
                 <TableCell>{(m.restaurantIds || []).length}</TableCell>
                 <TableCell>{m.createdAt ? new Date(String(m.createdAt)).toLocaleString() : ''}</TableCell>
                 <TableCell>
-                  <Link to={`/menus/creation/${m.id}`}><Button size="sm" variant="ghost" icon={<FiEdit className="w-4 h-4" />}>Edit</Button></Link>
+                  <Link to={`/menus/creation/${m.id}`}><Button size="sm" variant="ghost" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
                 </TableCell>
               </TableRow>
             ))}

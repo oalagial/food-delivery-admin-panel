@@ -21,8 +21,7 @@ export default function Roles() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const [editingId, setEditingId] = useState<number | string | null>(null)
-  const [editValues, setEditValues] = useState<{ name?: string; description?: string }>({})
+  // Editing handled by dedicated create/edit page
 
   async function fetchRoles() {
     setLoading(true)
@@ -58,28 +57,7 @@ export default function Roles() {
     }
   }
 
-  function startEdit(r: Role) {
-    setEditingId(r.id)
-    setEditValues({ name: r.name, description: r.description })
-  }
-
-  async function saveEdit(id: number | string) {
-    if (!editValues.name) return setError('Name is required')
-    setError(null)
-    try {
-      const res = await fetch(`${API_BASE}/roles/update/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editValues),
-      })
-      if (!res.ok) throw new Error(`Update failed ${res.status}`)
-      setEditingId(null)
-      await fetchRoles()
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err)
-      setError(msg)
-    }
-  }
+  // Editing handled by `/roles/creation/:id`
 
   
 
@@ -136,33 +114,14 @@ export default function Roles() {
               {roles.map((r) => (
                 <TableRow key={r.id}>
                   <TableCell>{String(r.id)}</TableCell>
+                  <TableCell>{r.name}</TableCell>
                   <TableCell>
-                    {editingId === r.id ? (
-                      <input value={editValues.name ?? ''} onChange={(e) => setEditValues(v => ({ ...v, name: e.target.value }))} />
-                    ) : (
-                      r.name
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {editingId === r.id ? (
-                      <input value={editValues.description ?? ''} onChange={(e) => setEditValues(v => ({ ...v, description: e.target.value }))} />
-                    ) : (
-                      r.description ?? ''
-                    )}
+                    {r.description ?? ''}
                   </TableCell>
                   <TableCell>{r.createdAt ? new Date(String(r.createdAt)).toLocaleString() : ''}</TableCell>
                   <TableCell>
-                    {editingId === r.id ? (
-                      <>
-                        <Button variant="primary" size="sm" onClick={() => void saveEdit(r.id)}>Save</Button>
-                        <Button variant="ghost" size="sm" onClick={() => setEditingId(null)} style={{ marginLeft: 6 }}>Cancel</Button>
-                      </>
-                    ) : (
-                      <>
-                        <Button variant="ghost" size="sm" onClick={() => startEdit(r)} icon={<FiEdit className="w-4 h-4" />}>Edit</Button>
-                        <Button variant="danger" size="sm" onClick={() => void handleDelete(r.id)} style={{ marginLeft: 6 }} icon={<FiTrash className="w-4 h-4" />}>Delete</Button>
-                      </>
-                    )}
+                    <Link to={`/roles/creation/${encodeURIComponent(String(r.id ?? ''))}`} className='mr-2' ><Button variant="ghost" className='p-2' size="sm" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
+                    <Button variant="danger" size="sm" className='p-2' icon={<FiTrash className="w-4 h-4" />}></Button>
                   </TableCell>
                 </TableRow>
               ))}

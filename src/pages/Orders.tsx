@@ -73,7 +73,7 @@ export default function Orders(){
                 <TableCell>{it.customer?.name}</TableCell>
                 <TableCell>{(it.orderProducts || []).length}</TableCell>
                 <TableCell>
-                  <Link to={`/orders/creation/${it.id}`}><Button size="sm" variant="ghost" icon={<FiEdit className="w-4 h-4" />}>Edit</Button></Link>
+                  <Link to={`/orders/creation/${it.id}`}><Button size="sm" variant="ghost" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
                 </TableCell>
               </TableRow>
             ))}

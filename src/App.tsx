@@ -74,7 +74,7 @@ function App() {
   return (
     <BrowserRouter>
       <div className="app-root">
-        <aside className="w-80 md:w-96 bg-white rounded-md p-6 shadow border h-[calc(100vh-32px)] sticky top-4 overflow-auto">
+        <aside className="min-w-80 md:w-96 bg-white rounded-md p-6 shadow border h-[calc(100vh-32px)] sticky top-4 overflow-auto">
           <div className="mb-4">
             <div className="text-xl font-bold text-blue-600 flex items-center gap-3"><FiMapPin className="w-6 h-6 text-sky-600" /> Delivery Food - Admin Panel</div>
           </div>

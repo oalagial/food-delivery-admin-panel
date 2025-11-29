@@ -51,7 +51,7 @@ export default function SectionCreate(){
   return (
     <div className="space-y-4 max-w-2xl">
       <h1 className="text-2xl font-semibold">{params.id ? 'Edit' : 'Create'} Section</h1>
-      <form onSubmit={onSubmit} className="space-y-4">
+      <form onSubmit={onSubmit} className="space-y-6 bg-white p-6 rounded-md shadow-sm border">
         <div>
           <label className="block text-sm font-medium mb-1">Name</label>
           <Input value={name} onChange={e=>setName(e.target.value)} />

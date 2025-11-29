@@ -91,9 +91,9 @@ export default function Products() {
                 <TableCell>{p.isAvailable ? 'Yes' : 'No'}</TableCell>
                 <TableCell>{p.createdAt ? new Date(String(p.createdAt)).toLocaleString() : ''}</TableCell>
                 <TableCell>
-                  <Link to={`/products/creation/${encodeURIComponent(String(p.id ?? ''))}`} style={{ marginRight: 8 }}><Button variant="ghost" size="sm" icon={<FiEdit className="w-4 h-4" />}>Edit</Button></Link>
-                  <Button variant="danger" size="sm" icon={<FiTrash className="w-4 h-4" />}>Delete</Button>
-                </TableCell>
+                    <Link to={`/products/creation/${encodeURIComponent(String(p.id ?? ''))}`} className='mr-2' ><Button variant="ghost" className='p-2' size="sm" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
+                    <Button variant="danger" size="sm" className='p-2' icon={<FiTrash className="w-4 h-4" />}></Button>
+                  </TableCell>
               </TableRow>
             ))}
           </TableBody>

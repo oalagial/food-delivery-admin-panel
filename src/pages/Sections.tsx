@@ -68,7 +68,7 @@ export default function Sections() {
                 <TableCell>{it.typeId}</TableCell>
                 <TableCell>{(it.productsIds || []).length}</TableCell>
                 <TableCell>
-                  <Link to={`/sections/creation/${it.id}`}><Button size="sm" variant="ghost" icon={<FiEdit className="w-4 h-4" />}>Edit</Button></Link>
+                  <Link to={`/sections/creation/${it.id}`}><Button size="sm" variant="ghost" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
                 </TableCell>
               </TableRow>
             ))}

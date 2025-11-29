@@ -22,8 +22,7 @@ export default function Users() {
 
   
 
-  const [editingId, setEditingId] = useState<number | string | null>(null)
-  const [editValues, setEditValues] = useState<{ email?: string; username?: string }>({})
+  // Use dedicated create/edit page instead of inline editing
 
   async function fetchUsers() {
     setLoading(true)
@@ -92,28 +91,7 @@ export default function Users() {
     }
   }
 
-  function startEdit(u: User) {
-    setEditingId(u.id)
-    setEditValues({ email: u.email as string | undefined, username: u.username as string | undefined })
-  }
-
-  async function saveEdit(id: number | string) {
-    if (!editValues.email || !editValues.username) return setError('Email and username required')
-    setError(null)
-    try {
-      const res = await fetch(`${API_BASE}/users/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editValues),
-      })
-      if (!res.ok) throw new Error(`Update failed ${res.status}`)
-      setEditingId(null)
-      await fetchUsers()
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err)
-      setError(msg)
-    }
-  }
+  // Editing now handled by `/users/creation/:id` page
 
   
 
@@ -146,33 +124,12 @@ export default function Users() {
             {users.map((u) => (
               <TableRow key={u.id}>
                 <TableCell>{String(u.id)}</TableCell>
-                <TableCell>
-                  {editingId === u.id ? (
-                    <input value={editValues.email ?? ''} onChange={(e) => setEditValues(v => ({ ...v, email: e.target.value }))} />
-                  ) : (
-                    u.email
-                  )}
-                </TableCell>
-                <TableCell>
-                  {editingId === u.id ? (
-                    <input value={editValues.username ?? ''} onChange={(e) => setEditValues(v => ({ ...v, username: e.target.value }))} />
-                  ) : (
-                    u.username
-                  )}
-                </TableCell>
+                <TableCell>{u.email}</TableCell>
+                <TableCell>{u.username}</TableCell>
                 <TableCell>{u.createdAt ? new Date(u.createdAt).toLocaleString() : ''}</TableCell>
                 <TableCell>
-                  {editingId === u.id ? (
-                    <>
-                      <Button variant="primary" size="sm" onClick={() => void saveEdit(u.id)}>Save</Button>
-                      <Button variant="ghost" size="sm" onClick={() => setEditingId(null)} style={{ marginLeft: 6 }}>Cancel</Button>
-                    </>
-                  ) : (
-                    <>
-                      <Button variant="ghost" size="sm" onClick={() => startEdit(u)} icon={<FiEdit className="w-4 h-4" />}>Edit</Button>
-                      <Button variant="danger" size="sm" onClick={() => void handleDelete(u.id)} style={{ marginLeft: 6 }} icon={<FiTrash className="w-4 h-4" />}>Delete</Button>
-                    </>
-                  )}
+                  <Link to={`/users/creation/${encodeURIComponent(String(u.id ?? ''))}`} className='mr-2' ><Button variant="ghost" className='p-2' size="sm" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
+                  <Button variant="danger" size="sm" className='p-2' icon={<FiTrash className="w-4 h-4" />}></Button>
                 </TableCell>
               </TableRow>
             ))}

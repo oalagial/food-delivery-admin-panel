@@ -82,7 +82,7 @@ export default function RoleCreate() {
         </div>
 
         <div className="flex justify-end gap-3">
-          <Link to="/roles"><Button variant="ghost">Cancel</Button></Link>
+          <Link to="/roles"><Button variant="ghost" type="button">Cancel</Button></Link>
           <Button variant="primary" type="submit" disabled={saving}>{saving ? (id ? 'Saving...' : 'Creating...') : (id ? 'Save' : 'Create')}</Button>
         </div>
       </form>

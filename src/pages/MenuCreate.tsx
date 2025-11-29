@@ -108,7 +108,7 @@ export default function MenuCreate() {
           {error && <div className="text-sm text-red-600">{error}</div>}
 
           <div className="flex justify-end gap-3">
-            <Button variant="ghost" onClick={()=> navigate(-1)}>Cancel</Button>
+            <Button variant="ghost" type="button" onClick={()=> navigate(-1)}>Cancel</Button>
             <Button type="submit" variant="primary" disabled={saving}>{saving ? 'Saving...' : (editing ? 'Save' : 'Create')}</Button>
           </div>
         </form>

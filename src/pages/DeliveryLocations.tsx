@@ -142,8 +142,8 @@ export default function DeliveryLocations() {
                     : ''}</TableCell>
                   <TableCell>{loc.createdAt ? new Date(String(loc.createdAt)).toLocaleString() : ''}</TableCell>
                   <TableCell>
-                    <Link to={`/delivery-locations/creation/${encodeURIComponent(String(loc.id ?? ''))}`} style={{ marginRight: 8 }}><Button variant="ghost" size="sm" icon={<FiEdit className="w-4 h-4" />}>Edit</Button></Link>
-                    <Button variant="danger" size="sm" icon={<FiTrash className="w-4 h-4" />}>Delete</Button>
+                    <Link to={`/delivery-locations/creation/${encodeURIComponent(String(loc.id ?? ''))}`} className='mr-2' ><Button variant="ghost" className='p-2' size="sm" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
+                    <Button variant="danger" size="sm" className='p-2' icon={<FiTrash className="w-4 h-4" />}></Button>
                   </TableCell>
                 </TableRow>
               ))}
