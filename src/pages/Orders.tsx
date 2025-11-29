@@ -29,7 +29,6 @@ export default function Orders(){
         <Table>
           <TableHead>
             <TableRow>
-              <TableHeadCell>ID</TableHeadCell>
               <TableHeadCell>Restaurant</TableHeadCell>
               <TableHeadCell>Delivery Location</TableHeadCell>
               <TableHeadCell>Status</TableHeadCell>
@@ -54,7 +53,6 @@ export default function Orders(){
         <Table>
           <TableHead>
             <TableRow>
-              <TableHeadCell>ID</TableHeadCell>
               <TableHeadCell>Restaurant</TableHeadCell>
               <TableHeadCell>Delivery Location</TableHeadCell>
               <TableHeadCell>Status</TableHeadCell>
@@ -66,7 +64,6 @@ export default function Orders(){
           <TableBody>
             {items.map(it => (
               <TableRow key={String(it.id)}>
-                <TableCell>{it.id}</TableCell>
                 <TableCell>{it.restaurantId}</TableCell>
                 <TableCell>{it.deliveryLocationId}</TableCell>
                 <TableCell>{it.status}</TableCell>

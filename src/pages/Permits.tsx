@@ -9,7 +9,6 @@ export default function Permits() {
         <Table>
           <TableHead>
             <tr>
-              <TableHeadCell>ID</TableHeadCell>
               <TableHeadCell>Name</TableHeadCell>
               <TableHeadCell>Description</TableHeadCell>
               <TableHeadCell>Actions</TableHeadCell>

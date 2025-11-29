@@ -75,7 +75,6 @@ export default function Roles() {
           <Table>
             <TableHead>
               <tr>
-                <TableHeadCell>ID</TableHeadCell>
                 <TableHeadCell>Name</TableHeadCell>
                 <TableHeadCell>Description</TableHeadCell>
                 <TableHeadCell>Created</TableHeadCell>
@@ -98,7 +97,6 @@ export default function Roles() {
           <Table>
             <TableHead>
               <tr>
-                <TableHeadCell>ID</TableHeadCell>
                 <TableHeadCell>Name</TableHeadCell>
                 <TableHeadCell>Description</TableHeadCell>
                 <TableHeadCell>Created</TableHeadCell>
@@ -113,7 +111,6 @@ export default function Roles() {
               )}
               {roles.map((r) => (
                 <TableRow key={r.id}>
-                  <TableCell>{String(r.id)}</TableCell>
                   <TableCell>{r.name}</TableCell>
                   <TableCell>
                     {r.description ?? ''}

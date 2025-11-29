@@ -41,7 +41,6 @@ export default function Products() {
         <Table>
           <TableHead>
             <tr>
-              <TableHeadCell>ID</TableHeadCell>
               <TableHeadCell>Name</TableHeadCell>
               <TableHeadCell>Image</TableHeadCell>
               <TableHeadCell>Type</TableHeadCell>
@@ -69,7 +68,6 @@ export default function Products() {
         {!loading && (<Table>
           <TableHead>
             <tr>
-              <TableHeadCell>ID</TableHeadCell>
               <TableHeadCell>Name</TableHeadCell>
               <TableHeadCell>Image</TableHeadCell>
               <TableHeadCell>Type</TableHeadCell>
@@ -90,7 +88,6 @@ export default function Products() {
 
             {items.map((p) => (
               <TableRow key={p.id ?? p.name}>
-                <TableCell>{String(p.id ?? '')}</TableCell>
                 <TableCell>{p.name ?? ''}</TableCell>
                 <TableCell>
                   {p.image ? (

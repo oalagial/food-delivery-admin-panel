@@ -9,7 +9,6 @@ export default function CustomerCollection() {
         <Table>
           <TableHead>
             <tr>
-              <TableHeadCell>ID</TableHeadCell>
               <TableHeadCell>Name</TableHeadCell>
               <TableHeadCell>Email</TableHeadCell>
               <TableHeadCell>Created</TableHeadCell>

@@ -68,7 +68,6 @@ export default function DeliveryLocations() {
           <Table>
             <TableHead>
               <tr>
-                <TableHeadCell>ID</TableHeadCell>
                 <TableHeadCell>Name</TableHeadCell>
                 <TableHeadCell>Address</TableHeadCell>
                 <TableHeadCell>City</TableHeadCell>
@@ -96,7 +95,6 @@ export default function DeliveryLocations() {
           <Table>
             <TableHead>
               <tr>
-                <TableHeadCell>ID</TableHeadCell>
                 <TableHeadCell>Name</TableHeadCell>
                 <TableHeadCell>Address</TableHeadCell>
                 <TableHeadCell>City</TableHeadCell>
@@ -120,7 +118,6 @@ export default function DeliveryLocations() {
 
               {locations.map((loc) => (
                 <TableRow key={String(loc.id ?? '') + String(loc.name ?? '')}>
-                  <TableCell>{String(loc.id ?? '')}</TableCell>
                   <TableCell>{loc.name ?? ''}</TableCell>
                   <TableCell>{loc.address ?? ''}</TableCell>
                   <TableCell>{loc.city ?? ''}</TableCell>

@@ -46,7 +46,6 @@ export default function Restaurant() {
         <Table>
           <TableHead>
             <tr>
-              <TableHeadCell>ID</TableHeadCell>
               <TableHeadCell>Name</TableHeadCell>
               <TableHeadCell>Address</TableHeadCell>
               <TableHeadCell>City</TableHeadCell>
@@ -75,7 +74,6 @@ export default function Restaurant() {
           <Table>
             <TableHead>
               <tr>
-                <TableHeadCell>ID</TableHeadCell>
                 <TableHeadCell>Name</TableHeadCell>
                 <TableHeadCell>Address</TableHeadCell>
                 <TableHeadCell>City</TableHeadCell>
@@ -96,7 +94,6 @@ export default function Restaurant() {
               )}
               {restaurants.map((r) => (
                 <TableRow key={r.id || r.name}>
-                  <TableCell>{String(r.id ?? '')}</TableCell>
                   <TableCell>{r.name ?? ''}</TableCell>
                   <TableCell>{r.address ?? ''}</TableCell>
                   <TableCell>{r.city ?? ''}</TableCell>

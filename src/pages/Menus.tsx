@@ -32,7 +32,6 @@ export default function Menus() {
         <Table>
           <TableHead>
             <TableRow>
-              <TableHeadCell>ID</TableHeadCell>
               <TableHeadCell>Name</TableHeadCell>
               <TableHeadCell>Description</TableHeadCell>
               <TableHeadCell>Sections</TableHeadCell>
@@ -55,7 +54,6 @@ export default function Menus() {
         <Table>
           <TableHead>
             <TableRow>
-              <TableHeadCell>ID</TableHeadCell>
               <TableHeadCell>Name</TableHeadCell>
               <TableHeadCell>Description</TableHeadCell>
               <TableHeadCell>Sections</TableHeadCell>
@@ -67,7 +65,6 @@ export default function Menus() {
           <TableBody>
             {menus.map((m) => (
               <TableRow key={String(m.id)}>
-                <TableCell>{m.id}</TableCell>
                 <TableCell>{m.name}</TableCell>
                 <TableCell>{m.description}</TableCell>
                 <TableCell>

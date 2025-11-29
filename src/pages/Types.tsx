@@ -41,7 +41,6 @@ export default function Types() {
         <Table>
           <TableHead>
             <tr>
-              <TableHeadCell>ID</TableHeadCell>
               <TableHeadCell>Name</TableHeadCell>
               <TableHeadCell>Tag</TableHeadCell>
               <TableHeadCell>Description</TableHeadCell>
@@ -66,7 +65,6 @@ export default function Types() {
         <Table>
           <TableHead>
             <tr>
-              <TableHeadCell>ID</TableHeadCell>
               <TableHeadCell>Name</TableHeadCell>
               <TableHeadCell>Tag</TableHeadCell>
               <TableHeadCell>Description</TableHeadCell>
@@ -83,7 +81,6 @@ export default function Types() {
 
             {types.map((t) => (
               <TableRow key={t.id ?? t.name}>
-                <TableCell>{String(t.id ?? '')}</TableCell>
                 <TableCell>{t.name ?? ''}</TableCell>
                 <TableCell>{t.tag ?? ''}</TableCell>
                 <TableCell>{t.description ?? ''}</TableCell>

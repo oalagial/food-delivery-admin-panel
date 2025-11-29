@@ -31,7 +31,6 @@ export default function OpeningHours() {
         <Table>
           <TableHead>
             <TableRow>
-              <TableHeadCell>ID</TableHeadCell>
               <TableHeadCell>Day</TableHeadCell>
               <TableHeadCell>Open</TableHeadCell>
               <TableHeadCell>Close</TableHeadCell>
@@ -52,7 +51,6 @@ export default function OpeningHours() {
         <Table>
           <TableHead>
             <TableRow>
-              <TableHeadCell>ID</TableHeadCell>
               <TableHeadCell>Day</TableHeadCell>
               <TableHeadCell>Open</TableHeadCell>
               <TableHeadCell>Close</TableHeadCell>
@@ -62,7 +60,6 @@ export default function OpeningHours() {
           <TableBody>
             {items.map(it => (
               <TableRow key={String(it.id)}>
-                <TableCell>{it.id}</TableCell>
                 <TableCell>{it.day}</TableCell>
                 <TableCell>{it.open}</TableCell>
                 <TableCell>{it.close}</TableCell>

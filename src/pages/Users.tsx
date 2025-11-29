@@ -55,7 +55,6 @@ export default function Users() {
         <Table>
           <TableHead>
             <tr>
-              <TableHeadCell>ID</TableHeadCell>
               <TableHeadCell>Email</TableHeadCell>
               <TableHeadCell>Username</TableHeadCell>
               <TableHeadCell>Created</TableHeadCell>
@@ -108,7 +107,6 @@ export default function Users() {
           <Table>
           <TableHead>
             <tr>
-              <TableHeadCell>ID</TableHeadCell>
               <TableHeadCell>Email</TableHeadCell>
               <TableHeadCell>Username</TableHeadCell>
               <TableHeadCell>Created</TableHeadCell>
@@ -123,7 +121,6 @@ export default function Users() {
             )}
             {users.map((u) => (
               <TableRow key={u.id}>
-                <TableCell>{String(u.id)}</TableCell>
                 <TableCell>{u.email}</TableCell>
                 <TableCell>{u.username}</TableCell>
                 <TableCell>{u.createdAt ? new Date(u.createdAt).toLocaleString() : ''}</TableCell>

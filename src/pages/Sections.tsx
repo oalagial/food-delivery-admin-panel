@@ -32,7 +32,6 @@ export default function Sections() {
         <Table>
           <TableHead>
             <TableRow>
-              <TableHeadCell>ID</TableHeadCell>
               <TableHeadCell>Name</TableHeadCell>
               <TableHeadCell>Type</TableHeadCell>
               <TableHeadCell>Products</TableHeadCell>
@@ -53,7 +52,6 @@ export default function Sections() {
         <Table>
           <TableHead>
             <TableRow>
-              <TableHeadCell>ID</TableHeadCell>
               <TableHeadCell>Name</TableHeadCell>
               <TableHeadCell>Type</TableHeadCell>
               <TableHeadCell>Products</TableHeadCell>
@@ -63,7 +61,6 @@ export default function Sections() {
           <TableBody>
             {items.map(it => (
               <TableRow key={String(it.id)}>
-                <TableCell>{it.id}</TableCell>
                 <TableCell>{it.name}</TableCell>
                 <TableCell>{it.typeId}</TableCell>
                 <TableCell>{(it.productsIds || []).length}</TableCell>
