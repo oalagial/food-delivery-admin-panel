@@ -5,7 +5,7 @@ import { FiShoppingCart, FiCoffee, FiUsers, FiMapPin, FiList } from 'react-icons
 import Table, { TableBody, TableHead, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { Skeleton } from '../components/ui/skeleton'
 
-const API_BASE = 'https://delivery-app-backend-production-64f2.up.railway.app'
+import { API_BASE } from '../config'
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true)

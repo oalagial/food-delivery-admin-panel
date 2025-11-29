@@ -1,9 +1,10 @@
+import { API_BASE } from '../config'
+
 type LoginResponse = {
   token?: string
   accessToken?: string
   [k: string]: unknown
 }
-const API_BASE = 'https://delivery-app-backend-production-64f2.up.railway.app'
 
 export async function login(email: string, password: string): Promise<LoginResponse> {
   const res = await fetch(`${API_BASE}/auth/login`, {

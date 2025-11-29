@@ -13,7 +13,7 @@ type User = {
   [key: string]: unknown
 }
 
-const API_BASE = 'https://delivery-app-backend-production-64f2.up.railway.app'
+import { API_BASE } from '../config'
 
 export default function Users() {
   const [users, setUsers] = useState<User[]>([])

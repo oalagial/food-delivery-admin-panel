@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Input } from '../components/ui/input'
 import { Button } from '../components/ui/button'
 
-const API_BASE = 'https://delivery-app-backend-production-64f2.up.railway.app'
+import { API_BASE } from '../config'
 
 export default function RoleCreate() {
   const { id } = useParams<{ id?: string }>()
