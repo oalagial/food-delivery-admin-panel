@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { Button } from '../components/ui/button'
-import { FiPlus, FiEdit, FiTrash } from 'react-icons/fi'
+import { FiPlus, FiEdit, FiTrash, FiCheckCircle, FiXCircle } from 'react-icons/fi'
 import { getProductsList } from '../utils/api'
 import type { Product } from '../utils/api'
 import { Skeleton } from '../components/ui/skeleton'
@@ -88,7 +88,13 @@ export default function Products() {
                 <TableCell>{p.name ?? ''}</TableCell>
                 <TableCell>{p.typeId ?? ''}</TableCell>
                 <TableCell>{p.price != null ? String(p.price) : ''}</TableCell>
-                <TableCell>{p.isAvailable ? 'Yes' : 'No'}</TableCell>
+                <TableCell className="text-center">
+                  <span className="inline-flex items-center justify-center">
+                    {p.isAvailable
+                      ? <FiCheckCircle className="w-5 h-5 text-green-500" aria-label="Available" />
+                      : <FiXCircle className="w-5 h-5 text-red-500" aria-label="Not available" />}
+                  </span>
+                </TableCell>
                 <TableCell>{p.createdAt ? new Date(String(p.createdAt)).toLocaleString() : ''}</TableCell>
                 <TableCell>
                     <Link to={`/products/creation/${encodeURIComponent(String(p.id ?? ''))}`} className='mr-2' ><Button variant="ghost" className='p-2' size="sm" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
