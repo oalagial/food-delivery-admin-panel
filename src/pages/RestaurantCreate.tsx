@@ -2,8 +2,13 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { createRestaurant, getRestaurantsList, getRestaurantById, updateRestaurant } from '../utils/api'
 import type { CreateRestaurantPayload } from '../utils/api'
-import { Input } from '../components/ui/input'
+import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
+import { Label } from '../components/ui/label'
+import { Textarea } from '../components/ui/textarea'
+import { Alert, AlertDescription } from '../components/ui/alert'
+import { AlertCircle, CheckCircle } from 'lucide-react'
 
 export default function RestaurantCreate() {
   const { id } = useParams<{ id?: string }>()
@@ -137,145 +142,173 @@ export default function RestaurantCreate() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">{id ? 'Edit Restaurant' : 'Create Restaurant'}</h1>
+      <div>
+        <h1 className="text-3xl font-bold">{id ? 'Edit Restaurant' : 'Create Restaurant'}</h1>
+      </div>
 
-      <form onSubmit={handleCreate} className="space-y-6 bg-white p-6 rounded-md shadow-sm border">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-          <Input
-            className="w-full"
-            name="name"
-            value={form.name}
-            onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
-            placeholder="Restaurant name"
-            required
-          />
-        </div>
+      <Card className="shadow-md">
+        <CardHeader>
+          <CardTitle>{id ? 'Update Details' : 'Enter Restaurant Details'}</CardTitle>
+          <CardDescription>Fill in all the required information below</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleCreate} className="space-y-6">
+            <div>
+              <Label htmlFor="name">Name *</Label>
+              <Input
+                id="name"
+                className="mt-2 w-full"
+                name="name"
+                value={form.name}
+                onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
+                placeholder="Restaurant name"
+                required
+              />
+            </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-            <Input
-              name="address"
-              value={form.address}
-              onChange={(e) => setForm((s) => ({ ...s, address: e.target.value }))}
-              placeholder="Address"
-              className="w-full"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">House Number</label>
-            <Input
-              name="streetNumber"
-              value={form.streetNumber}
-              onChange={(e) => setForm((s) => ({ ...s, streetNumber: e.target.value }))}
-              placeholder="Number"
-              className="w-full"
-            />
-          </div>
-        </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-2">
+                <Label htmlFor="address">Address *</Label>
+                <Input
+                  id="address"
+                  className="mt-2 w-full"
+                  name="address"
+                  value={form.address}
+                  onChange={(e) => setForm((s) => ({ ...s, address: e.target.value }))}
+                  placeholder="Street address"
+                />
+              </div>
+              <div>
+                <Label htmlFor="streetNumber">House Number</Label>
+                <Input
+                  id="streetNumber"
+                  className="mt-2 w-full"
+                  name="streetNumber"
+                  value={form.streetNumber}
+                  onChange={(e) => setForm((s) => ({ ...s, streetNumber: e.target.value }))}
+                  placeholder="Number"
+                />
+              </div>
+            </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-            <Input
-              name="city"
-              value={form.city}
-              onChange={(e) => setForm((s) => ({ ...s, city: e.target.value }))}
-              placeholder="City"
-              className="w-full"
-            />
-          </div>
-          <div className="md:col-span-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">ZIP CODE</label>
-            <Input
-              name="zipCode"
-              value={form.zipCode}
-              onChange={(e) => setForm((s) => ({ ...s, zipCode: e.target.value }))}
-              placeholder="ZIP CODE"
-              className="w-full"
-            />
-          </div>
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Province</label>
-            <Input
-              name="province"
-              value={form.province}
-              onChange={(e) => setForm((s) => ({ ...s, province: e.target.value }))}
-              placeholder="Province"
-              className="w-full"
-            />
-          </div>
-          <div className="md:col-span-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
-            <Input
-              name="country"
-              value={form.country}
-              onChange={(e) => setForm((s) => ({ ...s, country: e.target.value }))}
-              placeholder="Country"
-              className="w-full"
-            />
-          </div>
-        </div>
+            <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+              <div className="md:col-span-2">
+                <Label htmlFor="city">City</Label>
+                <Input
+                  id="city"
+                  className="mt-2 w-full"
+                  name="city"
+                  value={form.city}
+                  onChange={(e) => setForm((s) => ({ ...s, city: e.target.value }))}
+                  placeholder="City"
+                />
+              </div>
+              <div className="md:col-span-1">
+                <Label htmlFor="zipCode">ZIP Code</Label>
+                <Input
+                  id="zipCode"
+                  className="mt-2 w-full"
+                  name="zipCode"
+                  value={form.zipCode}
+                  onChange={(e) => setForm((s) => ({ ...s, zipCode: e.target.value }))}
+                  placeholder="ZIP"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <Label htmlFor="province">Province</Label>
+                <Input
+                  id="province"
+                  className="mt-2 w-full"
+                  name="province"
+                  value={form.province}
+                  onChange={(e) => setForm((s) => ({ ...s, province: e.target.value }))}
+                  placeholder="Province"
+                />
+              </div>
+              <div className="md:col-span-1">
+                <Label htmlFor="country">Country</Label>
+                <Input
+                  id="country"
+                  className="mt-2 w-full"
+                  name="country"
+                  value={form.country}
+                  onChange={(e) => setForm((s) => ({ ...s, country: e.target.value }))}
+                  placeholder="Country"
+                />
+              </div>
+            </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-          <textarea
-            name="description"
-            value={form.description}
-            onChange={(e) => setForm((s) => ({ ...s, description: e.target.value }))}
-            placeholder="Description..."
-            className="w-full min-h-[90px] rounded-md border px-3 py-2 text-sm"
-          />
-        </div>
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                className="mt-2 w-full"
+                name="description"
+                value={form.description}
+                onChange={(e) => setForm((s) => ({ ...s, description: e.target.value }))}
+                placeholder="Tell us about your restaurant..."
+              />
+            </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Latitude</label>
-            <Input
-              name="latitude"
-              value={form.latitude}
-              onChange={(e) => setForm((s) => ({ ...s, latitude: e.target.value }))}
-              placeholder="Latitude"
-              type="number"
-              step="any"
-              className="w-full"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Longitude</label>
-            <Input
-              name="longitude"
-              value={form.longitude}
-              onChange={(e) => setForm((s) => ({ ...s, longitude: e.target.value }))}
-              placeholder="Longitude"
-              type="number"
-              step="any"
-              className="w-full"
-            />
-          </div>
-        </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="latitude">Latitude</Label>
+                <Input
+                  id="latitude"
+                  className="mt-2 w-full"
+                  name="latitude"
+                  value={form.latitude}
+                  onChange={(e) => setForm((s) => ({ ...s, latitude: e.target.value }))}
+                  placeholder="e.g., 40.7128"
+                  type="number"
+                  step="any"
+                />
+              </div>
+              <div>
+                <Label htmlFor="longitude">Longitude</Label>
+                <Input
+                  id="longitude"
+                  className="mt-2 w-full"
+                  name="longitude"
+                  value={form.longitude}
+                  onChange={(e) => setForm((s) => ({ ...s, longitude: e.target.value }))}
+                  placeholder="e.g., -74.0060"
+                  type="number"
+                  step="any"
+                />
+              </div>
+            </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Add Images</label>
-          <div className="flex items-center gap-4">
-            <input id="images" type="file" multiple className="hidden" onChange={(e) => setFiles(e.target.files)} />
-            <label htmlFor="images"><Button variant="primary">Choose Images</Button></label>
-            <div className="text-sm text-gray-500">{files && files.length > 0 ? `${files.length} file(s) selected` : 'No files selected'}</div>
-          </div>
-        </div>
+            <div>
+              <Label htmlFor="images">Images</Label>
+              <div className="mt-2 flex items-center gap-4">
+                <input id="images" type="file" multiple className="hidden" onChange={(e) => setFiles(e.target.files)} />
+                <label htmlFor="images"><Button variant="primary" type="button">Choose Images</Button></label>
+                <span className="text-sm text-gray-600">{files && files.length > 0 ? `${files.length} file(s) selected` : 'No files selected'}</span>
+              </div>
+            </div>
 
-        <div className="flex justify-end gap-3">
-          <Link to="/restaurant"><Button variant="ghost" type="button">Cancel</Button></Link>
-          <Button variant="primary" type="submit" disabled={creating}>{creating ? 'Saving...' : 'Save'}</Button>
-        </div>
-      </form>
+            {createError && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{createError}</AlertDescription>
+              </Alert>
+            )}
 
-      {createError && <div className="text-red-600">{createError}</div>}
-      {(() => {
-        const createResultText = createResult ? (typeof createResult === 'string' ? createResult : JSON.stringify(createResult)) : null
-        return createResultText ? <div className="text-green-600">{id ? 'Updated' : 'Created'}: {createResultText}</div> : null
-      })()}
+            <div className="flex justify-end gap-3 pt-4">
+              <Link to="/restaurant"><Button variant="ghost" type="button">Cancel</Button></Link>
+              <Button variant="primary" type="submit" disabled={creating}>{creating ? 'Saving...' : id ? 'Update' : 'Create'}</Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      {createResult && (
+        <Alert variant="success">
+          <CheckCircle className="h-4 w-4" />
+          <AlertDescription>{id ? 'Restaurant updated' : 'Restaurant created'} successfully!</AlertDescription>
+        </Alert>
+      )}
     </div>
   )
 }

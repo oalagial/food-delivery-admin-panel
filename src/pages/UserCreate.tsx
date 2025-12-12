@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Input } from '../components/ui/input'
+import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
+import { Label } from '../components/ui/label'
+import { Alert, AlertDescription } from '../components/ui/alert'
+import { AlertCircle } from 'lucide-react'
 
 import { API_BASE } from '../config'
 import { getRolesList } from '../utils/api'
@@ -108,39 +112,81 @@ export default function UserCreate() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">{id ? 'Edit User' : 'Create User'}</h1>
+      <div>
+        <h1 className="text-3xl font-bold">{id ? 'Edit User' : 'Create User'}</h1>
+      </div>
 
-      <form onSubmit={handleSave} className="space-y-6 bg-white p-6 rounded-md shadow-sm border">
-        {error && <div className="text-red-600">{error}</div>}
+      <Card className="shadow-md">
+        <CardHeader>
+          <CardTitle>{id ? 'Update User' : 'New User'}</CardTitle>
+          <CardDescription>Manage user account and permissions</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSave} className="space-y-6">
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-          <Input value={form.email} onChange={(e) => setForm((s) => ({ ...s, email: e.target.value }))} placeholder="Email" required className="w-full" />
-        </div>
+            <div>
+              <Label htmlFor="email">Email *</Label>
+              <Input 
+                id="email"
+                className="mt-2 w-full"
+                value={form.email} 
+                onChange={(e) => setForm((s) => ({ ...s, email: e.target.value }))} 
+                placeholder="user@example.com" 
+                required 
+              />
+            </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
-          <Input value={form.username} onChange={(e) => setForm((s) => ({ ...s, username: e.target.value }))} placeholder="Username" required className="w-full" />
-        </div>
+            <div>
+              <Label htmlFor="username">Username *</Label>
+              <Input 
+                id="username"
+                className="mt-2 w-full"
+                value={form.username} 
+                onChange={(e) => setForm((s) => ({ ...s, username: e.target.value }))} 
+                placeholder="Username" 
+                required 
+              />
+            </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-          <select value={String(roleId ?? '')} onChange={(e) => setRoleId(e.target.value)} className="w-full rounded border px-2 py-1">
-            <option value="">(No role)</option>
-            {roles.map(r => <option key={String(r.id)} value={String(r.id)}>{r.name ?? String(r.id)}</option>)}
-          </select>
-        </div>
+            <div>
+              <Label htmlFor="role">Role</Label>
+              <select 
+                id="role"
+                value={String(roleId ?? '')} 
+                onChange={(e) => setRoleId(e.target.value)} 
+                className="mt-2 w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              >
+                <option value="">(No role)</option>
+                {roles.map(r => <option key={String(r.id)} value={String(r.id)}>{r.name ?? String(r.id)}</option>)}
+              </select>
+            </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Password {id ? <span className="text-xs text-gray-400">(leave blank to keep)</span> : null}</label>
-          <Input value={form.password} onChange={(e) => setForm((s) => ({ ...s, password: e.target.value }))} placeholder="Password" type="password" className="w-full" />
-        </div>
+            <div>
+              <Label htmlFor="password">Password {id && <span className="text-xs text-gray-400">(leave blank to keep)</span>}</Label>
+              <Input 
+                id="password"
+                className="mt-2 w-full"
+                value={form.password} 
+                onChange={(e) => setForm((s) => ({ ...s, password: e.target.value }))} 
+                placeholder={id ? 'Leave blank to keep current' : 'Enter password'} 
+                type="password" 
+                required={!id}
+              />
+            </div>
 
-        <div className="flex justify-end gap-3">
-          <Link to="/users"><Button variant="ghost" type="button">Cancel</Button></Link>
-          <Button variant="primary" type="submit" disabled={saving}>{saving ? (id ? 'Saving...' : 'Creating...') : (id ? 'Save' : 'Create')}</Button>
-        </div>
-      </form>
+            <div className="flex justify-end gap-3 pt-4">
+              <Link to="/users"><Button variant="ghost" type="button">Cancel</Button></Link>
+              <Button variant="primary" type="submit" disabled={saving}>{saving ? (id ? 'Saving...' : 'Creating...') : (id ? 'Update' : 'Create')}</Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   )
 }

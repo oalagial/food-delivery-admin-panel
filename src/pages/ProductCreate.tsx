@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Input } from '../components/ui/input'
+import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
+import { Label } from '../components/ui/label'
+import { Alert, AlertDescription } from '../components/ui/alert'
+import { AlertCircle } from 'lucide-react'
 import { createProduct, getProductById, updateProduct, getTypesList } from '../utils/api'
 import type { CreateProductPayload } from '../utils/api'
 
@@ -91,72 +95,109 @@ export default function ProductCreate() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">{id ? 'Edit Product' : 'Create Product'}</h1>
+      <div>
+        <h1 className="text-3xl font-bold">{id ? 'Edit Product' : 'Create Product'}</h1>
+      </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 rounded-md shadow-sm border">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-          <Input value={form.name as string} onChange={(e) => setForm(s => ({...s, name: e.target.value}))} placeholder="Product name" className="w-full" required />
-        </div>
+      <Card className="shadow-md">
+        <CardHeader>
+          <CardTitle>{id ? 'Update Product' : 'New Product'}</CardTitle>
+          <CardDescription>Fill in the product details below</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <Label htmlFor="name">Product Name *</Label>
+              <Input 
+                id="name"
+                className="mt-2 w-full"
+                value={form.name as string} 
+                onChange={(e) => setForm(s => ({...s, name: e.target.value}))} 
+                placeholder="Product name" 
+                required 
+              />
+            </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-          {typesLoading ? <div className="text-sm text-gray-500">Loading types...</div> : (
-            <select
-              value={form.typeId !== undefined && form.typeId !== null ? String(form.typeId) : ''}
-              onChange={(e) => setForm(s => ({ ...s, typeId: e.target.value ? Number(e.target.value) : undefined }))}
-              className="w-full rounded-md border px-3 py-2 text-sm"
-            >
-              <option value="">Select a type</option>
-              {types.map(t => <option key={t.id} value={String(t.id)}>{t.name}</option>)}
-            </select>
-          )}
-        </div>
+            <div>
+              <Label htmlFor="type">Product Type</Label>
+              {typesLoading ? (
+                <div className="mt-2 text-sm text-gray-500">Loading types...</div>
+              ) : (
+                <select
+                  id="type"
+                  className="mt-2 w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  value={form.typeId !== undefined && form.typeId !== null ? String(form.typeId) : ''}
+                  onChange={(e) => setForm(s => ({ ...s, typeId: e.target.value ? Number(e.target.value) : undefined }))}
+                >
+                  <option value="">Select a type</option>
+                  {types.map(t => <option key={t.id} value={String(t.id)}>{t.name}</option>)}
+                </select>
+              )}
+            </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
-          <Input
-            value={form.price !== undefined ? String(form.price) : ''}
-            onChange={(e) => {
-              const v = e.target.value;
-              setForm(s => ({ ...s, price: v === '' ? undefined : Number(v) }));
-            }}
-            placeholder="Price"
-            type="number"
-            step="0.01"
-            className="w-full"
-          />
-        </div>
+            <div>
+              <Label htmlFor="price">Price ($)</Label>
+              <Input
+                id="price"
+                className="mt-2 w-full"
+                value={form.price !== undefined ? String(form.price) : ''}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setForm(s => ({ ...s, price: v === '' ? undefined : Number(v) }));
+                }}
+                placeholder="0.00"
+                type="number"
+                step="0.01"
+              />
+            </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Ingredients (comma separated)</label>
-          <Input
-            value={ingredientsInput}
-            onChange={(e)=> setIngredientsInput(e.target.value)}
-            placeholder="Tomato, Cheese"
-            className="w-full"
-          />
-        </div>
+            <div>
+              <Label htmlFor="ingredients">Ingredients (comma separated)</Label>
+              <Input
+                id="ingredients"
+                className="mt-2 w-full"
+                value={ingredientsInput}
+                onChange={(e)=> setIngredientsInput(e.target.value)}
+                placeholder="Tomato, Cheese, Basil"
+              />
+            </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
-          <Input value={form.image as string} onChange={(e)=> setForm(s=>({...s, image: e.target.value}))} placeholder="Image url" className="w-full" />
-        </div>
+            <div>
+              <Label htmlFor="image">Image URL</Label>
+              <Input 
+                id="image"
+                className="mt-2 w-full"
+                value={form.image as string} 
+                onChange={(e)=> setForm(s=>({...s, image: e.target.value}))} 
+                placeholder="https://example.com/image.jpg" 
+              />
+            </div>
 
-        <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={!!form.isAvailable} onChange={(e)=> setForm(s=>({...s, isAvailable: e.target.checked}))} />
-            <span className="text-sm">Available</span>
-          </label>
-        </div>
+            <div className="flex items-center gap-3">
+              <input 
+                id="available"
+                type="checkbox" 
+                checked={!!form.isAvailable} 
+                onChange={(e)=> setForm(s=>({...s, isAvailable: e.target.checked}))}
+                className="h-4 w-4 rounded border-gray-300"
+              />
+              <Label htmlFor="available" className="mb-0 cursor-pointer">Available for order</Label>
+            </div>
 
-        <div className="flex justify-end gap-3">
-          <Button variant="ghost" type="button" onClick={() => navigate('/products')}>Cancel</Button>
-          <Button variant="primary" type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save'}</Button>
-        </div>
-      </form>
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
 
-      {error && <div className="text-red-600">{error}</div>}
+            <div className="flex justify-end gap-3 pt-4">
+              <Button variant="ghost" type="button" onClick={() => navigate('/products')}>Cancel</Button>
+              <Button variant="primary" type="submit" disabled={saving}>{saving ? 'Saving...' : id ? 'Update' : 'Create'}</Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   )
 }

@@ -2,6 +2,11 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Input } from '../components/ui/input'
 import { Button } from '../components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
+import { Label } from '../components/ui/label'
+import { Textarea } from '../components/ui/textarea'
+import { Alert, AlertDescription } from '../components/ui/alert'
+import { AlertCircle } from 'lucide-react'
 import { createType, getTypeById, updateType } from '../utils/api'
 import type { CreateTypePayload } from '../utils/api'
 
@@ -61,34 +66,71 @@ export default function TypeCreate() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">{editing ? 'Edit Type' : 'Create Type'}</h1>
+      <div>
+        <h1 className="text-3xl font-bold">{editing ? 'Edit Type' : 'Create Type'}</h1>
+      </div>
 
-      {loading ? <div>Loading...</div> : (
-        <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 rounded-md shadow-sm border">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-            <Input value={form.name as string} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} placeholder="Type name" className="w-full" required />
-          </div>
+      {loading ? (
+        <Card className="shadow-md">
+          <CardContent className="pt-6">Loading...</CardContent>
+        </Card>
+      ) : (
+        <Card className="shadow-md">
+          <CardHeader>
+            <CardTitle>{editing ? 'Update Type' : 'New Type'}</CardTitle>
+            <CardDescription>Create or edit a product type</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <Label htmlFor="name">Type Name *</Label>
+                <Input 
+                  id="name"
+                  className="mt-2 w-full"
+                  value={form.name as string} 
+                  onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} 
+                  placeholder="e.g., Beverages, Desserts" 
+                  required 
+                />
+              </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tag</label>
-            <Input value={form.tag as string} onChange={(e) => setForm((s) => ({ ...s, tag: e.target.value }))} placeholder="tag (e.g. food)" className="w-full" />
-          </div>
+              <div>
+                <Label htmlFor="tag">Tag</Label>
+                <Input 
+                  id="tag"
+                  className="mt-2 w-full"
+                  value={form.tag as string} 
+                  onChange={(e) => setForm((s) => ({ ...s, tag: e.target.value }))} 
+                  placeholder="e.g., food, drinks"
+                />
+              </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea value={form.description as string} onChange={(e) => setForm((s) => ({ ...s, description: e.target.value }))} placeholder="Description..." className="w-full min-h-[90px] rounded-md border px-3 py-2 text-sm" />
-          </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea 
+                  id="description"
+                  className="mt-2 w-full"
+                  value={form.description as string} 
+                  onChange={(e) => setForm((s) => ({ ...s, description: e.target.value }))} 
+                  placeholder="Describe this type..."
+                />
+              </div>
 
-          <div className="flex justify-end gap-3">
-            <Button variant="ghost" type="button" onClick={() => navigate('/types')}>Cancel</Button>
-            <Button variant="primary" type="submit" disabled={submitting}>{submitting ? 'Saving...' : (editing ? 'Save' : 'Save')}</Button>
-          </div>
-        </form>
+              {error && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              <div className="flex justify-end gap-3 pt-4">
+                <Button variant="ghost" type="button" onClick={() => navigate('/types')}>Cancel</Button>
+                <Button variant="primary" type="submit" disabled={submitting}>{submitting ? 'Saving...' : editing ? 'Update' : 'Create'}</Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
       )}
-
-      {error && <div className="text-red-600">{error}</div>}
-      {result != null && <div className="text-green-600">Saved</div>}
     </div>
   )
 }

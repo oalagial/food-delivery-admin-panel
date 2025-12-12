@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Input } from '../components/ui/input'
+import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
+import { Label } from '../components/ui/label'
+import { Textarea } from '../components/ui/textarea'
+import { Alert, AlertDescription } from '../components/ui/alert'
+import { AlertCircle } from 'lucide-react'
 import { createDeliveryLocation, getDeliveryLocationById, updateDeliveryLocation, getRestaurantsList } from '../utils/api'
 import type { CreateDeliveryLocationPayload, Restaurant as RestaurantType } from '../utils/api'
 
@@ -185,139 +190,248 @@ export default function DeliveryLocationCreate() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Create Delivery Location</h1>
+      <div>
+        <h1 className="text-3xl font-bold">{params.id ? 'Edit Delivery Location' : 'Create Delivery Location'}</h1>
+      </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 rounded-md shadow-sm border">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-          <Input value={form.name as string} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} placeholder="Location name" className="w-full" required />
-        </div>
+      <Card className="shadow-md">
+        <CardHeader>
+          <CardTitle>{params.id ? 'Update Location' : 'New Delivery Location'}</CardTitle>
+          <CardDescription>Set up delivery area and restaurant assignments</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <Label htmlFor="name">Location Name *</Label>
+              <Input 
+                id="name"
+                className="mt-2 w-full"
+                value={form.name as string} 
+                onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} 
+                placeholder="Location name" 
+                required 
+              />
+            </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-            <Input value={form.address as string} onChange={(e) => setForm((s) => ({ ...s, address: e.target.value }))} placeholder="Address" className="w-full" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">House Number</label>
-            <Input value={form.streetNumber as string} onChange={(e) => setForm((s) => ({ ...s, streetNumber: e.target.value }))} placeholder="Number" className="w-full" />
-          </div>
-        </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-2">
+                <Label htmlFor="address">Address</Label>
+                <Input 
+                  id="address"
+                  className="mt-2 w-full"
+                  value={form.address as string} 
+                  onChange={(e) => setForm((s) => ({ ...s, address: e.target.value }))} 
+                  placeholder="Street address"
+                />
+              </div>
+              <div>
+                <Label htmlFor="streetNumber">House Number</Label>
+                <Input 
+                  id="streetNumber"
+                  className="mt-2 w-full"
+                  value={form.streetNumber as string} 
+                  onChange={(e) => setForm((s) => ({ ...s, streetNumber: e.target.value }))} 
+                  placeholder="Number"
+                />
+              </div>
+            </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-            <Input value={form.city as string} onChange={(e) => setForm((s) => ({ ...s, city: e.target.value }))} placeholder="City" className="w-full" />
-          </div>
-          <div className="md:col-span-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">ZIP CODE</label>
-            <Input value={form.zipCode as string} onChange={(e) => setForm((s) => ({ ...s, zipCode: e.target.value }))} placeholder="ZIP CODE" className="w-full" />
-          </div>
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Province</label>
-            <Input value={form.province as string} onChange={(e) => setForm((s) => ({ ...s, province: e.target.value }))} placeholder="Province" className="w-full" />
-          </div>
-          <div className="md:col-span-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
-            <Input value={form.country as string} onChange={(e) => setForm((s) => ({ ...s, country: e.target.value }))} placeholder="Country" className="w-full" />
-          </div>
-        </div>
+            <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+              <div className="md:col-span-2">
+                <Label htmlFor="city">City</Label>
+                <Input 
+                  id="city"
+                  className="mt-2 w-full"
+                  value={form.city as string} 
+                  onChange={(e) => setForm((s) => ({ ...s, city: e.target.value }))} 
+                  placeholder="City"
+                />
+              </div>
+              <div className="md:col-span-1">
+                <Label htmlFor="zipCode">ZIP Code</Label>
+                <Input 
+                  id="zipCode"
+                  className="mt-2 w-full"
+                  value={form.zipCode as string} 
+                  onChange={(e) => setForm((s) => ({ ...s, zipCode: e.target.value }))} 
+                  placeholder="ZIP"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <Label htmlFor="province">Province</Label>
+                <Input 
+                  id="province"
+                  className="mt-2 w-full"
+                  value={form.province as string} 
+                  onChange={(e) => setForm((s) => ({ ...s, province: e.target.value }))} 
+                  placeholder="Province"
+                />
+              </div>
+              <div className="md:col-span-1">
+                <Label htmlFor="country">Country</Label>
+                <Input 
+                  id="country"
+                  className="mt-2 w-full"
+                  value={form.country as string} 
+                  onChange={(e) => setForm((s) => ({ ...s, country: e.target.value }))} 
+                  placeholder="Country"
+                />
+              </div>
+            </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-          <textarea value={form.description as string} onChange={(e) => setForm((s) => ({ ...s, description: e.target.value }))} placeholder="Description..." className="w-full min-h-[90px] rounded-md border px-3 py-2 text-sm" />
-        </div>
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea 
+                id="description"
+                className="mt-2 w-full"
+                value={form.description as string} 
+                onChange={(e) => setForm((s) => ({ ...s, description: e.target.value }))} 
+                placeholder="Describe this delivery area..."
+              />
+            </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Latitude</label>
-            <Input value={form.latitude as string} onChange={(e) => setForm((s) => ({ ...s, latitude: e.target.value }))} placeholder="Latitude" type="number" step="any" className="w-full" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Longitude</label>
-            <Input value={form.longitude as string} onChange={(e) => setForm((s) => ({ ...s, longitude: e.target.value }))} placeholder="Longitude" type="number" step="any" className="w-full" />
-          </div>
-        </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="latitude">Latitude</Label>
+                <Input 
+                  id="latitude"
+                  className="mt-2 w-full"
+                  value={form.latitude as string} 
+                  onChange={(e) => setForm((s) => ({ ...s, latitude: e.target.value }))} 
+                  placeholder="e.g., 40.7128"
+                  type="number" 
+                  step="any"
+                />
+              </div>
+              <div>
+                <Label htmlFor="longitude">Longitude</Label>
+                <Input 
+                  id="longitude"
+                  className="mt-2 w-full"
+                  value={form.longitude as string} 
+                  onChange={(e) => setForm((s) => ({ ...s, longitude: e.target.value }))} 
+                  placeholder="e.g., -74.0060"
+                  type="number" 
+                  step="any"
+                />
+              </div>
+            </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-          <div>
-            <label className="flex items-center gap-2">
-              <input type="checkbox" checked={!!form.isActive} onChange={(e) => setForm((s) => ({ ...s, isActive: e.target.checked }))} />
-              <span className="text-sm">Active</span>
-            </label>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Restaurants</label>
-            {restaurantsLoading ? (
-              <div className="text-sm text-gray-500">Loading restaurants...</div>
-            ) : restaurantsError ? (
-              <div className="text-sm text-red-600">{restaurantsError}</div>
-            ) : (
-              <select
-                multiple
-                value={selectedDeliveredBy.map((d) => String(d.restaurantId))}
-                onChange={(e) => {
-                  const vals = Array.from(e.target.selectedOptions).map((o) => Number(o.value)).filter((n) => !Number.isNaN(n))
-                  handleSelectChange(vals)
-                }}
-                className="w-full rounded-md border px-3 py-2 text-sm"
-              >
-                {restaurants.map((r) => (
-                  <option key={r.id ?? r.name} value={String(r.id ?? '')}>{r.name ?? String(r.id)}</option>
-                ))}
-              </select>
+            <div className="flex items-center gap-3">
+              <input 
+                id="isActive"
+                type="checkbox" 
+                checked={!!form.isActive} 
+                onChange={(e) => setForm((s) => ({ ...s, isActive: e.target.checked }))}
+                className="h-4 w-4 rounded border-gray-300"
+              />
+              <Label htmlFor="isActive" className="mb-0 cursor-pointer">Active location</Label>
+            </div>
+
+            <div>
+              <Label htmlFor="restaurants">Restaurants</Label>
+              {restaurantsLoading ? (
+                <div className="mt-2 text-sm text-gray-500">Loading restaurants...</div>
+              ) : restaurantsError ? (
+                <Alert variant="destructive" className="mt-2">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{restaurantsError}</AlertDescription>
+                </Alert>
+              ) : (
+                <>
+                  <select
+                    id="restaurants"
+                    multiple
+                    value={selectedDeliveredBy.map((d) => String(d.restaurantId))}
+                    onChange={(e) => {
+                      const vals = Array.from(e.target.selectedOptions).map((o) => Number(o.value)).filter((n) => !Number.isNaN(n))
+                      handleSelectChange(vals)
+                    }}
+                    className="mt-2 w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    {restaurants.map((r) => (
+                      <option key={r.id ?? r.name} value={String(r.id ?? '')}>{r.name ?? String(r.id)}</option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-gray-500">Hold Ctrl/Cmd to select multiple restaurants</p>
+                </>
+              )}
+            </div>
+
+            {selectedDeliveredBy.length > 0 && (
+              <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+                <h3 className="text-sm font-semibold">Delivery Settings</h3>
+                {selectedDeliveredBy.map((entry, idx) => {
+                  const rest = restaurants.find((r) => String(r.id) === String(entry.restaurantId))
+                  return (
+                    <div key={entry.restaurantId} className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end p-3 bg-white rounded border">
+                      <div className="md:col-span-2">
+                        <div className="text-sm font-medium">{rest?.name ?? entry.restaurantId}</div>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Fee ($)</Label>
+                        <Input 
+                          type="number" 
+                          step="0.01" 
+                          value={String(entry.deliveryFee)} 
+                          onChange={(e) => {
+                            const v = Number(e.target.value)
+                            setSelectedDeliveredBy((s) => s.map((it, i) => i === idx ? { ...it, deliveryFee: Number.isNaN(v) ? 0 : v } : it))
+                          }} 
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Min Order ($)</Label>
+                        <Input 
+                          type="number" 
+                          step="0.01" 
+                          value={String(entry.minOrder)} 
+                          onChange={(e) => {
+                            const v = Number(e.target.value)
+                            setSelectedDeliveredBy((s) => s.map((it, i) => i === idx ? { ...it, minOrder: Number.isNaN(v) ? 0 : v } : it))
+                          }} 
+                          className="mt-1"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input 
+                          type="checkbox" 
+                          checked={!!entry.isActive} 
+                          onChange={(e) => setSelectedDeliveredBy((s) => s.map((it, i) => i === idx ? { ...it, isActive: e.target.checked } : it))}
+                          className="h-4 w-4 rounded"
+                        />
+                        <span className="text-xs">Active</span>
+                      </div>
+                      <div>
+                        <button 
+                          type="button" 
+                          className="text-xs text-red-600 hover:text-red-700 font-medium" 
+                          onClick={() => setSelectedDeliveredBy((s) => s.filter((it) => it.restaurantId !== entry.restaurantId))}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             )}
-            <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd (or use shift) to select multiple restaurants.</p>
-          </div>
-        </div>
 
-        {selectedDeliveredBy.length > 0 && (
-          <div className="space-y-3">
-            <h3 className="text-sm font-medium">Delivery settings per restaurant</h3>
-            {selectedDeliveredBy.map((entry, idx) => {
-              const rest = restaurants.find((r) => String(r.id) === String(entry.restaurantId))
-              return (
-                <div key={entry.restaurantId} className="grid grid-cols-1 md:grid-cols-6 gap-2 items-center">
-                  <div className="md:col-span-2">
-                    <div className="text-sm font-medium">{rest?.name ?? entry.restaurantId}</div>
-                  </div>
-                  <div className="md:col-span-1">
-                    <label className="block text-xs text-gray-600">Fee</label>
-                    <Input type="number" step="0.01" value={String(entry.deliveryFee)} onChange={(e) => {
-                      const v = Number(e.target.value)
-                      setSelectedDeliveredBy((s) => s.map((it, i) => i === idx ? { ...it, deliveryFee: Number.isNaN(v) ? 0 : v } : it))
-                    }} />
-                  </div>
-                  <div className="md:col-span-1">
-                    <label className="block text-xs text-gray-600">Min order</label>
-                    <Input type="number" step="0.01" value={String(entry.minOrder)} onChange={(e) => {
-                      const v = Number(e.target.value)
-                      setSelectedDeliveredBy((s) => s.map((it, i) => i === idx ? { ...it, minOrder: Number.isNaN(v) ? 0 : v } : it))
-                    }} />
-                  </div>
-                  <div className="md:col-span-1">
-                    <label className="flex items-center gap-2">
-                      <input type="checkbox" checked={!!entry.isActive} onChange={(e) => setSelectedDeliveredBy((s) => s.map((it, i) => i === idx ? { ...it, isActive: e.target.checked } : it))} />
-                      <span className="text-sm">Active</span>
-                    </label>
-                  </div>
-                  <div className="md:col-span-1">
-                    <button type="button" className="text-sm text-red-600" onClick={() => setSelectedDeliveredBy((s) => s.filter((it) => it.restaurantId !== entry.restaurantId))}>Remove</button>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
 
-        <div className="flex justify-end gap-3">
-          <Button variant="ghost" type="button" onClick={() => navigate('/delivery-locations')}>Cancel</Button>
-          <Button variant="primary" type="submit" disabled={submitting}>{submitting ? 'Saving...' : 'Save'}</Button>
-        </div>
-      </form>
-
-      {error && <div className="text-red-600">{error}</div>}
-      {result != null && <div className="text-green-600">Created</div>}
+            <div className="flex justify-end gap-3 pt-4">
+              <Button variant="ghost" type="button" onClick={() => navigate('/delivery-locations')}>Cancel</Button>
+              <Button variant="primary" type="submit" disabled={submitting}>{submitting ? 'Saving...' : params.id ? 'Update' : 'Create'}</Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   )
 }
