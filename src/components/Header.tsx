@@ -33,16 +33,16 @@ export default function Header(){
       </div>
       <div className="header-right">
         <div className="header-time">
-          <FiClock className="w-4 h-4" />
-          <span>{time}</span>
+          <FiClock className="w-5 h-5" />
+          <span className="font-medium">{time}</span>
         </div>
         {token ? (
-          <Button variant="ghost" onClick={handleLogout} className="header-logout">
-            <FiLogOut className="w-4 h-4" />
+          <Button variant="danger" onClick={handleLogout} className="px-5 py-2.5 text-base flex items-center gap-2">
+            <FiLogOut className="w-5 h-5" />
             <span>Logout</span>
           </Button>
         ) : (
-          <Button variant="ghost" onClick={handleLogin}>Login</Button>
+          <Button variant="primary" onClick={handleLogin} className="px-5 py-2.5 text-base">Login</Button>
         )}
       </div>
     </header>
