@@ -39,7 +39,6 @@ export default function TypeCreate() {
     e.preventDefault()
     setSubmitting(true)
     setError(null)
-    setResult(null)
 
     const payload: CreateTypePayload = {
       name: String(form.name ?? '').trim(),

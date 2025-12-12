@@ -82,13 +82,12 @@ export default function RestaurantCreate() {
     }
 
     try {
-      let res
       if (id) {
         // Edit mode: use PUT
-        res = await updateRestaurant(id, payload)
+        await updateRestaurant(id, payload)
         setCreateResult(true)
       } else {
-        res = await createRestaurant(payload)
+        await createRestaurant(payload)
         setCreateResult(true)
       }
 
