@@ -9,7 +9,6 @@ import DeliveryLocations from './pages/DeliveryLocations'
 import DeliveryLocationCreate from './pages/DeliveryLocationCreate'
 import Users from './pages/Users'
 import UserCreate from './pages/UserCreate'
-import CustomerCollection from './pages/CustomerCollection'
 import Roles from './pages/Roles'
 import RoleCreate from './pages/RoleCreate'
 import Permits from './pages/Permits'
@@ -20,8 +19,6 @@ import Products from './pages/Products'
 import ProductCreate from './pages/ProductCreate'
 import Menus from './pages/Menus'
 import MenuCreate from './pages/MenuCreate'
-import OpeningHours from './pages/OpeningHours'
-import OpeningHourCreate from './pages/OpeningHourCreate'
 import Sections from './pages/Sections'
 import SectionCreate from './pages/SectionCreate'
 import Header from './components/Header'
@@ -141,17 +138,6 @@ function App() {
                   <span>Users</span>
                 </NavLink>
               </li>
-              <li>
-                <NavLink
-                  to="/customer-collection"
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
-                  }
-                >
-                  <FiDatabase className="w-5 h-5" />
-                  <span>Customer Collection</span>
-                </NavLink>
-              </li>
             </ul>
           </NavSection>
 
@@ -230,17 +216,6 @@ function App() {
               </li>
               <li>
                 <NavLink
-                  to="/opening-hours"
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
-                  }
-                >
-                  <FiClock className="w-5 h-5" />
-                  <span>Opening Hours</span>
-                </NavLink>
-              </li>
-              <li>
-                <NavLink
                   to="/sections"
                   className={({ isActive }) =>
                     `flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
@@ -287,16 +262,12 @@ function App() {
               <Route path="/menus" element={<RequireAuth><Menus /></RequireAuth>} />
               <Route path="/menus/creation" element={<RequireAuth><MenuCreate /></RequireAuth>} />
               <Route path="/menus/creation/:id" element={<RequireAuth><MenuCreate /></RequireAuth>} />
-              <Route path="/opening-hours" element={<RequireAuth><OpeningHours /></RequireAuth>} />
-              <Route path="/opening-hours/creation" element={<RequireAuth><OpeningHourCreate /></RequireAuth>} />
-              <Route path="/opening-hours/creation/:id" element={<RequireAuth><OpeningHourCreate /></RequireAuth>} />
               <Route path="/sections" element={<RequireAuth><Sections /></RequireAuth>} />
               <Route path="/sections/creation" element={<RequireAuth><SectionCreate /></RequireAuth>} />
               <Route path="/sections/creation/:id" element={<RequireAuth><SectionCreate /></RequireAuth>} />
               <Route path="/users" element={<RequireAuth><Users /></RequireAuth>} />
               <Route path="/users/creation" element={<RequireAuth><UserCreate /></RequireAuth>} />
               <Route path="/users/creation/:id" element={<RequireAuth><UserCreate /></RequireAuth>} />
-              <Route path="/customer-collection" element={<RequireAuth><CustomerCollection /></RequireAuth>} />
               <Route path="/roles" element={<RequireAuth><Roles /></RequireAuth>} />
               <Route path="/roles/creation" element={<RequireAuth><RoleCreate /></RequireAuth>} />
               <Route path="/roles/creation/:id" element={<RequireAuth><RoleCreate /></RequireAuth>} />
