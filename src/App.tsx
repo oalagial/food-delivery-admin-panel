@@ -53,17 +53,10 @@ function App() {
   if (!token) {
     return (
       <BrowserRouter>
-        <div className="min-h-screen">
-          <main className="main">
-            <Header />
-            <div className="panel">
-              <Routes>
-                <Route path="/login" element={<Login />} />
-                <Route path="/*" element={<Login />} />
-              </Routes>
-            </div>
-          </main>
-        </div>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/*" element={<Login />} />
+        </Routes>
       </BrowserRouter>
     )
   }
