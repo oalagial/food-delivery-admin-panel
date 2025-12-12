@@ -48,54 +48,54 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
         <div className="flex items-center gap-3">
-          <Link to="/products/creation"><Button variant="primary" icon={<FiShoppingCart className="w-4 h-4" />}>New Product</Button></Link>
-          <Link to="/menus/creation"><Button variant="primary" icon={<FiList className="w-4 h-4" />}>New Menu</Button></Link>
-          <Link to="/orders/creation"><Button variant="primary" icon={<FiShoppingCart className="w-4 h-4" />}>New Order</Button></Link>
+          <Link to="/products/creation"><Button variant="primary" icon={<FiShoppingCart className="w-5 h-5" />} className="px-6 py-3 text-base">New Product</Button></Link>
+          <Link to="/menus/creation"><Button variant="primary" icon={<FiList className="w-5 h-5" />} className="px-6 py-3 text-base">New Menu</Button></Link>
+          <Link to="/orders/creation"><Button variant="primary" icon={<FiShoppingCart className="w-5 h-5" />} className="px-6 py-3 text-base">New Order</Button></Link>
         </div>
       </div>
 
       <section>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="p-4 bg-white rounded-md shadow-sm border flex items-center gap-4">
-            <div className="p-3 bg-blue-50 rounded-md"><FiCoffee className="w-6 h-6 text-sky-600" /></div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="p-6 bg-white rounded-lg shadow-md border-2 flex items-center gap-4">
+            <div className="p-4 bg-blue-50 rounded-lg"><FiCoffee className="w-8 h-8 text-sky-600" /></div>
             <div>
-              <div className="text-sm text-gray-500">Restaurants</div>
-              <div className="text-2xl font-semibold">{loading ? <span className="inline-block w-24"><Skeleton className="h-6 w-full bg-gray-200" /></span> : counts.restaurants}</div>
+              <div className="text-sm text-gray-500 font-medium">Restaurants</div>
+              <div className="text-3xl font-bold text-gray-900">{loading ? <span className="inline-block w-24"><Skeleton className="h-8 w-full bg-gray-200" /></span> : counts.restaurants}</div>
             </div>
           </div>
 
-          <div className="p-4 bg-white rounded-md shadow-sm border flex items-center gap-4">
-            <div className="p-3 bg-green-50 rounded-md"><FiShoppingCart className="w-6 h-6 text-green-600" /></div>
+          <div className="p-6 bg-white rounded-lg shadow-md border-2 flex items-center gap-4">
+            <div className="p-4 bg-green-50 rounded-lg"><FiShoppingCart className="w-8 h-8 text-green-600" /></div>
             <div>
-              <div className="text-sm text-gray-500">Orders</div>
-              <div className="text-2xl font-semibold">{loading ? <span className="inline-block w-24"><Skeleton className="h-6 w-full bg-gray-200" /></span> : counts.orders}</div>
+              <div className="text-sm text-gray-500 font-medium">Orders</div>
+              <div className="text-3xl font-bold text-gray-900">{loading ? <span className="inline-block w-24"><Skeleton className="h-8 w-full bg-gray-200" /></span> : counts.orders}</div>
             </div>
           </div>
 
-          <div className="p-4 bg-white rounded-md shadow-sm border flex items-center gap-4">
-            <div className="p-3 bg-purple-50 rounded-md"><FiUsers className="w-6 h-6 text-purple-600" /></div>
+          <div className="p-6 bg-white rounded-lg shadow-md border-2 flex items-center gap-4">
+            <div className="p-4 bg-purple-50 rounded-lg"><FiUsers className="w-8 h-8 text-purple-600" /></div>
             <div>
-              <div className="text-sm text-gray-500">Users</div>
-              <div className="text-2xl font-semibold">{loading ? <span className="inline-block w-24"><Skeleton className="h-6 w-full bg-gray-200" /></span> : counts.users}</div>
+              <div className="text-sm text-gray-500 font-medium">Users</div>
+              <div className="text-3xl font-bold text-gray-900">{loading ? <span className="inline-block w-24"><Skeleton className="h-8 w-full bg-gray-200" /></span> : counts.users}</div>
             </div>
           </div>
 
-          <div className="p-4 bg-white rounded-md shadow-sm border flex items-center gap-4">
-            <div className="p-3 bg-yellow-50 rounded-md"><FiMapPin className="w-6 h-6 text-yellow-600" /></div>
+          <div className="p-6 bg-white rounded-lg shadow-md border-2 flex items-center gap-4">
+            <div className="p-4 bg-yellow-50 rounded-lg"><FiMapPin className="w-8 h-8 text-yellow-600" /></div>
             <div>
-              <div className="text-sm text-gray-500">Delivery Areas</div>
-              <div className="text-2xl font-semibold">{loading ? <span className="inline-block w-24"><Skeleton className="h-6 w-full bg-gray-200" /></span> : counts.deliveryLocations}</div>
+              <div className="text-sm text-gray-500 font-medium">Delivery Areas</div>
+              <div className="text-3xl font-bold text-gray-900">{loading ? <span className="inline-block w-24"><Skeleton className="h-8 w-full bg-gray-200" /></span> : counts.deliveryLocations}</div>
             </div>
           </div>
         </div>
       </section>
 
       <section>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-medium">Recent Orders</h2>
-          <Link to="/orders"><Button variant="ghost">View All</Button></Link>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold text-gray-900">Recent Orders</h2>
+          <Link to="/orders"><Button variant="ghost" className="px-6 py-2 text-base">View All</Button></Link>
         </div>
 
         <div className="bg-white rounded-md border shadow-sm">

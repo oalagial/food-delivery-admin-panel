@@ -29,9 +29,9 @@ import { FiHome, FiShoppingCart, FiCoffee, FiMapPin, FiUsers, FiShield, FiKey, F
 
 function NavSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="mt-6">
-      <div className="text-sm font-semibold text-gray-500 mb-3">{title}</div>
-      <div>{children}</div>
+    <div className="mt-8 first:mt-0">
+      <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 px-4">{title}</div>
+      <div className="space-y-1">{children}</div>
     </div>
   )
 }
@@ -53,7 +53,7 @@ function App() {
   if (!token) {
     return (
       <BrowserRouter>
-        <div >
+        <div className="min-h-screen">
           <main className="main">
             <Header />
             <div className="panel">
@@ -71,173 +71,178 @@ function App() {
   return (
     <BrowserRouter>
       <div className="app-root">
-        <aside className="min-w-80 md:w-96 bg-white rounded-md p-6 shadow border h-[calc(100vh-32px)] sticky top-4 overflow-auto">
-          <div className="mb-4">
-            <div className="text-xl font-bold text-blue-600 flex items-center gap-3"><FiMapPin className="w-6 h-6 text-sky-600" /> Delivery Food - Admin Panel</div>
+        <aside className="sidebar">
+          <div className="sidebar-header">
+            <div className="sidebar-logo">
+              <FiMapPin className="w-6 h-6 text-white" />
+              <span>Delivery Admin</span>
+            </div>
           </div>
 
-          <NavSection title="MANAGEMENT">
-            <ul className="space-y-3">
+          <nav className="sidebar-nav">
+            <NavSection title="MANAGEMENT">
+              <ul className="space-y-1">
                 <li>
                   <NavLink
                     to="/dashboard"
                     className={({ isActive }) =>
-                      `flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
+                      `nav-link ${isActive ? 'active' : ''}`
                     }
                   >
                     <FiHome className="w-5 h-5" />
                     <span>Dashboard</span>
                   </NavLink>
                 </li>
-              <li>
-                <NavLink
-                  to="/orders"
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
-                  }
-                >
-                  <FiShoppingCart className="w-5 h-5" />
-                  <span>Orders</span>
-                </NavLink>
-              </li>
-              <li>
-                <NavLink
-                  to="/restaurant"
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
-                  }
-                >
-                  <FiCoffee className="w-5 h-5" />
-                  <span>Restaurant</span>
-                </NavLink>
-              </li>
-              <li>
-                <NavLink
-                  to="/delivery-locations"
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
-                  }
-                >
-                  <FiMapPin className="w-5 h-5" />
-                  <span>Delivery Locations</span>
-                </NavLink>
-              </li>
-            </ul>
-          </NavSection>
+                <li>
+                  <NavLink
+                    to="/orders"
+                    className={({ isActive }) =>
+                      `nav-link ${isActive ? 'active' : ''}`
+                    }
+                  >
+                    <FiShoppingCart className="w-5 h-5" />
+                    <span>Orders</span>
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink
+                    to="/restaurant"
+                    className={({ isActive }) =>
+                      `nav-link ${isActive ? 'active' : ''}`
+                    }
+                  >
+                    <FiCoffee className="w-5 h-5" />
+                    <span>Restaurant</span>
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink
+                    to="/delivery-locations"
+                    className={({ isActive }) =>
+                      `nav-link ${isActive ? 'active' : ''}`
+                    }
+                  >
+                    <FiMapPin className="w-5 h-5" />
+                    <span>Delivery Locations</span>
+                  </NavLink>
+                </li>
+              </ul>
+            </NavSection>
 
-          <NavSection title="USER">
-            <ul className="space-y-3">
-              <li>
-                <NavLink
-                  to="/users"
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
-                  }
-                >
-                  <FiUsers className="w-5 h-5" />
-                  <span>Users</span>
-                </NavLink>
-              </li>
-            </ul>
-          </NavSection>
+            <NavSection title="USER MANAGEMENT">
+              <ul className="space-y-1">
+                <li>
+                  <NavLink
+                    to="/users"
+                    className={({ isActive }) =>
+                      `nav-link ${isActive ? 'active' : ''}`
+                    }
+                  >
+                    <FiUsers className="w-5 h-5" />
+                    <span>Users</span>
+                  </NavLink>
+                </li>
+              </ul>
+            </NavSection>
 
-          <NavSection title="SETTINGS">
-            <ul className="space-y-3">
-              <li>
-                <NavLink
-                  to="/roles"
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
-                  }
-                >
-                  <FiShield className="w-5 h-5" />
-                  <span>Roles</span>
-                </NavLink>
-              </li>
-              <li>
-                <NavLink
-                  to="/permits"
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
-                  }
-                >
-                  <FiKey className="w-5 h-5" />
-                  <span>Permits</span>
-                </NavLink>
-              </li>
-              <li>
-                <NavLink
-                  to="/settings"
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
-                  }
-                >
-                  <FiSettings className="w-5 h-5" />
-                  <span>Settings</span>
-                </NavLink>
-              </li>
-            </ul>
-          </NavSection>
+            <NavSection title="CONFIGURATION">
+              <ul className="space-y-1">
+                <li>
+                  <NavLink
+                    to="/roles"
+                    className={({ isActive }) =>
+                      `nav-link ${isActive ? 'active' : ''}`
+                    }
+                  >
+                    <FiShield className="w-5 h-5" />
+                    <span>Roles</span>
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink
+                    to="/permits"
+                    className={({ isActive }) =>
+                      `nav-link ${isActive ? 'active' : ''}`
+                    }
+                  >
+                    <FiKey className="w-5 h-5" />
+                    <span>Permits</span>
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink
+                    to="/settings"
+                    className={({ isActive }) =>
+                      `nav-link ${isActive ? 'active' : ''}`
+                    }
+                  >
+                    <FiSettings className="w-5 h-5" />
+                    <span>Settings</span>
+                  </NavLink>
+                </li>
+              </ul>
+            </NavSection>
 
-          <NavSection title="CONTENT">
-            <ul className="space-y-3">
-              <li>
-                <NavLink
-                  to="/types"
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
-                  }
-                >
-                  <FiTag className="w-5 h-5" />
-                  <span>Types</span>
-                </NavLink>
-              </li>
-              <li>
-                <NavLink
-                  to="/products"
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
-                  }
-                >
-                  <FiBox className="w-5 h-5" />
-                  <span>Products</span>
-                </NavLink>
-              </li>
-              <li>
-                <NavLink
-                  to="/menus"
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
-                  }
-                >
-                  <FiList className="w-5 h-5" />
-                  <span>Menus</span>
-                </NavLink>
-              </li>
-              <li>
-                <NavLink
-                  to="/sections"
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
-                  }
-                >
-                  <FiLayers className="w-5 h-5" />
-                  <span>Sections</span>
-                </NavLink>
-              </li>
-              <li>
-                <NavLink
-                  to="/customers"
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium ${isActive ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' : 'text-gray-700 hover:bg-gray-50'}`
-                  }
-                >
-                  <FiUsers className="w-5 h-5" />
-                  <span>Customers</span>
-                </NavLink>
-              </li>
-            </ul>
-          </NavSection>
+            <NavSection title="CONTENT">
+              <ul className="space-y-1">
+                <li>
+                  <NavLink
+                    to="/types"
+                    className={({ isActive }) =>
+                      `nav-link ${isActive ? 'active' : ''}`
+                    }
+                  >
+                    <FiTag className="w-5 h-5" />
+                    <span>Types</span>
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink
+                    to="/products"
+                    className={({ isActive }) =>
+                      `nav-link ${isActive ? 'active' : ''}`
+                    }
+                  >
+                    <FiBox className="w-5 h-5" />
+                    <span>Products</span>
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink
+                    to="/menus"
+                    className={({ isActive }) =>
+                      `nav-link ${isActive ? 'active' : ''}`
+                    }
+                  >
+                    <FiList className="w-5 h-5" />
+                    <span>Menus</span>
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink
+                    to="/sections"
+                    className={({ isActive }) =>
+                      `nav-link ${isActive ? 'active' : ''}`
+                    }
+                  >
+                    <FiLayers className="w-5 h-5" />
+                    <span>Sections</span>
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink
+                    to="/customers"
+                    className={({ isActive }) =>
+                      `nav-link ${isActive ? 'active' : ''}`
+                    }
+                  >
+                    <FiUsers className="w-5 h-5" />
+                    <span>Customers</span>
+                  </NavLink>
+                </li>
+              </ul>
+            </NavSection>
+          </nav>
         </aside>
 
         <main className="main">

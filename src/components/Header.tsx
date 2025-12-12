@@ -2,10 +2,10 @@ import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getToken, clearToken } from '../utils/api'
 import { Button } from './ui/button'
-import { FiMapPin } from 'react-icons/fi'
+import { FiLogOut, FiClock } from 'react-icons/fi'
 
 export default function Header(){
-  const time = useMemo(()=> new Date().toLocaleString(), [])
+  const time = useMemo(()=> new Date().toLocaleTimeString(), [])
   const [token, setToken] = useState<string | null>(getToken())
   const navigate = useNavigate()
 
@@ -26,18 +26,21 @@ export default function Header(){
   }
 
   return (
-    <header className="flex justify-between items-center mb-4 min-w-[800px]">
-      <div>
-        <h3 className="text-xl font-semibold m-0 flex items-center">
-          <FiMapPin className="w-5 h-5 mr-2 text-sky-600" />
-          Administration
-        </h3>
-        <div className="text-sm text-gray-500 mb-4">Manage your application</div>
+    <header className="header-bar">
+      <div className="header-left">
+        <h1 className="header-title">Admin Dashboard</h1>
+        <p className="header-subtitle">Manage your food delivery platform</p>
       </div>
-      <div className="flex items-center gap-3">
-        <div className="text-sm text-gray-500">{time}</div>
+      <div className="header-right">
+        <div className="header-time">
+          <FiClock className="w-4 h-4" />
+          <span>{time}</span>
+        </div>
         {token ? (
-          <Button variant="ghost" onClick={handleLogout}>Logout</Button>
+          <Button variant="ghost" onClick={handleLogout} className="header-logout">
+            <FiLogOut className="w-4 h-4" />
+            <span>Logout</span>
+          </Button>
         ) : (
           <Button variant="ghost" onClick={handleLogin}>Login</Button>
         )}

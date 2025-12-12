@@ -10,7 +10,7 @@ type TdProps = React.TdHTMLAttributes<HTMLTableCellElement>
 
 export function Table({ className, ...props }: TableProps) {
   return (
-    <div className={cn('w-full overflow-x-auto', className)}>
+    <div className={cn('w-full overflow-x-auto rounded-lg border border-gray-200 shadow-sm', className)}>
       <table className="min-w-full divide-y divide-gray-200" {...props} />
     </div>
   )
@@ -18,7 +18,7 @@ export function Table({ className, ...props }: TableProps) {
 
 export const TableHead = React.forwardRef<HTMLTableSectionElement, THeadProps>(
   ({ className, ...props }, ref) => (
-    <thead ref={ref} className={cn('bg-gray-50', className)} {...props} />
+    <thead ref={ref} className={cn('bg-gradient-to-r from-blue-50 to-indigo-50', className)} {...props} />
   )
 )
 TableHead.displayName = 'TableHead'
@@ -32,7 +32,7 @@ TableBody.displayName = 'TableBody'
 
 export const TableRow = React.forwardRef<HTMLTableRowElement, TrProps>(
   ({ className, ...props }, ref) => (
-    <tr ref={ref} className={cn('odd:bg-white even:bg-gray-50 hover:bg-gray-50', className)} {...props} />
+    <tr ref={ref} className={cn('odd:bg-white even:bg-slate-50 hover:bg-blue-50 transition-colors', className)} {...props} />
   )
 )
 TableRow.displayName = 'TableRow'
@@ -42,7 +42,7 @@ export const TableHeadCell = React.forwardRef<HTMLTableCellElement, ThProps>(
     <th
       ref={ref}
       scope="col"
-      className={cn('px-4 py-3 text-center text-sm font-semibold text-gray-600 uppercase tracking-wide', className)}
+      className={cn('px-6 py-4 text-center text-sm font-bold text-gray-700 uppercase tracking-wider', className)}
       {...props}
     />
   )
@@ -51,7 +51,7 @@ TableHeadCell.displayName = 'TableHeadCell'
 
 export const TableCell = React.forwardRef<HTMLTableCellElement, TdProps>(
   ({ className, ...props }, ref) => (
-    <td ref={ref} className={cn('px-4 py-4 text-base text-gray-700', className)} {...props} />
+    <td ref={ref} className={cn('px-6 py-4 text-center text-base text-gray-700 font-medium', className)} {...props} />
   )
 )
 TableCell.displayName = 'TableCell'

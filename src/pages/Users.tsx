@@ -107,10 +107,13 @@ export default function Users() {
   
 
   return (
-    <div>
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Users</h1>
-        <Link to="/users/creation"><Button variant="primary" icon={<FiPlus className="w-4 h-4" />}>Create</Button></Link>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Users</h1>
+          <p className="text-gray-600 mt-1">Manage system users and accounts</p>
+        </div>
+        <Link to="/users/creation"><Button variant="primary" icon={<FiPlus className="w-5 h-5" />} className="px-6 py-3 text-base">Create User</Button></Link>
       </div>
 
       {error && <div style={{ color: 'crimson' }}><strong>Error:</strong> {error}</div>}

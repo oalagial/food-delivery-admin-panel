@@ -31,10 +31,13 @@ export default function Types() {
   }, [])
 
   return (
-    <div>
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Types</h1>
-        <Link to="/types/creation"><Button variant="primary" icon={<FiPlus className="w-4 h-4" />}>Create</Button></Link>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Product Types</h1>
+          <p className="text-gray-600 mt-1">Manage product categories and types</p>
+        </div>
+        <Link to="/types/creation"><Button variant="primary" icon={<FiPlus className="w-5 h-5" />} className="px-6 py-3 text-base">Create Type</Button></Link>
       </div>
 
       {loading && (

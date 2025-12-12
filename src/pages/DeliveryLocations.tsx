@@ -54,11 +54,14 @@ export default function DeliveryLocations() {
   }, [])
 
   return (
-    <div>
+    <div className="space-y-6">
 
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Delivery Locations</h1>
-        <Link to="/delivery-locations/creation"><Button variant="primary" icon={<FiPlus className="w-4 h-4" />}>Create</Button></Link>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Delivery Locations</h1>
+          <p className="text-gray-600 mt-1">Manage delivery zones and locations</p>
+        </div>
+        <Link to="/delivery-locations/creation"><Button variant="primary" icon={<FiPlus className="w-5 h-5" />} className="px-6 py-3 text-base">Create Location</Button></Link>
       </div>
 
       {error && <p className="text-red-600">{error}</p>}
@@ -105,7 +108,6 @@ export default function DeliveryLocations() {
                 <TableHeadCell>Lon</TableHeadCell>
                 <TableHeadCell>Active</TableHeadCell>
                 <TableHeadCell>Restaurants</TableHeadCell>
-                <TableHeadCell>Created</TableHeadCell>
                 <TableHeadCell>Actions</TableHeadCell>
               </tr>
             </TableHead>

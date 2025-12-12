@@ -22,10 +22,13 @@ export default function Sections() {
   }, [])
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Sections</h1>
-        <Link to="/sections/creation"><Button variant="primary" icon={<FiPlus className="w-4 h-4" />}>Create</Button></Link>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Sections</h1>
+          <p className="text-gray-600 mt-1">Organize products into sections</p>
+        </div>
+        <Link to="/sections/creation"><Button variant="primary" icon={<FiPlus className="w-5 h-5" />} className="px-6 py-3 text-base">Create Section</Button></Link>
       </div>
 
       {loading ? (
