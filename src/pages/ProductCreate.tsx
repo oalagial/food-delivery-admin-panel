@@ -15,6 +15,9 @@ export default function ProductCreate() {
   const [types, setTypes] = useState<any[]>([])
   const [typesLoading, setTypesLoading] = useState(true)
 
+  // Keep a raw ingredients text input so typing a trailing comma doesn't get trimmed away
+  const [ingredientsInput, setIngredientsInput] = useState('')
+
   const [form, setForm] = useState<Partial<CreateProductPayload>>({
     name: '',
     description: '',
@@ -50,6 +53,7 @@ export default function ProductCreate() {
             price: data.price,
             isAvailable: data.isAvailable,
           })
+          setIngredientsInput(Array.isArray(data.ingredients) ? data.ingredients.join(', ') : '')
         }
       })
       .catch((err) => { if (!mounted) return; setError(err?.message || 'Failed to load product') })
@@ -66,7 +70,7 @@ export default function ProductCreate() {
       description: String(form.description ?? '').trim(),
       image: String(form.image ?? '').trim(),
       typeId: form.typeId,
-      ingredients: Array.isArray(form.ingredients) ? form.ingredients : [],
+      ingredients: ingredientsInput.split(',').map((x) => x.trim()).filter(Boolean),
       price: form.price !== undefined ? Number(form.price) : undefined,
       isAvailable: !!form.isAvailable,
     }
@@ -127,8 +131,8 @@ export default function ProductCreate() {
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Ingredients (comma separated)</label>
           <Input
-            value={Array.isArray(form.ingredients) ? (form.ingredients as string[]).join(', ') : ''}
-            onChange={(e)=> setForm(s=>({...s, ingredients: String(e.target.value).split(',').map(x=>x.trim()).filter(Boolean)}))}
+            value={ingredientsInput}
+            onChange={(e)=> setIngredientsInput(e.target.value)}
             placeholder="Tomato, Cheese"
             className="w-full"
           />
