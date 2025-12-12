@@ -25,7 +25,7 @@ import Header from './components/Header'
 import Login from './pages/Login'
 import RequireAuth from './components/RequireAuth'
 import { getToken } from './utils/api'
-import { FiHome, FiShoppingCart, FiCoffee, FiMapPin, FiUsers, FiDatabase, FiShield, FiKey, FiSettings, FiTag, FiBox, FiList, FiClock, FiLayers } from 'react-icons/fi'
+import { FiHome, FiShoppingCart, FiCoffee, FiMapPin, FiUsers, FiShield, FiKey, FiSettings, FiTag, FiBox, FiList, FiLayers } from 'react-icons/fi'
 
 function NavSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
