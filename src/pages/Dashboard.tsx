@@ -19,10 +19,10 @@ export default function Dashboard() {
     setError(null)
 
     Promise.allSettled([
-      fetch(`${API_BASE}/restaurants/list`).then((r) => r.json()),
-      fetch(`${API_BASE}/orders/list`).then((r) => r.json()),
-      fetch(`${API_BASE}/users/list`).then((r) => r.json()),
-      fetch(`${API_BASE}/delivery-locations/list`).then((r) => r.json()),
+      fetch(`${API_BASE}/restaurants`).then((r) => r.json()),
+      fetch(`${API_BASE}/orders`).then((r) => r.json()),
+      fetch(`${API_BASE}/users`).then((r) => r.json()),
+      fetch(`${API_BASE}/delivery-locations`).then((r) => r.json()),
     ])
       .then((results) => {
         if (!mounted) return

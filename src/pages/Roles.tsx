@@ -27,7 +27,7 @@ export default function Roles() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`${API_BASE}/roles/list`)
+      const res = await fetch(`${API_BASE}/roles`)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       const data = Array.isArray(json) ? json : json?.data ?? Object.values(json ?? {})

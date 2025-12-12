@@ -157,11 +157,11 @@ export type Restaurant = {
 }
 
 export async function getRestaurantsList(): Promise<Restaurant[]> {
-  const res = await authFetch('/restaurants/list')
+  const res = await authFetch('/restaurants')
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    throw new Error(text || `GET /restaurants/list failed (${res.status})`)
+    throw new Error(text || `GET /restaurants failed (${res.status})`)
   }
 
   const data = await res.json().catch(() => null)
@@ -169,11 +169,11 @@ export async function getRestaurantsList(): Promise<Restaurant[]> {
 }
 
 export async function getDeliveryLocationsList(): Promise<Restaurant[]> {
-  const res = await authFetch('/delivery-locations/list')
+  const res = await authFetch('/delivery-locations')
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    throw new Error(text || `GET /delivery-locations/list failed (${res.status})`)
+    throw new Error(text || `GET /delivery-locations failed (${res.status})`)
   }
 
   const data = await res.json().catch(() => null)
@@ -189,16 +189,17 @@ export type OpeningHour = {
 
 export async function getRestaurantByToken(token: string): Promise<Restaurant | null> {
   if (!token) throw new Error('token is required')
-  const res = await authFetch(`/restaurants/${encodeURIComponent(token)}`)
+  const res = await authFetch(`/restaurants?id=${encodeURIComponent(token)}`)
 
   if (res.status === 404) return null
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    throw new Error(text || `GET /restaurants/${token} failed (${res.status})`)
+    throw new Error(text || `GET /restaurants?id=${token} failed (${res.status})`)
   }
 
   const data = await res.json().catch(() => null)
-  return data || null
+
+  return data.data[0] || null
 }
 
 // Alias using clearer name when the identifier is a numeric id
@@ -256,11 +257,11 @@ export type TypeItem = {
 }
 
 export async function getTypesList(): Promise<TypeItem[]> {
-  const res = await authFetch('/types/list')
+  const res = await authFetch('/types')
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    throw new Error(text || `GET /types/list failed (${res.status})`)
+    throw new Error(text || `GET /types failed (${res.status})`)
   }
 
   const data = await res.json().catch(() => null)
@@ -309,7 +310,7 @@ export type RoleItem = {
 export async function getRolesList(): Promise<RoleItem[]> {
   // Try authenticated fetch first (works when user is logged in)
   try {
-    const res = await authFetch('/roles/list')
+    const res = await authFetch('/roles')
     if (res.ok) {
       const data = await res.json().catch(() => null)
       return Array.isArray(data) ? data : (data?.items || data?.data || [])
@@ -320,11 +321,11 @@ export async function getRolesList(): Promise<RoleItem[]> {
 
   // Fallback: try a plain fetch to the full API URL (some deployments expose roles publicly)
   try {
-    const url = API_BASE.replace(/\/$/, '') + '/roles/list'
+    const url = API_BASE.replace(/\/$/, '') + '/roles'
     const res2 = await fetch(url)
     if (!res2.ok) {
       const text = await res2.text().catch(() => '')
-      throw new Error(text || `GET /roles/list failed (${res2.status})`)
+      throw new Error(text || `GET /roles failed (${res2.status})`)
     }
     const data2 = await res2.json().catch(() => null)
     return Array.isArray(data2) ? data2 : (data2?.items || data2?.data || [])
@@ -335,16 +336,16 @@ export async function getRolesList(): Promise<RoleItem[]> {
 
 export async function getTypeById(id: string | number): Promise<TypeItem | null> {
   if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
-  const res = await authFetch(`/types/${encodeURIComponent(String(id))}`)
+  const res = await authFetch(`/types?id=${encodeURIComponent(String(id))}`)
 
   if (res.status === 404) return null
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    throw new Error(text || `GET /types/${id} failed (${res.status})`)
+    throw new Error(text || `GET /types?id=${id} failed (${res.status})`)
   }
 
   const data = await res.json().catch(() => null)
-  return data || null
+  return data.data?.[0] || null
 }
 
 export async function updateType(id: string | number, payload: CreateTypePayload) {
@@ -397,11 +398,11 @@ export type CreateProductPayload = {
 }
 
 export async function getProductsList(): Promise<Product[]> {
-  const res = await authFetch('/products/list')
+  const res = await authFetch('/products')
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    throw new Error(text || `GET /products/list failed (${res.status})`)
+    throw new Error(text || `GET /products failed (${res.status})`)
   }
 
   const data = await res.json().catch(() => null)
@@ -410,7 +411,7 @@ export async function getProductsList(): Promise<Product[]> {
 
 export async function getProductById(id: string | number): Promise<Product | null> {
   if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
-  const res = await authFetch(`/products/${encodeURIComponent(String(id))}`)
+  const res = await authFetch(`/products?id=${encodeURIComponent(String(id))}`)
 
   if (res.status === 404) return null
   if (!res.ok) {
@@ -419,7 +420,7 @@ export async function getProductById(id: string | number): Promise<Product | nul
   }
 
   const data = await res.json().catch(() => null)
-  return data || null
+  return data.data?.[0] || null
 }
 
 export async function createProduct(payload: CreateProductPayload) {
@@ -489,11 +490,11 @@ export type CreateMenuPayload = {
 }
 
 export async function getMenusList(): Promise<MenuItem[]> {
-  const res = await authFetch('/menus/list')
+  const res = await authFetch('/menus')
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    throw new Error(text || `GET /menus/list failed (${res.status})`)
+    throw new Error(text || `GET /menus failed (${res.status})`)
   }
 
   const data = await res.json().catch(() => null)
@@ -502,16 +503,16 @@ export async function getMenusList(): Promise<MenuItem[]> {
 
 export async function getMenuById(id: string | number): Promise<MenuItem | null> {
   if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
-  const res = await authFetch(`/menus/${encodeURIComponent(String(id))}`)
+  const res = await authFetch(`/menus?id=${encodeURIComponent(String(id))}`)
 
   if (res.status === 404) return null
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    throw new Error(text || `GET /menus/${id} failed (${res.status})`)
+    throw new Error(text || `GET /menus?id=${id} failed (${res.status})`)
   }
 
   const data = await res.json().catch(() => null)
-  return data || null
+  return data.data?.[0] || null
 }
 
 export async function createMenu(payload: CreateMenuPayload) {
@@ -572,11 +573,11 @@ export type OpeningHourItem = {
 }
 
 export async function getOpeningHoursList(): Promise<OpeningHourItem[]> {
-  const res = await authFetch('/opening-hours/list')
+  const res = await authFetch('/opening-hours')
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    throw new Error(text || `GET /opening-hours/list failed (${res.status})`)
+    throw new Error(text || `GET /opening-hours failed (${res.status})`)
   }
 
   const data = await res.json().catch(() => null)
@@ -662,11 +663,11 @@ export type CreateSectionPayload = {
 }
 
 export async function getSectionsList(): Promise<SectionItem[]> {
-  const res = await authFetch('/sections/list')
+  const res = await authFetch('/sections')
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    throw new Error(text || `GET /sections/list failed (${res.status})`)
+    throw new Error(text || `GET /sections failed (${res.status})`)
   }
 
   const data = await res.json().catch(() => null)
@@ -675,16 +676,16 @@ export async function getSectionsList(): Promise<SectionItem[]> {
 
 export async function getSectionById(id: string | number): Promise<SectionItem | null> {
   if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
-  const res = await authFetch(`/sections/${encodeURIComponent(String(id))}`)
+  const res = await authFetch(`/sections?id=${encodeURIComponent(String(id))}`)
 
   if (res.status === 404) return null
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    throw new Error(text || `GET /sections/${id} failed (${res.status})`)
+    throw new Error(text || `GET /sections?id=${id} failed (${res.status})`)
   }
 
   const data = await res.json().catch(() => null)
-  return data || null
+  return data.data?.[0] || null
 }
 
 export async function createSection(payload: CreateSectionPayload) {
@@ -769,10 +770,10 @@ export type CreateOrderPayload = {
 }
 
 export async function getOrdersList(): Promise<OrderItem[]> {
-  const res = await authFetch('/orders/list')
+  const res = await authFetch('/orders')
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    throw new Error(text || `GET /orders/list failed (${res.status})`)
+    throw new Error(text || `GET /orders failed (${res.status})`)
   }
   const data = await res.json().catch(() => null)
   return Array.isArray(data) ? data : (data?.items || data?.data || [])
@@ -879,16 +880,16 @@ export async function createDeliveryLocation(payload: CreateDeliveryLocationPayl
 
 export async function getDeliveryLocationById(id: string | number): Promise<CreateDeliveryLocationPayload | null> {
   if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
-  const res = await authFetch(`/delivery-locations/${encodeURIComponent(String(id))}`)
+  const res = await authFetch(`/delivery-locations?id=${encodeURIComponent(String(id))}`)
 
   if (res.status === 404) return null
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    throw new Error(text || `GET /delivery-locations/${id} failed (${res.status})`)
+    throw new Error(text || `GET /delivery-locations?id=${id} failed (${res.status})`)
   }
 
   const data = await res.json().catch(() => null)
-  return data || null
+  return data.data[0] || null
 }
 
 export async function updateDeliveryLocation(id: string | number, payload: CreateDeliveryLocationPayload) {

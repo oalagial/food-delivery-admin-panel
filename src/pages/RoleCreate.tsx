@@ -18,7 +18,7 @@ export default function RoleCreate() {
     let mounted = true
     ;(async () => {
       try {
-        const res = await fetch(`${API_BASE}/roles/${id}`)
+        const res = await fetch(`${API_BASE}/roles${id}`)
         if (!res.ok) throw new Error(`Failed to load role: ${res.status}`)
         const json = await res.json()
         if (!mounted) return

@@ -23,17 +23,18 @@ export default function UserCreate() {
     if (id) {
       ;(async () => {
         try {
-          const res = await fetch(`${API_BASE}/users/${id}`)
+          const res = await fetch(`${API_BASE}/users?id=${id}`)
           if (!res.ok) throw new Error(`Failed to load user: ${res.status}`)
           const json = await res.json()
+          const user = json?.data[0] || json
           if (!mounted) return
           setForm({
-            email: String(json.email ?? ''),
-            username: String(json.username ?? ''),
+            email: String(user.email ?? ''),
+            username: String(user.username ?? ''),
             password: '',
           })
           // try to populate role selection from returned user object
-          const roleFromApi = (json && (json.role?.id ?? json.roleId ?? json.role_id)) ?? ''
+          const roleFromApi = (user && (user.role?.id ?? user.roleId ?? user.role_id)) ?? ''
           if (roleFromApi !== undefined && roleFromApi !== null) setRoleId(String(roleFromApi))
         } catch (err: unknown) {
           if (!mounted) return
