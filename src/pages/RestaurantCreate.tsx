@@ -16,7 +16,7 @@ export default function RestaurantCreate() {
 
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
-  const [createResult, setCreateResult] = useState<unknown | null>(null)
+  const [createResult, setCreateResult] = useState<boolean>(false)
   const [form, setForm] = useState({
     name: '',
     address: '',
@@ -36,7 +36,7 @@ export default function RestaurantCreate() {
     e.preventDefault()
     setCreating(true)
     setCreateError(null)
-    setCreateResult(null)
+    setCreateResult(false)
 
     const payload: CreateRestaurantPayload = {
       name: String(form.name || '').trim(),
@@ -86,10 +86,10 @@ export default function RestaurantCreate() {
       if (id) {
         // Edit mode: use PUT
         res = await updateRestaurant(id, payload)
-        setCreateResult(res)
+        setCreateResult(true)
       } else {
         res = await createRestaurant(payload)
-        setCreateResult(res)
+        setCreateResult(true)
       }
 
       // Optionally refresh list

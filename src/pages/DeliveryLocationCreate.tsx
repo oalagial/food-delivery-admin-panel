@@ -22,7 +22,6 @@ export default function DeliveryLocationCreate() {
   const params = useParams<{ id?: string }>()
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [result, setResult] = useState<unknown | null>(null)
 
   const [form, setForm] = useState<Partial<CreateDeliveryLocationPayload>>({
     name: '',
@@ -114,7 +113,6 @@ export default function DeliveryLocationCreate() {
     e.preventDefault()
     setSubmitting(true)
     setError(null)
-    setResult(null)
 
     const latRaw = String(form.latitude ?? '').trim()
     const lonRaw = String(form.longitude ?? '').trim()
@@ -177,8 +175,7 @@ export default function DeliveryLocationCreate() {
       if (params.id) {
         await updateDeliveryLocation(params.id, payload)
       } else {
-        const res = await createDeliveryLocation(payload)
-        setResult(res)
+        await createDeliveryLocation(payload)
       }
       navigate('/delivery-locations')
     } catch (err: unknown) {

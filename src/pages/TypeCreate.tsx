@@ -18,7 +18,6 @@ export default function TypeCreate() {
   const [submitting, setSubmitting] = useState(false)
   const [loading, setLoading] = useState(editing)
   const [error, setError] = useState<string | null>(null)
-  const [result, setResult] = useState<unknown | null>(null)
 
   const [form, setForm] = useState<Partial<CreateTypePayload>>({ name: '', tag: '', description: '' })
 
@@ -49,13 +48,11 @@ export default function TypeCreate() {
     }
 
     try {
-      let res
       if (editing && id) {
-        res = await updateType(id, payload)
+        await updateType(id, payload)
       } else {
-        res = await createType(payload)
+        await createType(payload)
       }
-      setResult(res)
       navigate('/types')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err))
