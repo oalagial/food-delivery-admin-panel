@@ -326,7 +326,7 @@ export default function DeliveryLocationCreate() {
             </div>
 
             <div>
-              <Label htmlFor="restaurants">Restaurants</Label>
+              <Label>Restaurants</Label>
               {restaurantsLoading ? (
                 <div className="mt-2 text-sm text-gray-500">Loading restaurants...</div>
               ) : restaurantsError ? (
@@ -335,24 +335,43 @@ export default function DeliveryLocationCreate() {
                   <AlertDescription>{restaurantsError}</AlertDescription>
                 </Alert>
               ) : (
-                <>
-                  <select
-                    id="restaurants"
-                    multiple
-                    value={selectedDeliveredBy.map((d) => String(d.restaurantId))}
-                    onChange={(e) => {
-                      const vals = Array.from(e.target.selectedOptions).map((o) => Number(o.value)).filter((n) => !Number.isNaN(n))
-                      handleSelectChange(vals)
-                    }}
-                    className="mt-2 w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  >
-                    {restaurants.map((r) => (
-                      <option key={r.id ?? r.name} value={String(r.id ?? '')}>{r.name ?? String(r.id)}</option>
-                    ))}
-                  </select>
-                  <p className="mt-1 text-xs text-gray-500">Hold Ctrl/Cmd to select multiple restaurants</p>
-                </>
+                <div className="flex gap-4 mt-2">
+                  {/* Available Restaurants */}
+                  <div className="flex-1">
+                    <div className="font-semibold mb-1 text-sm">Available</div>
+                    <div className="border rounded p-2 h-40 overflow-y-auto bg-white">
+                      {restaurants.filter(r => !selectedDeliveredBy.some(e => e.restaurantId === r.id)).length === 0 && (
+                        <div className="text-xs text-gray-400">No more restaurants</div>
+                      )}
+                      {restaurants.filter(r => !selectedDeliveredBy.some(e => e.restaurantId === r.id)).map(r => (
+                        <div key={r.id} className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 rounded cursor-pointer group">
+                          <span>{r.name ?? String(r.id)}</span>
+                          <button type="button" className="ml-2 text-green-600 hover:text-green-800 text-xs font-bold opacity-80 group-hover:opacity-100" onClick={() => setSelectedDeliveredBy(list => [...list, { restaurantId: r.id, deliveryFee: 0, minOrder: 0, isActive: true }])}>Add</button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Selected Restaurants */}
+                  <div className="flex-1">
+                    <div className="font-semibold mb-1 text-sm">Selected</div>
+                    <div className="border rounded p-2 h-40 overflow-y-auto bg-white">
+                      {selectedDeliveredBy.length === 0 && (
+                        <div className="text-xs text-gray-400">No restaurants selected</div>
+                      )}
+                      {selectedDeliveredBy.map((entry, idx) => {
+                        const rest = restaurants.find(r => r.id === entry.restaurantId)
+                        return (
+                          <div key={entry.restaurantId} className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 rounded cursor-pointer group">
+                            <span>{rest?.name ?? entry.restaurantId}</span>
+                            <button type="button" className="ml-2 text-red-600 hover:text-red-800 text-xs font-bold opacity-80 group-hover:opacity-100" onClick={() => setSelectedDeliveredBy(list => list.filter(e => e.restaurantId !== entry.restaurantId))}>Remove</button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
               )}
+              <p className="mt-1 text-xs text-gray-500">Click "Add" to select, "Remove" to unselect.</p>
             </div>
 
             {selectedDeliveredBy.length > 0 && (

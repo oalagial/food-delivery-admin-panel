@@ -130,20 +130,40 @@ export default function MenuCreate() {
                 </div>
 
                 <div>
-                  <Label htmlFor="sections">Sections</Label>
-                  <select 
-                    id="sections"
-                    multiple 
-                    value={sectionIds.map(String)} 
-                    onChange={(e) => {
-                      const opts = Array.from(e.currentTarget.selectedOptions).map(o=> Number(o.value))
-                      setSectionIds(opts)
-                    }} 
-                    className="mt-2 w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  >
-                    {sections.map(s => <option key={s.id} value={s.id}>{s.name || s.id}</option>)}
-                  </select>
-                  <p className="mt-1 text-xs text-gray-500">Hold Ctrl/Cmd to select multiple</p>
+                  <Label>Sections</Label>
+                  <div className="flex gap-4 mt-2">
+                    {/* Available Sections */}
+                    <div className="flex-1">
+                      <div className="font-semibold mb-1 text-sm">Available</div>
+                      <div className="border rounded p-2 h-40 overflow-y-auto bg-white">
+                        {sections.filter(s => !sectionIds.includes(s.id)).length === 0 && (
+                          <div className="text-xs text-gray-400">No more sections</div>
+                        )}
+                        {sections.filter(s => !sectionIds.includes(s.id)).map(s => (
+                          <div key={s.id} className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 rounded cursor-pointer group">
+                            <span>{s.name || s.id}</span>
+                            <button type="button" className="ml-2 text-green-600 hover:text-green-800 text-xs font-bold opacity-80 group-hover:opacity-100" onClick={() => setSectionIds(ids => [...ids, s.id])}>Add</button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Selected Sections */}
+                    <div className="flex-1">
+                      <div className="font-semibold mb-1 text-sm">Selected</div>
+                      <div className="border rounded p-2 h-40 overflow-y-auto bg-white">
+                        {sectionIds.length === 0 && (
+                          <div className="text-xs text-gray-400">No sections selected</div>
+                        )}
+                        {sections.filter(s => sectionIds.includes(s.id)).map(s => (
+                          <div key={s.id} className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 rounded cursor-pointer group">
+                            <span>{s.name || s.id}</span>
+                            <button type="button" className="ml-2 text-red-600 hover:text-red-800 text-xs font-bold opacity-80 group-hover:opacity-100" onClick={() => setSectionIds(ids => ids.filter(id => id !== s.id))}>Remove</button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">Click "Add" to select, "Remove" to unselect.</p>
                 </div>
               </div>
 

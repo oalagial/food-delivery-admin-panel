@@ -60,7 +60,6 @@ export default function Menus() {
               <TableHeadCell>Name</TableHeadCell>
               <TableHeadCell>Description</TableHeadCell>
               <TableHeadCell>Sections</TableHeadCell>
-              <TableHeadCell>Restaurants</TableHeadCell>
               <TableHeadCell>Created</TableHeadCell>
               <TableHeadCell>Actions</TableHeadCell>
             </TableRow>
@@ -75,7 +74,6 @@ export default function Menus() {
                     ? (m as any).sections.map((s: any) => s?.name ?? s?.id).join(', ')
                     : (m.sectionIds || []).length}
                 </TableCell>
-                <TableCell>{(m.restaurants)?.length}</TableCell>
                 <TableCell>{m.createdAt ? new Date(String(m.createdAt)).toLocaleString() : ''}</TableCell>
                 <TableCell>
                   <Link to={`/menus/creation/${m.id}`}><Button size="sm" variant="ghost" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
