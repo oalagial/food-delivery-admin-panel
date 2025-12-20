@@ -139,14 +139,22 @@ export default function Users() {
               <TableRow key={u.id}>
                 <TableCell>{String(u.email ?? '')}</TableCell>
                 <TableCell>{String(u.username ?? '')}</TableCell>
-                <TableCell>{(() => {
-                  const rec = u as unknown as Record<string, unknown>
-                  const roleObj = rec.role
-                  if (roleObj && typeof roleObj === 'object' && (roleObj as Record<string, unknown>).name) return String((roleObj as Record<string, unknown>).name)
-                  const rId = rec.roleId ?? rec.role_id ?? rec.roleId
-                  if (rId !== undefined && rId !== null && String(rId) !== '') return rolesMap[String(rId)] ?? String(rId)
-                  return ''
-                })()}</TableCell>
+                  <TableCell>{(() => {
+                    const rec = u as unknown as Record<string, unknown>
+                    // Handle array of roles
+                    if (Array.isArray(rec.roles) && rec.roles.length > 0) {
+                      return rec.roles
+                        .map((role: any) => role?.name || rolesMap[String(role?.id)] || String(role?.id || ''))
+                        .filter(Boolean)
+                        .join(', ')
+                    }
+                    // Fallback to single role object
+                    const roleObj = rec.role
+                    if (roleObj && typeof roleObj === 'object' && (roleObj as Record<string, unknown>).name) return String((roleObj as Record<string, unknown>).name)
+                    const rId = rec.roleId ?? rec.role_id ?? rec.roleId
+                    if (rId !== undefined && rId !== null && String(rId) !== '') return rolesMap[String(rId)] ?? String(rId)
+                    return ''
+                  })()}</TableCell>
                 <TableCell>{u.createdAt ? new Date(String(u.createdAt)).toLocaleString() : ''}</TableCell>
                 <TableCell>
                   <Link to={`/users/creation/${encodeURIComponent(String(u.id ?? ''))}`} className='mr-2' ><Button variant="ghost" className='p-2' size="sm" icon={<FiEdit className="w-4 h-4" />}></Button></Link>

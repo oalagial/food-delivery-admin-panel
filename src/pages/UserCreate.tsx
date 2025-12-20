@@ -17,7 +17,7 @@ export default function UserCreate() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState({ email: '', username: '', password: '' })
-  const [roles, setRoles] = useState<Array<{ id?: string | number; name?: string }>>([])
+  const [roleIds, setRoleIds] = useState<Array<{ id?: string | number; name?: string }>>([])
   const [roleId, setRoleId] = useState<string | number | ''>('')
 
   useEffect(() => {
@@ -38,8 +38,13 @@ export default function UserCreate() {
             password: '',
           })
           // try to populate role selection from returned user object
-          const roleFromApi = (user && (user.role?.id ?? user.roleId ?? user.role_id)) ?? ''
-          if (roleFromApi !== undefined && roleFromApi !== null) setRoleId(String(roleFromApi))
+          let roleFromApi = ''
+          if (Array.isArray(user.roles) && user.roles.length > 0) {
+            roleFromApi = user.roles[0]?.id ?? ''
+          } else {
+            roleFromApi = user.role?.id ?? user.roleId ?? user.role_id ?? ''
+          }
+          if (roleFromApi !== undefined && roleFromApi !== null && roleFromApi !== '') setRoleId(String(roleFromApi))
         } catch (err: unknown) {
           if (!mounted) return
           setError(err instanceof Error ? err.message : String(err))
@@ -47,11 +52,11 @@ export default function UserCreate() {
       })()
     }
 
-    // fetch roles for the select using API helper (always fetch roles)
+    // fetch roleIds for the select using API helper (always fetch roleIds)
     let mountedRoles = true
     getRolesList().then((data) => {
       if (!mountedRoles) return
-      setRoles(data || [])
+      setRoleIds(data || [])
     }).catch(() => {})
 
     return () => {
@@ -69,16 +74,16 @@ export default function UserCreate() {
         email: String(form.email).trim(),
         username: String(form.username).trim(),
       }
-        if (roleId !== '' && roleId !== undefined) payload.roleId = Number(roleId)
       if (!payload.email || !payload.username) {
         setError('Email and username are required')
         setSaving(false)
         return
       }
-      if (!id && form.password) payload.password = String(form.password)
-
+      // Always send roleIds array if a role is selected
+      if (roleId !== '' && roleId !== undefined) payload.roleIds = [Number(roleId)]
       let res
       if (id) {
+        if (form.password) payload.password = String(form.password)
         res = await fetch(`${API_BASE}/users/${id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -86,7 +91,6 @@ export default function UserCreate() {
         })
         if (!res.ok) throw new Error(`Update failed ${res.status}`)
       } else {
-        // creation
         if (!form.password) {
           setError('Password is required when creating a user')
           setSaving(false)
@@ -163,7 +167,7 @@ export default function UserCreate() {
                 className="mt-2 w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 <option value="">(No role)</option>
-                {roles.map(r => <option key={String(r.id)} value={String(r.id)}>{r.name ?? String(r.id)}</option>)}
+                {roleIds.map(r => <option key={String(r.id)} value={String(r.id)}>{r.name ?? String(r.id)}</option>)}
               </select>
             </div>
 
