@@ -33,7 +33,14 @@ export default function SectionCreate(){
         setName(s.name || '')
         setDescription(String(s.description || ''))
         setTypeId(s.typeId !== undefined && s.typeId !== null && String(s.typeId) !== '' ? Number(s.typeId) : '')
-        setProductsIds((s.productsIds || []).map(p => Number(p)))
+        // Support both productsIds (array of ids) and products (array of objects with id)
+        let ids: number[] = []
+        if (Array.isArray(s.productsIds) && s.productsIds.length > 0) {
+          ids = s.productsIds.map((p: any) => Number(p))
+        } else if (Array.isArray(s.products) && s.products.length > 0) {
+          ids = s.products.map((p: any) => Number(p.id))
+        }
+        setProductsIds(ids)
       }).catch(e=>setError(String(e)))
     }
     return ()=>{ mounted = false }
@@ -105,22 +112,40 @@ export default function SectionCreate(){
             </div>
 
             <div>
-              <Label htmlFor="products">Products</Label>
-              <select 
-                id="products"
-                multiple 
-                value={productsIds.map(String)} 
-                onChange={e=>{
-                  const opts = Array.from(e.currentTarget.selectedOptions).map(o => Number(o.value))
-                  setProductsIds(opts)
-                }} 
-                className="mt-2 w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              >
-                {products.map(p => (
-                  <option key={p.id} value={p.id}>{p.name ?? String(p.id)}</option>
-                ))}
-              </select>
-              <p className="mt-1 text-xs text-gray-500">Hold Ctrl/Cmd to select multiple</p>
+              <Label>Products</Label>
+              <div className="flex gap-4 mt-2">
+                {/* Available Products */}
+                <div className="flex-1">
+                  <div className="font-semibold mb-1 text-sm">Available</div>
+                  <div className="border rounded p-2 h-48 overflow-y-auto bg-white">
+                    {products.filter(p => !productsIds.includes(p.id)).length === 0 && (
+                      <div className="text-xs text-gray-400">No more products</div>
+                    )}
+                    {products.filter(p => !productsIds.includes(p.id)).map(p => (
+                      <div key={p.id} className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 rounded cursor-pointer group">
+                        <span>{p.name ?? String(p.id)}</span>
+                        <button type="button" className="ml-2 text-green-600 hover:text-green-800 text-xs font-bold opacity-80 group-hover:opacity-100" onClick={() => setProductsIds(ids => [...ids, p.id])}>Add</button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {/* Selected Products */}
+                <div className="flex-1">
+                  <div className="font-semibold mb-1 text-sm">Selected</div>
+                  <div className="border rounded p-2 h-48 overflow-y-auto bg-white">
+                    {productsIds.length === 0 && (
+                      <div className="text-xs text-gray-400">No products selected</div>
+                    )}
+                    {products.filter(p => productsIds.includes(p.id)).map(p => (
+                      <div key={p.id} className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 rounded cursor-pointer group">
+                        <span>{p.name ?? String(p.id)}</span>
+                        <button type="button" className="ml-2 text-red-600 hover:text-red-800 text-xs font-bold opacity-80 group-hover:opacity-100" onClick={() => setProductsIds(ids => ids.filter(id => id !== p.id))}>Remove</button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <p className="mt-1 text-xs text-gray-500">Click "Add" to select, "Remove" to unselect.</p>
             </div>
 
             {error && (

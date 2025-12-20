@@ -138,21 +138,32 @@ export default function DeliveryLocations() {
                     }
                     const list = maybeArray('deliveredBy') ?? maybeArray('deliveredByRestaurants') ?? maybeArray('delivedByRestaurants') ?? []
 
-                    return list.map((d) => {
-                      const item = d as Record<string, unknown>
-                      // d can be either: { restaurantId, deliveryFee, minOrder, isActive }
-                      // or a full restaurant object with { id, name, ... }
-                      let name = ''
-                      if (typeof item.name === 'string' || item.id !== undefined) {
-                        name = String(item.name ?? item.id)
-                      } else if (item.restaurantId !== undefined) {
-                        name = restaurantsMap[String(item.restaurantId ?? '')] ?? String(item.restaurantId ?? '')
-                      }
-                      const fee = (typeof item.deliveryFee === 'number' || typeof item.deliveryFee === 'string') ? ` fee:${String(item.deliveryFee)}` : ''
-                      const min = (typeof item.minOrder === 'number' || typeof item.minOrder === 'string') ? ` min:${String(item.minOrder)}` : ''
-                      const act = item.isActive === false ? ' (inactive)' : ''
-                      return `${name}${fee}${min}${act}`
-                    }).join(', ')
+                    if (list.length === 0) return <span className="text-xs text-gray-400">None</span>;
+
+                    return (
+                      <div className="flex flex-col gap-1">
+                        {list.map((d, idx) => {
+                          const item = d as Record<string, unknown>
+                          let name = ''
+                          if (typeof item.name === 'string' || item.id !== undefined) {
+                            name = String(item.name ?? item.id)
+                          } else if (item.restaurantId !== undefined) {
+                            name = restaurantsMap[String(item.restaurantId ?? '')] ?? String(item.restaurantId ?? '')
+                          }
+                          const fee = (typeof item.deliveryFee === 'number' || typeof item.deliveryFee === 'string') ? `Fee: €${String(item.deliveryFee)}` : ''
+                          const min = (typeof item.minOrder === 'number' || typeof item.minOrder === 'string') ? `Min: €${String(item.minOrder)}` : ''
+                          const inactive = item.isActive === false
+                          return (
+                            <span key={idx} className={inactive ? 'opacity-60' : ''}>
+                              <span className="font-medium">{name}</span>
+                              {fee && <span className="ml-2 bg-gray-100 rounded px-2 py-0.5 text-xs">{fee}</span>}
+                              {min && <span className="ml-2 bg-gray-100 rounded px-2 py-0.5 text-xs">{min}</span>}
+                              {inactive && <span className="ml-2 bg-red-200 text-red-800 rounded px-2 py-0.5 text-xs">Inactive</span>}
+                            </span>
+                          )
+                        })}
+                      </div>
+                    );
                   })()}</TableCell>
                   <TableCell>
                     <Link to={`/delivery-locations/creation/${encodeURIComponent(String(loc.id ?? ''))}`} className='mr-2' ><Button variant="ghost" className='p-2' size="sm" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
