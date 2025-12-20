@@ -9,6 +9,7 @@ import { AlertCircle } from 'lucide-react'
 
 import { API_BASE } from '../config'
 import { getRolesList } from '../utils/api'
+import { Select } from '../components/ui/select';
 
 export default function UserCreate() {
   const { id } = useParams<{ id?: string }>()
@@ -126,7 +127,7 @@ export default function UserCreate() {
           <CardDescription>Manage user account and permissions</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSave} className="space-y-6">
+          <form onSubmit={handleSave} className="grid grid-cols-2 gap-3">
             {error && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
@@ -160,19 +161,19 @@ export default function UserCreate() {
 
             <div>
               <Label htmlFor="role">Role</Label>
-              <select 
+              <Select 
                 id="role"
                 value={String(roleId ?? '')} 
                 onChange={(e) => setRoleId(e.target.value)} 
-                className="mt-2 w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="mt-2 w-full"
               >
                 <option value="">(No role)</option>
                 {roleIds.map(r => <option key={String(r.id)} value={String(r.id)}>{r.name ?? String(r.id)}</option>)}
-              </select>
+              </Select>
             </div>
 
             <div>
-              <Label htmlFor="password">Password {id && <span className="text-xs text-gray-400">(leave blank to keep)</span>}</Label>
+              <Label htmlFor="password">Password {id && <span className="text-xs ">(leave blank to keep)</span>}</Label>
               <Input 
                 id="password"
                 className="mt-2 w-full"
@@ -183,10 +184,18 @@ export default function UserCreate() {
                 required={!id}
               />
             </div>
-
-            <div className="flex justify-end gap-3 pt-4">
-              <Link to="/users"><Button variant="ghost" type="button">Cancel</Button></Link>
-              <Button variant="primary" type="submit" disabled={saving}>{saving ? (id ? 'Saving...' : 'Creating...') : (id ? 'Update' : 'Create')}</Button>
+      
+            <div className="col-start-2 flex justify-end gap-3 pt-4">
+              <Link to="/users">
+                <Button variant="default" type="button">Cancel</Button>
+              </Link>
+              <Button
+                variant="primary"
+                type="submit"
+                disabled={saving}
+              >
+                {saving ? (id ? 'Saving...' : 'Creating...') : (id ? 'Update' : 'Create')}
+              </Button>
             </div>
           </form>
         </CardContent>

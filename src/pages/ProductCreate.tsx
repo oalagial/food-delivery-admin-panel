@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '../components/ui/alert'
 import { AlertCircle } from 'lucide-react'
 import { createProduct, getProductById, updateProduct, getTypesList } from '../utils/api'
 import type { CreateProductPayload } from '../utils/api'
+import { Select } from '../components/ui/select';
 
 export default function ProductCreate() {
   const { id } = useParams<{ id?: string }>()
@@ -105,7 +106,7 @@ export default function ProductCreate() {
           <CardDescription>Fill in the product details below</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="name">Product Name *</Label>
               <Input 
@@ -123,15 +124,15 @@ export default function ProductCreate() {
               {typesLoading ? (
                 <div className="mt-2 text-sm text-gray-500">Loading types...</div>
               ) : (
-                <select
+                <Select
                   id="type"
-                  className="mt-2 w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  className="mt-2 w-full"
                   value={form.typeId !== undefined && form.typeId !== null ? String(form.typeId) : ''}
                   onChange={(e) => setForm(s => ({ ...s, typeId: e.target.value ? Number(e.target.value) : undefined }))}
                 >
                   <option value="">Select a type</option>
                   {types.map(t => <option key={t.id} value={String(t.id)}>{t.name}</option>)}
-                </select>
+                </Select>
               )}
             </div>
 
@@ -173,7 +174,7 @@ export default function ProductCreate() {
               />
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-end gap-3">
               <input 
                 id="available"
                 type="checkbox" 
@@ -191,8 +192,8 @@ export default function ProductCreate() {
               </Alert>
             )}
 
-            <div className="flex justify-end gap-3 pt-4">
-              <Button variant="ghost" type="button" onClick={() => navigate('/products')}>Cancel</Button>
+            <div className="col-start-2 flex justify-end gap-3 pt-4">
+              <Button variant="default" type="button" onClick={() => navigate('/products')}>Cancel</Button>
               <Button variant="primary" type="submit" disabled={saving}>{saving ? 'Saving...' : id ? 'Update' : 'Create'}</Button>
             </div>
           </form>

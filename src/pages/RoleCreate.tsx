@@ -23,7 +23,7 @@ export default function RoleCreate() {
     let mounted = true
     ;(async () => {
       try {
-        const res = await fetch(`${API_BASE}/roles${id}`)
+        const res = await fetch(`${API_BASE}/roles?id=${id}`)
         if (!res.ok) throw new Error(`Failed to load role: ${res.status}`)
         const json = await res.json()
         if (!mounted) return
@@ -113,7 +113,7 @@ export default function RoleCreate() {
             </div>
 
             <div className="flex justify-end gap-3 pt-4">
-              <Link to="/roles"><Button variant="ghost" type="button">Cancel</Button></Link>
+              <Link to="/roles"><Button variant="default" type="button">Cancel</Button></Link>
               <Button variant="primary" type="submit" disabled={saving}>{saving ? (id ? 'Saving...' : 'Creating...') : (id ? 'Update' : 'Create')}</Button>
             </div>
           </form>

@@ -30,7 +30,7 @@ import { FiHome, FiShoppingCart, FiCoffee, FiMapPin, FiUsers, FiShield, FiKey, F
 function NavSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mt-8 first:mt-0">
-      <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 px-4">{title}</div>
+      <div className="text-xs font-bold text-blue-800 uppercase tracking-wider mb-4 px-4">{title}</div>
       <div className="space-y-1">{children}</div>
     </div>
   )
@@ -67,8 +67,8 @@ function App() {
         <aside className="sidebar">
           <div className="sidebar-header">
             <div className="sidebar-logo">
-              <FiMapPin className="w-6 h-6 text-white" />
-              <span>Delivery Admin</span>
+              {/* <FiMapPin className="w-6 h-6 text-white" /> */}
+              <img src="src/assets/logo.png" alt="Image"  style={{ width: "100px", height: "auto" }}/>
             </div>
           </div>
 

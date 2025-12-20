@@ -121,8 +121,10 @@ export default function Restaurant() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Link to={`/restaurant/creation/${encodeURIComponent(String(r.id ?? ''))}`} className='mr-2' ><Button variant="ghost" className='p-2' size="sm" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
-                    <Button variant="danger" size="sm" className='p-2' icon={<FiTrash className="w-4 h-4" />}></Button>
+                    <div className="flex gap-1">
+                      <Link to={`/restaurant/creation/${encodeURIComponent(String(r.id ?? ''))}`} className='mr-2' ><Button variant="ghost" className='p-2' size="sm" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
+                      <Button variant="danger" size="sm" className='p-2' icon={<FiTrash className="w-4 h-4" />}></Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

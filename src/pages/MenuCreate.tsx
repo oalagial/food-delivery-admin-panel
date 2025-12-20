@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '../components/ui/alert'
 import { AlertCircle } from 'lucide-react'
 import { getRestaurantsList, getSectionsList, getMenuById, createMenu, updateMenu } from '../utils/api'
 import type { CreateMenuPayload, Restaurant, SectionItem } from '../utils/api'
+import { Select } from '../components/ui/select';
 
 export default function MenuCreate() {
   const { id } = useParams<{ id?: string }>()
@@ -124,15 +125,15 @@ export default function MenuCreate() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="restaurant">Restaurant *</Label>
-                  <select 
+                  <Select 
                     id="restaurant"
                     value={restaurantId} 
                     onChange={(e) => setRestaurantId(e.currentTarget.value)} 
-                    className="mt-2 w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    className="mt-2 w-full"
                   >
                     <option value="">Select restaurant</option>
                     {restaurants.map(r => <option key={r.id} value={String(r.id)}>{r.name || r.id}</option>)}
-                  </select>
+                  </Select>
                 </div>
 
                 <div>
@@ -181,7 +182,7 @@ export default function MenuCreate() {
               )}
 
               <div className="flex justify-end gap-3 pt-4">
-                <Button variant="ghost" type="button" onClick={()=> navigate(-1)}>Cancel</Button>
+                <Button variant="default" type="button" onClick={()=> navigate(-1)}>Cancel</Button>
                 <Button type="submit" variant="primary" disabled={saving}>{saving ? 'Saving...' : (editing ? 'Update' : 'Create')}</Button>
               </div>
             </form>

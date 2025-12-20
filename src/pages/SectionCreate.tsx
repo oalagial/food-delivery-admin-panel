@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '../components/ui/alert'
 import { AlertCircle } from 'lucide-react'
 import { getSectionById, createSection, updateSection, getTypesList, getProductsList } from '../utils/api'
 import type { TypeItem, Product } from '../utils/api'
+import { Select } from '../components/ui/select';
 
 export default function SectionCreate(){
   const params = useParams<{id?: string}>()
@@ -63,7 +64,7 @@ export default function SectionCreate(){
   }
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">{params.id ? 'Edit Section' : 'Create Section'}</h1>
       </div>
@@ -75,29 +76,32 @@ export default function SectionCreate(){
         </CardHeader>
         <CardContent>
           <form onSubmit={onSubmit} className="space-y-6">
-            <div>
-              <Label htmlFor="name">Section Name *</Label>
-              <Input 
-                id="name"
-                className="mt-2 w-full"
-                value={name} 
-                onChange={e=>setName(e.target.value)} 
-                placeholder="Section name"
-                required
-              />
-            </div>
+            <div className="grid grid-cols-2 gap-4">
 
-            <div>
-              <Label htmlFor="type">Product Type</Label>
-              <select 
-                id="type"
-                value={String(typeId)} 
-                onChange={e=>setTypeId(Number(e.target.value))} 
-                className="mt-2 w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              >
-                <option value="">Select a type</option>
-                {types.map(t=> <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
+              <div>
+                <Label htmlFor="name">Section Name *</Label>
+                <Input 
+                  id="name"
+                  className="mt-2 w-full"
+                  value={name} 
+                  onChange={e=>setName(e.target.value)} 
+                  placeholder="Section name"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="type">Product Type</Label>
+                <Select 
+                  id="type"
+                  value={String(typeId)} 
+                  onChange={e=>setTypeId(Number(e.target.value))} 
+                  className="mt-2 w-full"
+                >
+                  <option value="">Select a type</option>
+                  {types.map(t=> <option key={t.id} value={t.id}>{t.name}</option>)}
+                </Select>
+              </div>
             </div>
 
             <div>
@@ -156,7 +160,7 @@ export default function SectionCreate(){
             )}
 
             <div className="flex justify-end gap-3 pt-4">
-              <Button type="button" variant="ghost" onClick={()=>navigate('/sections')}>Cancel</Button>
+              <Button type="button" variant="default" onClick={()=>navigate('/sections')}>Cancel</Button>
               <Button type="submit" variant="primary" disabled={loading}>{loading ? 'Saving...' : params.id ? 'Update' : 'Create'}</Button>
             </div>
           </form>

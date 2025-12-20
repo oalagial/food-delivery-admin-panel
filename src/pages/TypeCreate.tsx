@@ -120,7 +120,7 @@ export default function TypeCreate() {
               )}
 
               <div className="flex justify-end gap-3 pt-4">
-                <Button variant="ghost" type="button" onClick={() => navigate('/types')}>Cancel</Button>
+                <Button variant="default" type="button" onClick={() => navigate('/types')}>Cancel</Button>
                 <Button variant="primary" type="submit" disabled={submitting}>{submitting ? 'Saving...' : editing ? 'Update' : 'Create'}</Button>
               </div>
             </form>

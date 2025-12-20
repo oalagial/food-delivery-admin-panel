@@ -352,7 +352,7 @@ export default function RestaurantCreate() {
             )}
 
             <div className="flex justify-end gap-3 pt-4">
-              <Link to="/restaurant"><Button variant="ghost" type="button">Cancel</Button></Link>
+              <Link to="/restaurant"><Button variant="default" type="button">Cancel</Button></Link>
               <Button variant="primary" type="submit" disabled={creating}>{creating ? 'Saving...' : id ? 'Update' : 'Create'}</Button>
             </div>
           </form>

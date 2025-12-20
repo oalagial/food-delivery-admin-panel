@@ -379,6 +379,7 @@ export type Product = {
   description?: string
   image?: string
   typeId?: number | string
+  type: any
   ingredients?: string[]
   price?: number
   isAvailable?: boolean
