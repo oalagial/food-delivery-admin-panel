@@ -10,6 +10,16 @@ import { Textarea } from '../components/ui/textarea'
 import { Alert, AlertDescription } from '../components/ui/alert'
 import { AlertCircle, CheckCircle } from 'lucide-react'
 
+const DAYS = [
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
+];
+
 export default function RestaurantCreate() {
   const { id } = useParams<{ id?: string }>()
   const navigate = useNavigate()
@@ -31,6 +41,9 @@ export default function RestaurantCreate() {
     longitude: '',
   })
   const [files, setFiles] = useState<FileList | null>(null)
+  const [openingHours, setOpeningHours] = useState([
+    // Example: { day: 'Monday', open: '09:00', close: '18:00' }
+  ])
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
@@ -38,7 +51,7 @@ export default function RestaurantCreate() {
     setCreateError(null)
     setCreateResult(false)
 
-    const payload: CreateRestaurantPayload = {
+    const payload: CreateRestaurantPayload & { openingHours?: any[] } = {
       name: String(form.name || '').trim(),
       address: String(form.address || '').trim(),
       streetNumber: String(form.streetNumber || '').trim(),
@@ -48,6 +61,9 @@ export default function RestaurantCreate() {
       country: String(form.country || '').trim(),
       image: String(form.image || '').trim(),
       description: String(form.description || '').trim(),
+    }
+    if (openingHours.length > 0) {
+      payload.openingHours = openingHours
     }
 
     const latRaw = String(form.latitude || '').trim()
@@ -126,6 +142,13 @@ export default function RestaurantCreate() {
             latitude: data.latitude != null ? String(data.latitude) : '',
             longitude: data.longitude != null ? String(data.longitude) : '',
           }))
+          if (Array.isArray(data.openingHours)) {
+            setOpeningHours(data.openingHours.map((oh: any) => ({
+              day: oh.day || '',
+              open: oh.open || '',
+              close: oh.close || '',
+            })))
+          }
         } else {
           setCreateError('Restaurant not found')
         }
@@ -275,6 +298,42 @@ export default function RestaurantCreate() {
                   type="number"
                   step="any"
                 />
+              </div>
+            </div>
+
+            {/* Opening Hours Section */}
+            <div>
+              <Label>Opening Hours</Label>
+              <div className="space-y-2 mt-2">
+                {openingHours.map((oh, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <select
+                      className="border rounded px-2 py-1"
+                      value={oh.day}
+                      onChange={e => setOpeningHours(hrs => hrs.map((h, i) => i === idx ? { ...h, day: e.target.value } : h))}
+                    >
+                      <option value="">Day</option>
+                      {DAYS.map(day => <option key={day} value={day}>{day}</option>)}
+                    </select>
+                    <Input
+                      type="time"
+                      className="w-28"
+                      value={oh.open}
+                      onChange={e => setOpeningHours(hrs => hrs.map((h, i) => i === idx ? { ...h, open: e.target.value } : h))}
+                      placeholder="Open"
+                    />
+                    <span>-</span>
+                    <Input
+                      type="time"
+                      className="w-28"
+                      value={oh.close}
+                      onChange={e => setOpeningHours(hrs => hrs.map((h, i) => i === idx ? { ...h, close: e.target.value } : h))}
+                      placeholder="Close"
+                    />
+                    <Button type="button" variant="danger" size="sm" className="ml-2" onClick={() => setOpeningHours(hrs => hrs.filter((_, i) => i !== idx))}>Remove</Button>
+                  </div>
+                ))}
+                <Button type="button" variant="secondary" size="sm" onClick={() => setOpeningHours(hrs => [...hrs, { day: '', open: '', close: '' }])}>Add Opening Hour</Button>
               </div>
             </div>
 

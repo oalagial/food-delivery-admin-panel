@@ -58,6 +58,7 @@ export default function Restaurant() {
               <TableHeadCell>Lat</TableHeadCell>
               <TableHeadCell>Lon</TableHeadCell>
               <TableHeadCell>Created</TableHeadCell>
+              <TableHeadCell>Opening Hours</TableHeadCell>
               <TableHeadCell>Actions</TableHeadCell>
             </tr>
           </TableHead>
@@ -86,13 +87,14 @@ export default function Restaurant() {
                 <TableHeadCell>Lat</TableHeadCell>
                 <TableHeadCell>Lon</TableHeadCell>
                 <TableHeadCell>Created</TableHeadCell>
+                <TableHeadCell>Opening Hours</TableHeadCell>
                 <TableHeadCell>Actions</TableHeadCell>
               </tr>
             </TableHead>
             <TableBody>
               {restaurants.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={11}>No restaurants found.</TableCell>
+                  <TableCell colSpan={12}>No restaurants found.</TableCell>
                 </TableRow>
               )}
               {restaurants.map((r) => (
@@ -106,6 +108,18 @@ export default function Restaurant() {
                   <TableCell>{r.latitude ?? ''}</TableCell>
                   <TableCell>{r.longitude ?? ''}</TableCell>
                   <TableCell>{r.createdAt ? new Date(String(r.createdAt)).toLocaleString() : ''}</TableCell>
+                  <TableCell>
+                    {Array.isArray(r.openingHours) && r.openingHours.length > 0 ? (
+                      <>
+                        {`${r.openingHours[0].day}: ${r.openingHours[0].open}-${r.openingHours[0].close}`}
+                        {r.openingHours.length > 1 && (
+                          <span className="text-xs text-gray-500 ml-2">+{r.openingHours.length - 1} more</span>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-xs text-gray-400">No hours</span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Link to={`/restaurant/creation/${encodeURIComponent(String(r.id ?? ''))}`} className='mr-2' ><Button variant="ghost" className='p-2' size="sm" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
                     <Button variant="danger" size="sm" className='p-2' icon={<FiTrash className="w-4 h-4" />}></Button>

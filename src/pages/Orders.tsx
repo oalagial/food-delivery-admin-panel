@@ -40,7 +40,7 @@ export default function Orders(){
           <TableBody>
             {Array.from({ length: 6 }).map((_, r) => (
               <TableRow key={r} className="animate-pulse">
-                {Array.from({ length: 7 }).map((__, c) => (
+                {Array.from({ length: 6 }).map((__, c) => (
                   <TableCell key={c}><Skeleton className="h-4 w-full bg-gray-200" /></TableCell>
                 ))}
               </TableRow>
