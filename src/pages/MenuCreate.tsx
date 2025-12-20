@@ -18,7 +18,7 @@ export default function MenuCreate() {
   const [description, setDescription] = useState('')
   // allow selecting only one restaurant for a menu
   const [restaurantId, setRestaurantId] = useState<string>('')
-  const [sectionIds, setSectionIds] = useState<Array<number | string>>([])
+  const [sectionIds, setSectionIds] = useState<number[]>([])
 
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [sections, setSections] = useState<SectionItem[]>([])
@@ -41,7 +41,13 @@ export default function MenuCreate() {
         setDescription(menu.description || '')
         // take the first restaurant id if returned as an array
         setRestaurantId(((menu.restaurants || [])[0] ?? '') + '')
-        setSectionIds((menu.sectionIds || []).map(v => Number(v)))
+        if (Array.isArray(menu.sections) && menu.sections.length > 0) {
+          setSectionIds(menu.sections.map((s: any) => Number(s.id)))
+        } else if (Array.isArray(menu.sectionIds)) {
+          setSectionIds(menu.sectionIds.map((v: any) => Number(v)))
+        } else {
+          setSectionIds([])
+        }
       }
     }).catch((e) => { if (mounted) setError(String(e)) })
       .finally(() => { if (mounted) setLoading(false) })
@@ -136,13 +142,13 @@ export default function MenuCreate() {
                     <div className="flex-1">
                       <div className="font-semibold mb-1 text-sm">Available</div>
                       <div className="border rounded p-2 h-40 overflow-y-auto bg-white">
-                        {sections.filter(s => !sectionIds.includes(s.id)).length === 0 && (
+                        {sections.filter(s => !sectionIds.includes(Number(s.id))).length === 0 && (
                           <div className="text-xs text-gray-400">No more sections</div>
                         )}
-                        {sections.filter(s => !sectionIds.includes(s.id)).map(s => (
+                        {sections.filter(s => !sectionIds.includes(Number(s.id))).map(s => (
                           <div key={s.id} className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 rounded cursor-pointer group">
                             <span>{s.name || s.id}</span>
-                            <button type="button" className="ml-2 text-green-600 hover:text-green-800 text-xs font-bold opacity-80 group-hover:opacity-100" onClick={() => setSectionIds(ids => [...ids, s.id])}>Add</button>
+                            <button type="button" className="ml-2 text-green-600 hover:text-green-800 text-xs font-bold opacity-80 group-hover:opacity-100" onClick={() => setSectionIds(ids => [...ids.map(Number), Number(s.id)])}>Add</button>
                           </div>
                         ))}
                       </div>
@@ -154,10 +160,10 @@ export default function MenuCreate() {
                         {sectionIds.length === 0 && (
                           <div className="text-xs text-gray-400">No sections selected</div>
                         )}
-                        {sections.filter(s => sectionIds.includes(s.id)).map(s => (
+                        {sections.filter(s => sectionIds.includes(Number(s.id))).map(s => (
                           <div key={s.id} className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 rounded cursor-pointer group">
                             <span>{s.name || s.id}</span>
-                            <button type="button" className="ml-2 text-red-600 hover:text-red-800 text-xs font-bold opacity-80 group-hover:opacity-100" onClick={() => setSectionIds(ids => ids.filter(id => id !== s.id))}>Remove</button>
+                            <button type="button" className="ml-2 text-red-600 hover:text-red-800 text-xs font-bold opacity-80 group-hover:opacity-100" onClick={() => setSectionIds(ids => ids.map(Number).filter(id => id !== Number(s.id)))}>Remove</button>
                           </div>
                         ))}
                       </div>
