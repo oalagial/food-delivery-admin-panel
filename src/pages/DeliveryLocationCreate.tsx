@@ -101,14 +101,6 @@ export default function DeliveryLocationCreate() {
     return () => { mounted = false }
   }, [params.id])
 
-  function handleSelectChange(selectedIds: number[]) {
-    const next = selectedIds.map((id) => {
-      const found = selectedDeliveredBy.find((e) => e.restaurantId === id)
-      return found ?? { restaurantId: id, deliveryFee: 0, minOrder: 0, isActive: true }
-    })
-    setSelectedDeliveredBy(next)
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSubmitting(true)
@@ -340,13 +332,13 @@ export default function DeliveryLocationCreate() {
                   <div className="flex-1">
                     <div className="font-semibold mb-1 text-sm">Available</div>
                     <div className="border rounded p-2 h-40 overflow-y-auto bg-white">
-                      {restaurants.filter(r => !selectedDeliveredBy.some(e => e.restaurantId === r.id)).length === 0 && (
+                      {restaurants.filter(r => !selectedDeliveredBy.some(e => e.restaurantId === Number(r.id))).length === 0 && (
                         <div className="text-xs text-gray-400">No more restaurants</div>
                       )}
-                      {restaurants.filter(r => !selectedDeliveredBy.some(e => e.restaurantId === r.id)).map(r => (
+                      {restaurants.filter(r => !selectedDeliveredBy.some(e => e.restaurantId === Number(r.id))).map(r => (
                         <div key={r.id} className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 rounded cursor-pointer group">
                           <span>{r.name ?? String(r.id)}</span>
-                          <button type="button" className="ml-2 text-green-600 hover:text-green-800 text-xs font-bold opacity-80 group-hover:opacity-100" onClick={() => setSelectedDeliveredBy(list => [...list, { restaurantId: r.id, deliveryFee: 0, minOrder: 0, isActive: true }])}>Add</button>
+                          <button type="button" className="ml-2 text-green-600 hover:text-green-800 text-xs font-bold opacity-80 group-hover:opacity-100" onClick={() => setSelectedDeliveredBy(list => [...list, { restaurantId: Number(r.id), deliveryFee: 0, minOrder: 0, isActive: true }])}>Add</button>
                         </div>
                       ))}
                     </div>
@@ -358,8 +350,8 @@ export default function DeliveryLocationCreate() {
                       {selectedDeliveredBy.length === 0 && (
                         <div className="text-xs text-gray-400">No restaurants selected</div>
                       )}
-                      {selectedDeliveredBy.map((entry, idx) => {
-                        const rest = restaurants.find(r => r.id === entry.restaurantId)
+                      {selectedDeliveredBy.map((entry) => {
+                        const rest = restaurants.find(r => Number(r.id) === Number(entry.restaurantId))
                         return (
                           <div key={entry.restaurantId} className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 rounded cursor-pointer group">
                             <span>{rest?.name ?? entry.restaurantId}</span>

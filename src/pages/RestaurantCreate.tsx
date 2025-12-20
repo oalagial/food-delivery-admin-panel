@@ -41,9 +41,7 @@ export default function RestaurantCreate() {
     longitude: '',
   })
   const [files, setFiles] = useState<FileList | null>(null)
-  const [openingHours, setOpeningHours] = useState([
-    // Example: { day: 'Monday', open: '09:00', close: '18:00' }
-  ])
+  const [openingHours, setOpeningHours] = useState<Array<{ day: string; open: string; close: string }>>([])
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
@@ -333,7 +331,7 @@ export default function RestaurantCreate() {
                     <Button type="button" variant="danger" size="sm" className="ml-2" onClick={() => setOpeningHours(hrs => hrs.filter((_, i) => i !== idx))}>Remove</Button>
                   </div>
                 ))}
-                <Button type="button" variant="secondary" size="sm" onClick={() => setOpeningHours(hrs => [...hrs, { day: '', open: '', close: '' }])}>Add Opening Hour</Button>
+                <Button type="button" variant="default" size="sm" onClick={() => setOpeningHours(hrs => [...hrs, { day: '', open: '', close: '' }])}>Add Opening Hour</Button>
               </div>
             </div>
 

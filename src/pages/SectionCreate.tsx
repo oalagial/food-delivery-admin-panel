@@ -17,7 +17,7 @@ export default function SectionCreate(){
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [typeId, setTypeId] = useState<number | ''>('')
-  const [productsIds, setProductsIds] = useState<number[]>([])
+  const [productsIds, setProductsIds] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [types, setTypes] = useState<TypeItem[]>([])
