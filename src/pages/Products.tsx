@@ -6,11 +6,13 @@ import { FiPlus, FiEdit, FiTrash, FiCheckCircle, FiXCircle } from 'react-icons/f
 import { getProductsList } from '../utils/api'
 import type { Product } from '../utils/api'
 import { Skeleton } from '../components/ui/skeleton'
+import { API_BASE } from '../config'
 
 export default function Products() {
   const [items, setItems] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  
 
   useEffect(() => {
     let mounted = true
@@ -94,7 +96,7 @@ export default function Products() {
                 <TableCell>{p.name ?? ''}</TableCell>
                 <TableCell>
                   {p.image ? (
-                    <img src={p.image} alt={p.name ?? 'product'} className="w-12 h-12 object-cover rounded" />
+                    <img src={API_BASE + "/images/" + p.image} alt={p.name ?? 'product'} className="w-12 h-12 object-cover rounded" />
                   ) : (
                     <div className="w-12 h-12 bg-gray-100 rounded" />
                   )}

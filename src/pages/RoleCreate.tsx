@@ -7,7 +7,7 @@ import { Label } from '../components/ui/label'
 import { Textarea } from '../components/ui/textarea'
 import { Alert, AlertDescription } from '../components/ui/alert'
 import { AlertCircle } from 'lucide-react'
-
+import { getRoleById } from '../utils/api'
 import { API_BASE } from '../config'
 
 export default function RoleCreate() {
@@ -15,26 +15,45 @@ export default function RoleCreate() {
   const navigate = useNavigate()
 
   const [saving, setSaving] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState({ name: '', description: '' })
 
   useEffect(() => {
     if (!id) return
     let mounted = true
-    ;(async () => {
-      try {
-        const res = await fetch(`${API_BASE}/roles?id=${id}`)
-        if (!res.ok) throw new Error(`Failed to load role: ${res.status}`)
-        const json = await res.json()
+    getRoleById(id)
+      .then((data) => {
         if (!mounted) return
-        setForm({ name: String(json.name ?? ''), description: String(json.description ?? '') })
-      } catch (err: unknown) {
-        if (!mounted) return
-        setError(err instanceof Error ? err.message : String(err))
-      }
-    })()
+        if (data) {
+          setForm((s) => ({
+            ...s,
+            name: String(data.name ?? ''),
+            description: String(data.description ?? '')
 
-    return () => { mounted = false }
+          })
+        )} else {
+          setCreateError('Role not found')
+        }
+      })
+      .catch((err) => {
+        setCreateError(err?.message || 'Failed to load role')
+      })
+    // ;(async () => {
+    //   try {
+    //     // const res = await fetch(`${API_BASE}/roles?id=${id}`)
+    //     const res = await getRoleById(id); 
+    //     // if (!res.ok) throw new Error(`Failed to load role: ${res.status}`)
+    //     // const json = await res.json()
+    //     // if (!mounted) return
+    //     setForm({ name: String(json.name ?? ''), description: String(json.description ?? '') })
+    //   } catch (err: unknown) {
+    //     if (!mounted) return
+    //     setError(err instanceof Error ? err.message : String(err))
+    //   }
+    // })()
+
+    // return () => { mounted = false }
   }, [id])
 
   async function handleSave(e: React.FormEvent) {

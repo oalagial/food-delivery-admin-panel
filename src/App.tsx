@@ -26,6 +26,8 @@ import Login from './pages/Login'
 import RequireAuth from './components/RequireAuth'
 import { getToken } from './utils/api'
 import { FiHome, FiShoppingCart, FiCoffee, FiMapPin, FiUsers, FiShield, FiKey, FiSettings, FiTag, FiBox, FiList, FiLayers } from 'react-icons/fi'
+import Offers from './pages/Offers'
+import OfferCreate from './pages/OfferCreate'
 
 function NavSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -224,6 +226,17 @@ function App() {
                 </li>
                 <li>
                   <NavLink
+                    to="/offers"
+                    className={({ isActive }) =>
+                      `nav-link ${isActive ? 'active' : ''}`
+                    }
+                  >
+                    <FiHome className="w-5 h-5" />
+                    <span>Offers</span>
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink
                     to="/customers"
                     className={({ isActive }) =>
                       `nav-link ${isActive ? 'active' : ''}`
@@ -271,6 +284,9 @@ function App() {
               <Route path="/roles/creation/:id" element={<RequireAuth><RoleCreate /></RequireAuth>} />
               <Route path="/permits" element={<RequireAuth><Permits /></RequireAuth>} />
               <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
+              <Route path="/offers" element={<RequireAuth><Offers /></RequireAuth>} />
+              <Route path="/offers/creation" element={<RequireAuth><OfferCreate /></RequireAuth>} />
+              <Route path="/offers/creation/:id" element={<RequireAuth><OfferCreate /></RequireAuth>} />
               <Route path="/" element={<RequireAuth><Dashboard /></RequireAuth>} />
             </Routes>
           </div>

@@ -15,6 +15,7 @@ export default function ProductCreate() {
   const navigate = useNavigate()
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [files, setFiles] = useState<FileList | null>(null)
   
 
   const [types, setTypes] = useState<any[]>([])
@@ -165,13 +166,18 @@ export default function ProductCreate() {
 
             <div>
               <Label htmlFor="image">Image URL</Label>
-              <Input 
+               <div className="mt-2 flex items-center gap-4">
+                <input id="images" type="file" multiple className="hidden" onChange={(e) => setFiles(e.target.files)} />
+                <label htmlFor="images"><Button variant="primary" type="button">Choose Images</Button></label>
+                <span className="text-sm text-gray-600">{files && files.length > 0 ? `${files.length} file(s) selected` : 'No files selected'}</span>
+              </div>
+              {/* <Input 
                 id="image"
                 className="mt-2 w-full"
                 value={form.image as string} 
                 onChange={(e)=> setForm(s=>({...s, image: e.target.value}))} 
                 placeholder="https://example.com/image.jpg" 
-              />
+              /> */}
             </div>
 
             <div className="flex items-end gap-3">
