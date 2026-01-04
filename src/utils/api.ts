@@ -487,6 +487,58 @@ export async function updateProduct(id: string | number, payload: CreateProductP
   return data
 }
 
+export type ProductExtra = {
+  productId?: string
+  name: string
+  price: number
+}
+
+export type CreateProductExtraPayload = {
+  productId?: string
+  name: string
+  price: number
+}
+
+export async function getExtrasByProduct(id: string | number): Promise<ProductExtra[] | null> {
+  if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
+  const res = await authFetch(`/products-extra?productId=${encodeURIComponent(String(id))}`)
+
+  if (res.status === 404) return null
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(text || `GET /products-extra/${id} failed (${res.status})`)
+  }
+
+  const data = await res.json().catch(() => null)
+  return data.data?.[0] || null
+}
+
+export async function createProductExtra(payload: CreateProductExtraPayload) {
+  const res = await authFetch('/products-extra/create', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+
+  if (!res.ok) {
+    let bodyText = ''
+    try {
+      const json = await res.json()
+      bodyText = parseErrorJson(json)
+    } catch {
+      try { bodyText = await res.text() } catch { bodyText = '' }
+    }
+
+    throw new Error(bodyText || `POST /products-extra/create failed (${res.status})`)
+  }
+
+  const data = await res.json().catch(() => null)
+  return data
+}
+
+
+
+
 // Menus API
 export type MenuItem = {
   id?: number | string
@@ -589,22 +641,24 @@ export type Offer = {
   menuId?: number | string
   isActive: boolean
   image?: string
+  groups: OfferGroup[]
 }
 
 export type OfferGroup = {
-  name: string,
-  minItems: number,
+  name: string
+  minItems: number
   maxItems: number
-  productsIds: Array<number> 
+  products?: Array<any>
+  productsIds: Array<number>
 }
 
 export type CreateOfferPayload = {
-  name: string,
-  description: string,
-  price: number,
-  restaurantId: number,
-  menuId: number,
-  isActive: boolean,
+  name: string
+  description: string
+  price: number
+  restaurantId: number
+  menuId: number
+  isActive: boolean
   groups: OfferGroup[]
 }
 
@@ -650,6 +704,29 @@ export async function createOffer(payload: CreateOfferPayload) {
       try { bodyText = await res.text() } catch { bodyText = '' }
     }
     throw new Error(bodyText || `POST /offers/create failed (${res.status})`)
+  }
+
+  const data = await res.json().catch(() => null)
+  return data
+}
+
+export async function updateOffer(id: string | number, payload: CreateOfferPayload) {
+  if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
+  const res = await authFetch(`/offers/${encodeURIComponent(String(id))}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+
+  if (!res.ok) {
+    let bodyText = ''
+    try {
+      const json = await res.json()
+      bodyText = (json && (json.message || JSON.stringify(json))) || ''
+    } catch {
+      try { bodyText = await res.text() } catch { bodyText = '' }
+    }
+    throw new Error(bodyText || `PUT /offers/${id} failed (${res.status})`)
   }
 
   const data = await res.json().catch(() => null)

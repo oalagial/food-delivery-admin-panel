@@ -49,7 +49,7 @@ export default function Offers() {
               <TableHeadCell>Name</TableHeadCell>
               <TableHeadCell>Description</TableHeadCell>
               <TableHeadCell>Price</TableHeadCell>
-              {/* <TableHeadCell>Actions</TableHeadCell> */}
+              <TableHeadCell>Actions</TableHeadCell>
             </tr>
           </TableHead>
           <TableBody>
@@ -71,6 +71,7 @@ export default function Offers() {
                 <TableHeadCell>Name</TableHeadCell>
                 <TableHeadCell>Description</TableHeadCell>
                 <TableHeadCell>Price</TableHeadCell>
+                <TableHeadCell>Actions</TableHeadCell>
               </tr>
             </TableHead>
             <TableBody>
@@ -84,6 +85,14 @@ export default function Offers() {
                   <TableCell>{o.name ?? ''}</TableCell>
                   <TableCell>{o.description ?? ''}</TableCell>
                   <TableCell>{o.price ?? ''}</TableCell>
+                  <TableCell>
+                    <div className="flex justify-center gap-2">
+                      <Link to={`/offers/creation/${encodeURIComponent(String(o.id ?? ''))}`}>
+                        <Button variant="ghost" size="sm" className="p-2" icon={<FiEdit className="w-4 h-4" />} />
+                      </Link>
+                      <Button variant="danger" size="sm" className="p-2" icon={<FiTrash className="w-4 h-4" />} />
+                    </div>
+                </TableCell>
                 </TableRow>
               ))}
             </TableBody>

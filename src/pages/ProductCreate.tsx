@@ -6,8 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Label } from '../components/ui/label'
 import { Alert, AlertDescription } from '../components/ui/alert'
 import { AlertCircle } from 'lucide-react'
-import { createProduct, getProductById, updateProduct, getTypesList } from '../utils/api'
-import type { CreateProductPayload } from '../utils/api'
+import { createProduct, getProductById, updateProduct, getTypesList, getExtrasByProduct } from '../utils/api'
+import type { CreateProductPayload, ProductExtra } from '../utils/api'
 import { Select } from '../components/ui/select';
 
 export default function ProductCreate() {
@@ -19,8 +19,9 @@ export default function ProductCreate() {
   
 
   const [types, setTypes] = useState<any[]>([])
-  const [typesLoading, setTypesLoading] = useState(true)
-
+  const [loading, setLoading] = useState(true)
+  const [productExtras, setProductExtras] = useState<ProductExtra[]>([])
+  
   // Keep a raw ingredients text input so typing a trailing comma doesn't get trimmed away
   const [ingredientsInput, setIngredientsInput] = useState('')
 
@@ -44,28 +45,69 @@ export default function ProductCreate() {
   }, [])
 
   useEffect(() => {
-    if (!id) return
-    let mounted = true
-    getProductById(id)
-      .then((data) => {
-        if (!mounted) return
-        if (data) {
-          setForm({
-            name: data.name,
-            description: data.description,
-            image: data.image,
-            typeId: data.typeId,
-            ingredients: data.ingredients ?? [],
-            price: data.price,
-            isAvailable: data.isAvailable,
-          })
-          setIngredientsInput(Array.isArray(data.ingredients) ? data.ingredients.join(', ') : '')
-        }
-      })
-      .catch((err) => { if (!mounted) return; setError(err?.message || 'Failed to load product') })
+    let mounted = true;
+
+    Promise.all([
+      id ? getProductById(id).catch(() => null) : Promise.resolve(null),
+      id ? getExtrasByProduct(id).catch(() => []) : Promise.resolve(null)
+    ]).then(([product, productExtras]) => {
+      if (product) {
+        setForm({
+          name: product.name,
+          description: product.description,
+          image: product.image,
+          typeId: product.typeId,
+          ingredients: product.ingredients ?? [],
+          price: product.price,
+          isAvailable: product.isAvailable,
+        })
+        setIngredientsInput(Array.isArray(product.ingredients) ? product.ingredients.join(', ') : '')
+      }
+    })
+    .catch((e) => { if (mounted) setError(String(e)) })
+    .finally(() => { if (mounted) setLoading(false) } )
     return () => { mounted = false }
   }, [id])
 
+  // useEffect(() => {
+  //   if (!id) return
+  //   let mounted = true
+  //   getProductById(id)
+  //     .then((data) => {
+  //       if (!mounted) return
+  //       if (data) {
+  //         setForm({
+  //           name: data.name,
+  //           description: data.description,
+  //           image: data.image,
+  //           typeId: data.typeId,
+  //           ingredients: data.ingredients ?? [],
+  //           price: data.price,
+  //           isAvailable: data.isAvailable,
+  //         })
+  //         setIngredientsInput(Array.isArray(data.ingredients) ? data.ingredients.join(', ') : '')
+  //       }
+  //     })
+  //     .catch((err) => { if (!mounted) return; setError(err?.message || 'Failed to load product') })
+  //   return () => { mounted = false }
+  // }, [id])
+
+  const addExtra = () => {
+    setProductExtras(prev => [
+      ...prev,
+      {
+        productId: id ?? undefined,
+        name: '',
+        price: 0
+      }
+    ]);
+  };
+
+  const removeExtra = (index: number) => {
+    setProductExtras(prev => prev.filter((_, i) => i !== index));
+  };
+
+  
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
@@ -82,12 +124,13 @@ export default function ProductCreate() {
     }
 
     try {
+      console.log(productExtras)
       if (id) {
-        await updateProduct(id, payload)
+        // await updateProduct(id, payload)
       } else {
-        await createProduct(payload)
+        // await createProduct(payload)
       }
-      navigate('/products')
+      // navigate('/products')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -101,110 +144,181 @@ export default function ProductCreate() {
         <h1 className="text-3xl font-bold">{id ? 'Edit Product' : 'Create Product'}</h1>
       </div>
 
-      <Card className="shadow-md">
-        <CardHeader>
-          <CardTitle>{id ? 'Update Product' : 'New Product'}</CardTitle>
-          <CardDescription>Fill in the product details below</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="name">Product Name *</Label>
-              <Input 
-                id="name"
-                className="mt-2 w-full"
-                value={form.name as string} 
-                onChange={(e) => setForm(s => ({...s, name: e.target.value}))} 
-                placeholder="Product name" 
-                required 
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="type">Product Type</Label>
-              {typesLoading ? (
-                <div className="mt-2 text-sm text-gray-500">Loading types...</div>
-              ) : (
-                <Select
-                  id="type"
+      {loading ? (
+        <Card className="shadow-md">
+          <CardContent className="pt-6">Loading...</CardContent>
+        </Card>
+      ) : (
+        <Card className="shadow-md">  
+          <CardHeader>
+            <CardTitle>{id ? 'Update Product' : 'New Product'}</CardTitle>
+            <CardDescription>Fill in the product details below</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="name">Product Name *</Label>
+                <Input 
+                  id="name"
                   className="mt-2 w-full"
-                  value={form.typeId !== undefined && form.typeId !== null ? String(form.typeId) : ''}
-                  onChange={(e) => setForm(s => ({ ...s, typeId: e.target.value ? Number(e.target.value) : undefined }))}
-                >
-                  <option value="">Select a type</option>
-                  {types.map(t => <option key={t.id} value={String(t.id)}>{t.name}</option>)}
-                </Select>
-              )}
-            </div>
-
-            <div>
-              <Label htmlFor="price">Price ($)</Label>
-              <Input
-                id="price"
-                className="mt-2 w-full"
-                value={form.price !== undefined ? String(form.price) : ''}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setForm(s => ({ ...s, price: v === '' ? undefined : Number(v) }));
-                }}
-                placeholder="0.00"
-                type="number"
-                step="0.01"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="ingredients">Ingredients (comma separated)</Label>
-              <Input
-                id="ingredients"
-                className="mt-2 w-full"
-                value={ingredientsInput}
-                onChange={(e)=> setIngredientsInput(e.target.value)}
-                placeholder="Tomato, Cheese, Basil"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="image">Image URL</Label>
-               <div className="mt-2 flex items-center gap-4">
-                <input id="images" type="file" multiple className="hidden" onChange={(e) => setFiles(e.target.files)} />
-                <label htmlFor="images"><Button variant="primary" type="button">Choose Images</Button></label>
-                <span className="text-sm text-gray-600">{files && files.length > 0 ? `${files.length} file(s) selected` : 'No files selected'}</span>
+                  value={form.name as string} 
+                  onChange={(e) => setForm(s => ({...s, name: e.target.value}))} 
+                  placeholder="Product name" 
+                  required 
+                />
               </div>
-              {/* <Input 
-                id="image"
-                className="mt-2 w-full"
-                value={form.image as string} 
-                onChange={(e)=> setForm(s=>({...s, image: e.target.value}))} 
-                placeholder="https://example.com/image.jpg" 
-              /> */}
-            </div>
 
-            <div className="flex items-end gap-3">
-              <input 
-                id="available"
-                type="checkbox" 
-                checked={!!form.isAvailable} 
-                onChange={(e)=> setForm(s=>({...s, isAvailable: e.target.checked}))}
-                className="h-4 w-4 rounded border-gray-300"
-              />
-              <Label htmlFor="available" className="mb-0 cursor-pointer">Available for order</Label>
-            </div>
+              <div>
+                <Label htmlFor="type">Product Type</Label>
+                {loading ? (
+                  <div className="mt-2 text-sm text-gray-500">Loading types...</div>
+                ) : (
+                  <Select
+                    id="type"
+                    className="mt-2 w-full"
+                    value={form.typeId !== undefined && form.typeId !== null ? String(form.typeId) : ''}
+                    onChange={(e) => setForm(s => ({ ...s, typeId: e.target.value ? Number(e.target.value) : undefined }))}
+                  >
+                    <option value="">Select a type</option>
+                    {types.map(t => <option key={t.id} value={String(t.id)}>{t.name}</option>)}
+                  </Select>
+                )}
+              </div>
 
-            {error && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
+              <div>
+                <Label htmlFor="price">Price ($)</Label>
+                <Input
+                  id="price"
+                  className="mt-2 w-full"
+                  value={form.price !== undefined ? String(form.price) : ''}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setForm(s => ({ ...s, price: v === '' ? undefined : Number(v) }));
+                  }}
+                  placeholder="0.00"
+                  type="number"
+                  step="0.01"
+                />
+              </div>
 
-            <div className="col-start-2 flex justify-end gap-3 pt-4">
-              <Button variant="default" type="button" onClick={() => navigate('/products')}>Cancel</Button>
-              <Button variant="primary" type="submit" disabled={saving}>{saving ? 'Saving...' : id ? 'Update' : 'Create'}</Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+              <div>
+                <Label htmlFor="ingredients">Ingredients (comma separated)</Label>
+                <Input
+                  id="ingredients"
+                  className="mt-2 w-full"
+                  value={ingredientsInput}
+                  onChange={(e)=> setIngredientsInput(e.target.value)}
+                  placeholder="Tomato, Cheese, Basil"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="image">Image URL</Label>
+                <div className="mt-2 flex items-center gap-4">
+                  <input id="images" type="file" multiple className="hidden" onChange={(e) => setFiles(e.target.files)} />
+                  <label htmlFor="images"><Button variant="primary" type="button">Choose Images</Button></label>
+                  <span className="text-sm text-gray-600">{files && files.length > 0 ? `${files.length} file(s) selected` : 'No files selected'}</span>
+                </div>
+                {/* <Input 
+                  id="image"
+                  className="mt-2 w-full"
+                  value={form.image as string} 
+                  onChange={(e)=> setForm(s=>({...s, image: e.target.value}))} 
+                  placeholder="https://example.com/image.jpg" 
+                /> */}
+              </div>
+              
+              <div className="flex items-end gap-3">
+                <input 
+                  id="available"
+                  type="checkbox" 
+                  checked={!!form.isAvailable} 
+                  onChange={(e)=> setForm(s=>({...s, isAvailable: e.target.checked}))}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <Label htmlFor="available" className="mb-0 cursor-pointer">Available for order</Label>
+              </div>
+              
+              <div className="col-span-2">
+                <Label className="block mb-2">Product Extras</Label>
+                <div>
+                  <Button
+                    className='mb-2'
+                    type="button" 
+                    onClick={addExtra}
+                  > Add Extra
+                  </Button>
+
+                  </div>
+                <div className="grid grid-cols-2 gap-4">
+                  {productExtras.map((extra, index) => (
+                    <div
+                      key={index}
+                      className="rounded-lg border bg-gray-300 p-4 space-y-3"
+                    >
+                      <div className="flex justify-end">
+                        <Button
+                          type="button"
+                          variant="default"
+                          className="text-red-600 text-xs font-bold mb-4"
+                          onClick={() => removeExtra(index)}
+                        >
+                          Remove Extra
+                        </Button>
+                      </div>
+                      <div>
+                        <Label htmlFor={`productExtraName-${index}`}>Extra Name</Label>
+                        <Input
+                          id={`productExtraName-${index}`}
+                          value={extra.name}
+                          onChange={e => {
+                            const value = e.target.value;
+                            // updateProductExtra(index, 'name', value)
+                          }}
+                          placeholder="e.g. Extra cheese"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor={`productExtraPrice-${index}`}>Extra Price</Label>
+                        <Input
+                          id={`productExtraPrice-${index}`}
+                          type="number"
+                          step="0.01"
+                          value={extra.price}
+                          onChange={e => {
+                            const value = Number(e.target.value);
+                            // updateProductExtra(index, 'price', value)
+                          }}
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+
+
+              {error && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              <div className="col-start-2 flex justify-end gap-3 pt-4">
+                <Button variant="default" type="button" onClick={() => navigate('/products')}>Cancel</Button>
+                <Button variant="primary" type="submit" disabled={saving}>{saving ? 'Saving...' : id ? 'Update' : 'Create'}</Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card> 
+      )
+      }
+
+     
+      
     </div>
   )
 }

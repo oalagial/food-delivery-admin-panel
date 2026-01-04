@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
-import { createOffer, getProductsList, getRestaurantsList, type CreateOfferPayload, type OfferGroup, type Product, type Restaurant } from "../utils/api"
+import { createOffer, getOfferById, getProductsList, getRestaurantsList, updateOffer, type CreateOfferPayload, type OfferGroup, type Product, type Restaurant } from "../utils/api"
 import { FiPlus } from "react-icons/fi"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
@@ -25,22 +25,16 @@ export default function OfferCreate () {
     description: string;
     price: number;
     restaurantId: string;
+    menuId: string;
     groups: OfferGroup[];
   }>({
     name: '',
     description: '',
     price: 0,
     restaurantId: '',
+    menuId: '',
     groups: []
   });
-
-
-  const emptyGroup: OfferGroup = {
-    name: '',
-    minItems: 0,
-    maxItems: 0,
-    productsIds: [],
-  };
 
   const addProductToGroup = (groupIndex: number, productId: number) => {
     setForm(prev => ({
@@ -53,16 +47,16 @@ export default function OfferCreate () {
       }));
     };
 
-    const removeProductFromGroup = (groupIndex: number, productId: number) => {
-      setForm(prev => ({
-        ...prev,
-        groups: prev.groups.map((g, i) =>
-          i === groupIndex
-            ? { ...g, productsIds: g.productsIds.filter(id => id !== productId) }
-            : g
-        )
-      }));
-    };
+  const removeProductFromGroup = (groupIndex: number, productId: number) => {
+    setForm(prev => ({
+      ...prev,
+      groups: prev.groups.map((g, i) =>
+        i === groupIndex
+          ? { ...g, productsIds: g.productsIds.filter(id => id !== productId) }
+          : g
+      )
+    }));
+  };
 
 
   useEffect(() => {
@@ -70,11 +64,30 @@ export default function OfferCreate () {
     
     Promise.all([
       getRestaurantsList().catch(() => []),
-      getProductsList().catch(() => [])
-    ]).then(([rs, pr]) => {
+      getProductsList().catch(() => []),
+      id ? getOfferById(id).catch(() => null) : Promise.resolve(null)
+    ]).then(([rs, pr, offer]) => {
       if (!mounted) return
       setRestaurants(rs || [])
       setProducts(pr || [])
+      if (offer) {
+        setForm({
+          name: offer.name || "",
+          description: offer.description || "null",
+          price: Number(offer.price),
+          restaurantId: String(offer.restaurantId) || '',
+          menuId: String(offer.menuId) || '',
+          groups: offer.groups.map(g => ({
+            name: g.name,
+            minItems: g.minItems,
+            maxItems: g.maxItems,
+            productsIds: g.products?.map(p => p.id) // 🔥 ΤΟ ΚΛΕΙΔΙ
+          }))
+
+        });
+
+      }
+
     }).catch((e) => { if (mounted) setCreateError(String(e)) })
       .finally(() => { if (mounted) setLoading(false) } )
     return () => { mounted = false }
@@ -96,7 +109,12 @@ export default function OfferCreate () {
     }));
   };
 
-
+  const removeGroup = (index: number) => {
+    setForm(prev => ({
+      ...prev,
+      groups: prev.groups.filter((_, i) => i !==index)
+    }))
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -115,8 +133,12 @@ export default function OfferCreate () {
         groups: form.groups
       }
       console.log('Payload: ', payload)
-      if (editing && id) {}
-      else {await createOffer(payload)}
+      if (editing && id) {
+        await updateOffer(Number(id), payload)
+      }
+      else {
+        await createOffer(payload)
+      }
       navigate('/offers')
 
     } 
@@ -212,8 +234,18 @@ export default function OfferCreate () {
                 </div>
 
                 {form.groups.map((g, index) => (
-                  <div className="bg-gray-300">
+                  <div className="bg-gray-300 rounded-lg">
                     <div key={index} className="m-3 p-3">
+                      <div className="flex justify-end">
+                        <Button
+                          type="button"
+                          variant="default"
+                          className="text-red-600 text-xs font-bold mb-4"
+                          onClick={() => removeGroup(index)}
+                        >
+                          Remove Group
+                        </Button>
+                      </div>
                       <div className="grid grid-cols-3 gap-4">
                         <div>
                           <Label htmlFor={`groupName-${index}`}>Group Name</Label>
