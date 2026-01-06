@@ -6,8 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Label } from '../components/ui/label'
 import { Alert, AlertDescription } from '../components/ui/alert'
 import { AlertCircle } from 'lucide-react'
-import { createProduct, getProductById, updateProduct, getTypesList, getExtrasByProduct } from '../utils/api'
-import type { CreateProductPayload, ProductExtra } from '../utils/api'
+import { createProduct, getProductById, updateProduct, getTypesList, getExtrasByProduct, createProductExtra } from '../utils/api'
+import type { CreateProductExtraPayload, CreateProductPayload, ProductExtra } from '../utils/api'
 import { Select } from '../components/ui/select';
 
 export default function ProductCreate() {
@@ -63,40 +63,25 @@ export default function ProductCreate() {
         })
         setIngredientsInput(Array.isArray(product.ingredients) ? product.ingredients.join(', ') : '')
       }
+
+      if (productExtras) {
+        setProductExtras(productExtras.map(extra => ({
+          productId: extra.productId,
+          name: extra.name,
+          price: extra.price
+        })))
+      }
     })
     .catch((e) => { if (mounted) setError(String(e)) })
     .finally(() => { if (mounted) setLoading(false) } )
     return () => { mounted = false }
   }, [id])
 
-  // useEffect(() => {
-  //   if (!id) return
-  //   let mounted = true
-  //   getProductById(id)
-  //     .then((data) => {
-  //       if (!mounted) return
-  //       if (data) {
-  //         setForm({
-  //           name: data.name,
-  //           description: data.description,
-  //           image: data.image,
-  //           typeId: data.typeId,
-  //           ingredients: data.ingredients ?? [],
-  //           price: data.price,
-  //           isAvailable: data.isAvailable,
-  //         })
-  //         setIngredientsInput(Array.isArray(data.ingredients) ? data.ingredients.join(', ') : '')
-  //       }
-  //     })
-  //     .catch((err) => { if (!mounted) return; setError(err?.message || 'Failed to load product') })
-  //   return () => { mounted = false }
-  // }, [id])
-
   const addExtra = () => {
     setProductExtras(prev => [
       ...prev,
       {
-        productId: id ?? undefined,
+        productId: id ? Number(id) : undefined,
         name: '',
         price: 0
       }
@@ -107,7 +92,10 @@ export default function ProductCreate() {
     setProductExtras(prev => prev.filter((_, i) => i !== index));
   };
 
-  
+  const updateProductExtra = (index: number, field: keyof ProductExtra, value: string | number) => {
+    setProductExtras(prev => prev.map((extra, i) => i === index ? { ...extra, [field]: value } : extra));
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
@@ -124,13 +112,15 @@ export default function ProductCreate() {
     }
 
     try {
-      console.log(productExtras)
       if (id) {
-        // await updateProduct(id, payload)
+        await updateProduct(id, payload)
+        await Promise.all(productExtras.map(async (extra: any) => {
+          createProductExtra(extra)
+        }))
       } else {
-        // await createProduct(payload)
+        await createProduct(payload)
       }
-      // navigate('/products')
+      navigate('/products')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -254,13 +244,13 @@ export default function ProductCreate() {
                   {productExtras.map((extra, index) => (
                     <div
                       key={index}
-                      className="rounded-lg border bg-gray-300 p-4 space-y-3"
+                      className="rounded-lg border bg-gray-300 p-4"
                     >
                       <div className="flex justify-end">
                         <Button
                           type="button"
                           variant="default"
-                          className="text-red-600 text-xs font-bold mb-4"
+                          className="text-red-600 text-xs font-bold"
                           onClick={() => removeExtra(index)}
                         >
                           Remove Extra
@@ -273,7 +263,7 @@ export default function ProductCreate() {
                           value={extra.name}
                           onChange={e => {
                             const value = e.target.value;
-                            // updateProductExtra(index, 'name', value)
+                            updateProductExtra(index, 'name', value)
                           }}
                           placeholder="e.g. Extra cheese"
                         />
@@ -288,7 +278,7 @@ export default function ProductCreate() {
                           value={extra.price}
                           onChange={e => {
                             const value = Number(e.target.value);
-                            // updateProductExtra(index, 'price', value)
+                            updateProductExtra(index, 'price', value)
                           }}
                           placeholder="0.00"
                         />

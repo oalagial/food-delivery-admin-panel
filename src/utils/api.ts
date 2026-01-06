@@ -494,7 +494,7 @@ export type ProductExtra = {
 }
 
 export type CreateProductExtraPayload = {
-  productId?: string
+  productId?: number
   name: string
   price: number
 }
@@ -510,7 +510,7 @@ export async function getExtrasByProduct(id: string | number): Promise<ProductEx
   }
 
   const data = await res.json().catch(() => null)
-  return data.data?.[0] || null
+  return data.data || null
 }
 
 export async function createProductExtra(payload: CreateProductExtraPayload) {

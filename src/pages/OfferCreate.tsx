@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { createOffer, getOfferById, getProductsList, getRestaurantsList, updateOffer, type CreateOfferPayload, type OfferGroup, type Product, type Restaurant } from "../utils/api"
-import { FiPlus } from "react-icons/fi"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
 import { Label } from "../components/ui/label"
@@ -26,6 +25,7 @@ export default function OfferCreate () {
     price: number;
     restaurantId: string;
     menuId: string;
+    isActive: boolean;
     groups: OfferGroup[];
   }>({
     name: '',
@@ -33,6 +33,7 @@ export default function OfferCreate () {
     price: 0,
     restaurantId: '',
     menuId: '',
+    isActive: true,
     groups: []
   });
 
@@ -72,16 +73,17 @@ export default function OfferCreate () {
       setProducts(pr || [])
       if (offer) {
         setForm({
-          name: offer.name || "",
-          description: offer.description || "null",
+          name: offer.name || '',
+          description: offer.description || '',
           price: Number(offer.price),
           restaurantId: String(offer.restaurantId) || '',
           menuId: String(offer.menuId) || '',
+          isActive: Boolean(offer.isActive),
           groups: offer.groups.map(g => ({
             name: g.name,
             minItems: g.minItems,
             maxItems: g.maxItems,
-            productsIds: g.products?.map(p => p.id) // 🔥 ΤΟ ΚΛΕΙΔΙ
+            productsIds: g.products?.map(p => p.id)
           }))
 
         });
@@ -120,7 +122,6 @@ export default function OfferCreate () {
     e.preventDefault()
     setCreateError(null)
     setSaving(true)
-    console.log(form)
 
     try {
       const payload: CreateOfferPayload = {
@@ -129,10 +130,9 @@ export default function OfferCreate () {
         price: Number(form.price),
         restaurantId: Number(form.restaurantId),
         menuId: 1,
-        isActive: true,
+        isActive: form.isActive,
         groups: form.groups
       }
-      console.log('Payload: ', payload)
       if (editing && id) {
         await updateOffer(Number(id), payload)
       }
@@ -184,7 +184,7 @@ export default function OfferCreate () {
                   </div>
                   
                   <div>
-                    <Label htmlFor="description">Description*</Label>
+                    <Label htmlFor="description">Description</Label>
                     <Input
                       id="description"
                       className="mt-2 w-full"
@@ -195,9 +195,9 @@ export default function OfferCreate () {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <Label htmlFor="price" >Price ($)</Label>
+                    <Label htmlFor="price" >Price ($) *</Label>
                     <Input
                       id="price"
                       type="number"
@@ -211,7 +211,7 @@ export default function OfferCreate () {
                   </div>
 
                   <div>
-                    <Label htmlFor="restaurant">Restaurant Id *</Label>
+                    <Label htmlFor="restaurant">Restaurant *</Label>
                     <Select
                       id="restaurant"
                       className="mt-2 w-full"
@@ -223,6 +223,17 @@ export default function OfferCreate () {
                       {restaurants.map(r => <option key={String(r.id)} value={String(r.id)}>{r.name ?? String(r.id)}</option>)}
 
                     </Select>
+                  </div>
+
+                   <div className="flex items-end gap-3">
+                    <Label htmlFor="available" className="mb-0 cursor-pointer">Active</Label>
+                    <input 
+                      id="available"
+                      type="checkbox" 
+                      checked={!!form.isActive} 
+                      onChange={(e)=> setForm(s=>({...s, isActive: e.target.checked}))}
+                      className="h-4 w-4 rounded border-gray-300"
+                    />
                   </div>
                 </div>
                 

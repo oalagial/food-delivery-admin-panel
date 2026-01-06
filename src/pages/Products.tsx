@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { Button } from '../components/ui/button'
@@ -7,11 +7,14 @@ import { getProductsList } from '../utils/api'
 import type { Product } from '../utils/api'
 import { Skeleton } from '../components/ui/skeleton'
 import { API_BASE } from '../config'
+import { Input } from '../components/ui/input'
 
 export default function Products() {
   const [items, setItems] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+
   
 
   useEffect(() => {
@@ -32,6 +35,17 @@ export default function Products() {
     return () => { mounted = false }
   }, [])
 
+  const filteredItems = useMemo(() => {
+    const q = search.trim().toLowerCase()
+
+    if (!q) return items
+
+    return items.filter(p =>
+      p.name?.toLowerCase().includes(q)
+    )
+  }, [items, search])
+
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -39,7 +53,16 @@ export default function Products() {
           <h1 className="text-3xl font-bold text-gray-900">Products</h1>
           <p className="text-gray-600 mt-1">Manage your restaurant products</p>
         </div>
-        <Link to="/products/creation"><Button variant="primary" icon={<FiPlus className="w-5 h-5" />} className="px-6 py-3 text-base">Create Product</Button></Link>
+        <div className="flex flex-row items-center gap-4">
+          <div className="w-36">
+            <Input
+              placeholder="Search product..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <Link to="/products/creation"><Button variant="primary" icon={<FiPlus className="w-5 h-5" />} className="px-6 py-3 text-base">Create Product</Button></Link>
+        </div>
       </div>
 
       {loading && (
@@ -85,13 +108,13 @@ export default function Products() {
             </tr>
           </TableHead>
           <TableBody>
-            {(!loading && items.length === 0) && (
+            {(!loading && filteredItems.length === 0) && (
               <TableRow>
                 <TableCell colSpan={10}>No products found.</TableCell>
               </TableRow>
             )}
 
-            {items.map((p) => (
+            {filteredItems.map((p) => (
               <TableRow key={p.id ?? p.name}>
                 <TableCell>{p.name ?? ''}</TableCell>
                 <TableCell>
