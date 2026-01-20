@@ -29,8 +29,8 @@ function OrderRow({ order, isOpen, onToggle, onAccept, onReject }: OrderRowProps
             </div>
           </div>
         </TableCell>
-        <TableCell>{order.restaurantDeliveryLocation?.restaurant?.name ?? ''}</TableCell>
-        <TableCell>{order.restaurantDeliveryLocation?.deliveryLocation?.name ?? ''}</TableCell>
+        <TableCell>{order.restaurant?.name ?? ''}</TableCell>
+        <TableCell>{order.deliveryLocation?.name ?? ''}</TableCell>
         <TableCell>{order.customer?.name}</TableCell>
         <TableCell>
           <p className="font-semibold">€{order.total}</p>

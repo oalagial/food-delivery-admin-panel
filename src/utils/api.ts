@@ -1068,7 +1068,8 @@ export type OrderItem = {
   products?: any[]
   offers?: any[]
   createdAt?: string | number
-  restaurantDeliveryLocation: any
+  restaurant: Restaurant,
+  deliveryLocation: any
   [k: string]: unknown
 }
 
