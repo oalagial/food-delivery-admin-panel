@@ -38,13 +38,13 @@ function offerRowDetails(offer: any) {
                 PRODUCTS
               </h4>
 
-              {group.products.length === 0 ? (
+              {group.offerGroupProducts.length === 0 ? (
                 <p className="text-gray-400 text-sm">
                   No items in this group
                 </p>
               ) : (
                 <ul className="space-y-1">
-                  {group.products.map((product: any) => (
+                  {group.offerGroupProducts.map((product: any) => (
                     <li
                       key={product.id}
                       className="px-2 py-1 rounded bg-gray-50 border text-sm"

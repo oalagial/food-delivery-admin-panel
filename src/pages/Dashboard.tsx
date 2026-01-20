@@ -142,7 +142,7 @@ export default function Dashboard() {
                 {recentOrders.map((o, i) => (
                   <TableRow key={String(o.id ?? i)}>
                     <TableCell>{String(o.id ?? '')}</TableCell>
-                    <TableCell>{o.customerName ?? o.customer ?? o.email ?? '—'}</TableCell>
+                    <TableCell>{o.customerName ?? o.customer?.name ?? o.email ?? '—'}</TableCell>
                     <TableCell>{o.total != null ? `$${Number(o.total).toFixed(2)}` : (o.amount ? `$${Number(o.amount).toFixed(2)}` : '—')}</TableCell>
                     <TableCell>{o.status ?? ''}</TableCell>
                     <TableCell>{o.createdAt ? new Date(String(o.createdAt)).toLocaleString() : ''}</TableCell>

@@ -152,6 +152,7 @@ export type Restaurant = {
   latitude?: string | number
   longitude?: string | number
   openingHours?: OpeningHour[]
+  menu: MenuItem[]
   createdAt?: string | number
   [k: string]: unknown
 }
@@ -399,6 +400,7 @@ export type Product = {
   ingredients?: string[]
   price?: number
   isAvailable?: boolean
+  extras?: ProductExtra[]
   createdAt?: string | number
   [k: string]: unknown
 }
@@ -537,6 +539,106 @@ export async function createProductExtra(payload: CreateProductExtraPayload) {
 }
 
 
+export type ProductDiscount = {
+  productId: string
+  type: 'PERCENTAGE' | 'FIXED'
+  value: number
+  startsAt: string
+  endsAt?: string
+  isActive: boolean
+}
+
+export type CreateProductDiscountPayload = {
+  productId: string
+  type: 'PERCENTAGE' | 'FIXED'
+  value: number
+  startsAt: string
+  endsAt?: string
+  isActive: boolean
+}
+
+export async function getProductDiscount(id: string | number): Promise<ProductDiscount[] | null> {
+  if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
+  const res = await authFetch(`/products-discount?productId=${encodeURIComponent(String(id))}`)
+
+  if (res.status === 404) return null
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(text || `GET /products-discount/${id} failed (${res.status})`)
+  }
+
+  const data = await res.json().catch(() => null)
+  return data.data || null
+}
+
+export async function createProductDiscount(payload: CreateProductDiscountPayload) {
+  const res = await authFetch('/products-discount/create', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+
+  if (!res.ok) {
+    let bodyText = ''
+    try {
+      const json = await res.json()
+      bodyText = parseErrorJson(json)
+    } catch {
+      try { bodyText = await res.text() } catch { bodyText = '' }
+    }
+
+    throw new Error(bodyText || `POST /products-discount/create failed (${res.status})`)
+  }
+
+  const data = await res.json().catch(() => null)
+  return data
+}
+
+export async function createBatchProductDiscount(productId: string | number, payload: Array<CreateProductDiscountPayload>) {
+  const res = await authFetch(`/products-discount/batch-create/${productId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+
+  if (!res.ok) {
+    let bodyText = ''
+    try {
+      const json = await res.json()
+      bodyText = parseErrorJson(json)
+    } catch {
+      try { bodyText = await res.text() } catch { bodyText = '' }
+    }
+
+    throw new Error(bodyText || `POST /products-discount/batch-create failed (${res.status})`)
+  }
+
+  const data = await res.json().catch(() => null)
+  return data
+}
+
+export async function deleteProductDiscount(id: string | number) {
+  const res = await authFetch(`/products-discount/${id}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+  })
+
+  if (!res.ok) {
+    let bodyText = ''
+    try {
+      const json = await res.json()
+      bodyText = parseErrorJson(json)
+    } catch {
+      try { bodyText = await res.text() } catch { bodyText = '' }
+    }
+
+    throw new Error(bodyText || `DELETE /products-discount/${id} failed (${res.status})`)
+  }
+
+  const data = await res.json().catch(() => null)
+  return data
+}
+
 
 
 // Menus API
@@ -648,7 +750,7 @@ export type OfferGroup = {
   name: string
   minItems: number
   maxItems: number
-  products?: Array<any>
+  offerGroupProducts?: Array<any>
   productsIds: Array<number>
 }
 
@@ -912,6 +1014,36 @@ export type OrderProductItem = {
   [k: string]: unknown
 }
 
+// Replace enums with const objects using 'as const'
+export const PaymentMethod = {
+  CASH: 'CASH',
+  CARD: 'CARD',
+  ONLINE: 'ONLINE'
+} as const;
+
+export const PaymentStatus = {
+  UNPAID: 'UNPAID',
+  PAID: 'PAID',
+  FAILED: 'FAILED',
+  REFUNDED: 'REFUNDED'
+} as const;
+
+export const OrderStatus = {
+  PENDING: 'PENDING',
+  CONFIRMED: 'CONFIRMED',
+  PREPARING: 'PREPARING',
+  READY: 'READY',
+  ON_THE_WAY: 'ON_THE_WAY',
+  DELIVERED: 'DELIVERED',
+  CANCELLED: 'CANCELLED',
+  REJECTED: 'REJECTED'
+} as const;
+
+// Type inference from const objects
+export type PaymentMethod = typeof PaymentMethod[keyof typeof PaymentMethod];
+export type PaymentStatus = typeof PaymentStatus[keyof typeof PaymentStatus];
+export type OrderStatus = typeof OrderStatus[keyof typeof OrderStatus];
+
 export type OrderCustomer = {
   name?: string
   email?: string
@@ -923,11 +1055,20 @@ export type OrderItem = {
   id?: number | string
   restaurantId?: number | string
   deliveryLocationId?: number | string
-  status?: string | number
+  status: OrderStatus
+  paymentMethod: PaymentMethod
+  paymentStatus: PaymentStatus
+  deliveryTime: string
   customer?: OrderCustomer
+  subtotal: string
+  deliveryFee: string
+  discount: string
   notes?: string
-  orderProducts?: OrderProductItem[]
+  total: string
+  products?: any[]
+  offers?: any[]
   createdAt?: string | number
+  restaurantDeliveryLocation: any
   [k: string]: unknown
 }
 
@@ -983,7 +1124,7 @@ export async function createOrder(payload: CreateOrderPayload) {
   return data
 }
 
-export async function updateOrder(id: string | number, payload: CreateOrderPayload) {
+export async function updateOrder(id: string | number, payload: any) {
   if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
   const res = await authFetch(`/orders/${encodeURIComponent(String(id))}`, {
     method: 'PUT',

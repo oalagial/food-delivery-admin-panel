@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
-import { createOffer, getOfferById, getProductsList, getRestaurantsList, updateOffer, type CreateOfferPayload, type OfferGroup, type Product, type Restaurant } from "../utils/api"
+import { createOffer, getOfferById, getProductsList, getRestaurantsList, updateOffer, type CreateOfferPayload, type MenuItem, type OfferGroup, type Product, type Restaurant } from "../utils/api"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
 import { Label } from "../components/ui/label"
@@ -17,6 +17,7 @@ export default function OfferCreate () {
   const [createResult, setCreateResult] = useState<boolean>(false)
   const [saving, setSaving] = useState(false)
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
+  const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState<Boolean>(true)
   const [form, setForm] = useState<{
@@ -83,7 +84,7 @@ export default function OfferCreate () {
             name: g.name,
             minItems: g.minItems,
             maxItems: g.maxItems,
-            productsIds: g.products?.map(p => p.id)
+            productsIds: g.offerGroupProducts?.map(p => p.id)
           }))
 
         });
@@ -94,6 +95,15 @@ export default function OfferCreate () {
       .finally(() => { if (mounted) setLoading(false) } )
     return () => { mounted = false }
   }, [id])
+
+  useEffect(() => {
+    setSelectedRestaurant(null);
+    const selectedRestaurant = restaurants.find(r => String(r.id) === form.restaurantId);  // Use find() for efficiency
+    if (selectedRestaurant?.menu) {
+      setSelectedRestaurant(selectedRestaurant)
+      console.log(selectedRestaurant)
+    }
+  }, [form.restaurantId]);  // Add restaurants as dependency
 
   const addGroup = () => {
     setForm(prev => ({
@@ -129,7 +139,7 @@ export default function OfferCreate () {
         description: String(form.description).trim(),
         price: Number(form.price),
         restaurantId: Number(form.restaurantId),
-        menuId: 1,
+        menuId: Number(form.menuId),
         isActive: form.isActive,
         groups: form.groups
       }
@@ -222,6 +232,21 @@ export default function OfferCreate () {
                       <option value="">Select a restaurant</option>
                       {restaurants.map(r => <option key={String(r.id)} value={String(r.id)}>{r.name ?? String(r.id)}</option>)}
 
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="menu">Menu *</Label>
+                    <Select
+                      id="menu"
+                      className="mt-2 w-full"
+                      value={String(form.menuId ?? '')}
+                      onChange={(e) => setForm(s => ({...s, menuId: String(e.target.value)}))}
+                      required
+                      disabled={!form.restaurantId}  // Disable if no restaurant selected
+                    >
+                      <option value="">Select a menu</option>
+                      {selectedRestaurant?.menu.map(m => <option key={String(m.id)} value={String(m.id)}>{m.name ?? String(m.id)}</option>)}
                     </Select>
                   </div>
 

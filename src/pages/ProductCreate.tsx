@@ -6,9 +6,149 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Label } from '../components/ui/label'
 import { Alert, AlertDescription } from '../components/ui/alert'
 import { AlertCircle } from 'lucide-react'
-import { createProduct, getProductById, updateProduct, getTypesList, getExtrasByProduct, createProductExtra } from '../utils/api'
-import type { CreateProductExtraPayload, CreateProductPayload, ProductExtra } from '../utils/api'
+import { createProduct, getProductById, updateProduct, getTypesList, getExtrasByProduct, createProductExtra, createBatchProductDiscount, getProductDiscount } from '../utils/api'
+import type { CreateProductExtraPayload, CreateProductPayload, ProductDiscount, ProductExtra } from '../utils/api'
 import { Select } from '../components/ui/select';
+
+function utcToLocalDateTimeInput(utc?: string | null): string {
+  if (!utc) return ''
+
+  const date = new Date(utc)
+
+  const pad = (n: number) => n.toString().padStart(2, '0')
+
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
+
+type ProductDiscountRowProps = {
+  discount: ProductDiscount;
+  index: number;
+  onChange: (index: number, field: keyof ProductDiscount, value: any) => void;
+  onRemove: (index: number) => void;
+}
+
+function ProductDiscountRow({ discount, index, onChange, onRemove }: ProductDiscountRowProps) {
+  return (
+      <div className="rounded-lg border bg-gray-300 p-4">
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              className="text-red-600 text-xs font-bold"
+              variant="default"
+              onClick={() => onRemove(index)}
+            >
+              Remove Discount
+            </Button>
+          </div>
+        <div className="grid grid-cols-[1fr_1fr_2fr_2fr_auto] gap-2 items-end">
+          <div className="flex flex-col">
+            <Label className="mb-3">Type *</Label>
+            <select
+              value={discount.type}
+              onChange={(e) => onChange(index, 'type', e.target.value)}
+              className="border rounded px-2 py-1 h-9"
+            >
+              <option value="FIXED">Fixed</option>
+              <option value="PERCENTAGE">Percentage</option>
+            </select>
+          </div>
+
+          <div className="flex flex-col">
+            <Label className="mb-2">{ discount.type === 'FIXED' ? 'New Price (€)' : 'Discount (%)' }</Label>
+            <Input
+              type="number"
+              step="0.01"
+              value={discount.value}
+              onChange={(e) => onChange(index, 'value', Number(e.target.value))}
+            />
+          </div>
+
+          <div className="flex flex-col">
+            <Label className="mb-2">Starts At *</Label>
+            <Input
+              type="datetime-local"
+              value={utcToLocalDateTimeInput(discount.startsAt)}
+              onChange={(e) => onChange(index, 'startsAt', e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="flex flex-col">
+            <Label className="mb-2">Ends At</Label>
+            <Input
+              type="datetime-local"
+              value={utcToLocalDateTimeInput(discount.endsAt)}
+              onChange={(e) => onChange(index, 'endsAt', e.target.value)}
+            />
+          </div>
+
+          <div className="flex flex-col w-xs">
+            <Label className="mb-5 mt-2">Active</Label>
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-gray-300 mt-1"
+              checked={!!discount.isActive}
+              onChange={(e) => onChange(index, 'isActive', e.target.checked)}
+            />
+          </div>
+        </div>
+      </div>)
+}
+
+type ProductDiscountsProps = {
+  discounts: ProductDiscount[];
+  setDiscounts: (discounts: ProductDiscount[]) => void
+  productId?: string
+}
+
+function ProductDiscounts({ discounts, setDiscounts, productId }: ProductDiscountsProps) {
+  const addDiscount = () => {
+    setDiscounts([
+      ...discounts,
+      {
+        productId: productId ? Number(productId) : undefined,
+        type: 'FIXED',
+        value: 0,
+        startsAt: '',
+        endsAt: undefined,
+        isActive: true,
+      },
+    ])
+  }
+
+  const updateDiscount = (index: number, field: keyof ProductDiscount, value: any) => {
+    const updated = [...discounts]
+    updated[index] = { ...updated[index], [field]: value }
+    setDiscounts(updated)
+  }
+
+  const removeDiscount = (index: number) => {
+    setDiscounts(discounts.filter((_, i) => i !== index))
+  }
+
+  return (
+    <div>
+      <Label className="block mb-2">Product Discounts</Label>
+      {discounts.map((d, idx) => (
+        <ProductDiscountRow
+          key={idx}
+          discount={d}
+          index={idx}
+          onChange={updateDiscount}
+          onRemove={removeDiscount}
+        />
+      ))}
+
+      <Button 
+        className='mt-2'
+        type="button" 
+        onClick={addDiscount}>
+        Add Discount
+      </Button>
+    </div>
+  )
+}
 
 export default function ProductCreate() {
   const { id } = useParams<{ id?: string }>()
@@ -21,6 +161,7 @@ export default function ProductCreate() {
   const [types, setTypes] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [productExtras, setProductExtras] = useState<ProductExtra[]>([])
+  const [productDiscount, setProductDiscount] = useState<ProductDiscount[]>([]);
   
   // Keep a raw ingredients text input so typing a trailing comma doesn't get trimmed away
   const [ingredientsInput, setIngredientsInput] = useState('')
@@ -40,7 +181,7 @@ export default function ProductCreate() {
     getTypesList()
       .then((data) => { if (!mounted) return; setTypes(data) })
       .catch(() => { if (!mounted) return; setTypes([]) })
-      .finally(() => { if (mounted) setTypesLoading(false) })
+      .finally(() => { if (mounted) setLoading(false) })
     return () => { mounted = false }
   }, [])
 
@@ -49,27 +190,39 @@ export default function ProductCreate() {
 
     Promise.all([
       id ? getProductById(id).catch(() => null) : Promise.resolve(null),
-      id ? getExtrasByProduct(id).catch(() => []) : Promise.resolve(null)
-    ]).then(([product, productExtras]) => {
-      if (product) {
+      id ? getExtrasByProduct(id).catch(() => []) : Promise.resolve(null),
+      id ? getProductDiscount(id).catch(() => []) : Promise.resolve([]),
+    ]).then(([p, pe, pd]) => {
+      if (p) {
         setForm({
-          name: product.name,
-          description: product.description,
-          image: product.image,
-          typeId: product.typeId,
-          ingredients: product.ingredients ?? [],
-          price: product.price,
-          isAvailable: product.isAvailable,
+          name: p.name,
+          description: p.description,
+          image: p.image,
+          typeId: p.typeId,
+          ingredients: p.ingredients ?? [],
+          price: p.price,
+          isAvailable: p.isAvailable,
         })
-        setIngredientsInput(Array.isArray(product.ingredients) ? product.ingredients.join(', ') : '')
+        setIngredientsInput(Array.isArray(p.ingredients) ? p.ingredients.join(', ') : '')
       }
 
-      if (productExtras) {
-        setProductExtras(productExtras.map(extra => ({
-          productId: extra.productId,
-          name: extra.name,
-          price: extra.price
+      if (pe) {
+        setProductExtras(pe.map(e => ({
+          productId: e.productId,
+          name: e.name,
+          price: e.price
         })))
+      }
+
+      if (pd) {
+        setProductDiscount(pd.map(d => ({
+          productId: d.productId,
+          type: d.type,
+          value: d.value,
+          startsAt: d.startsAt,
+          endsAt: d.endsAt,
+          isActive: d.isActive,
+        })));
       }
     })
     .catch((e) => { if (mounted) setError(String(e)) })
@@ -115,10 +268,18 @@ export default function ProductCreate() {
       if (id) {
         await updateProduct(id, payload)
         await Promise.all(productExtras.map(async (extra: any) => {
+          extra.price = Number(extra.price);
           createProductExtra(extra)
         }))
+        productDiscount.map(discount => {
+          discount.value = Number(discount.value);
+          discount.startsAt = new Date(discount.startsAt).toISOString();
+          discount.endsAt = discount.endsAt ? new Date(discount.endsAt).toISOString() : undefined;
+        });
+        await createBatchProductDiscount(id, productDiscount);
       } else {
-        await createProduct(payload)
+        const createdProduct = await createProduct(payload)
+        console.log('Created product:', createdProduct);
       }
       navigate('/products')
     } catch (err: unknown) {
@@ -176,7 +337,7 @@ export default function ProductCreate() {
               </div>
 
               <div>
-                <Label htmlFor="price">Price ($)</Label>
+                <Label htmlFor="price">Price (€)</Label>
                 <Input
                   id="price"
                   className="mt-2 w-full"
@@ -231,15 +392,7 @@ export default function ProductCreate() {
               
               <div className="col-span-2">
                 <Label className="block mb-2">Product Extras</Label>
-                <div>
-                  <Button
-                    className='mb-2'
-                    type="button" 
-                    onClick={addExtra}
-                  > Add Extra
-                  </Button>
-
-                  </div>
+                
                 <div className="grid grid-cols-2 gap-4">
                   {productExtras.map((extra, index) => (
                     <div
@@ -270,7 +423,7 @@ export default function ProductCreate() {
                       </div>
 
                       <div>
-                        <Label htmlFor={`productExtraPrice-${index}`}>Extra Price</Label>
+                        <Label htmlFor={`productExtraPrice-${index}`}>Extra Price (€)</Label>
                         <Input
                           id={`productExtraPrice-${index}`}
                           type="number"
@@ -286,7 +439,25 @@ export default function ProductCreate() {
                     </div>
                   ))}
                 </div>
+                <div>
+                  <Button
+                    className='mt-2'
+                    type="button" 
+                    onClick={addExtra}
+                  > Add Extra
+                  </Button>
+
+                </div>
               </div>
+
+              <div className="col-span-2">
+                <ProductDiscounts
+                  discounts={productDiscount}
+                  setDiscounts={setProductDiscount}
+                  productId={id}
+                />
+              
+              </div>  
 
 
 
