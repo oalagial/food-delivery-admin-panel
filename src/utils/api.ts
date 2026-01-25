@@ -157,14 +157,12 @@ export type Restaurant = {
   [k: string]: unknown
 }
 
-export async function getRestaurantsList(): Promise<Restaurant[]> {
-  const res = await authFetch('/restaurants')
-
+export async function getRestaurantsList(query?: string): Promise<Restaurant[]> {
+  const res = await authFetch(`/restaurants${query ? `?${query}` : ''}`)
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    throw new Error(text || `GET /restaurants failed (${res.status})`)
+    throw new Error(text || `GET /restaurants${query ? `?${query}` : ''} failed (${res.status})`)
   }
-
   const data = await res.json().catch(() => null)
   return Array.isArray(data) ? data : (data?.items || data?.data || [])
 }
@@ -401,6 +399,7 @@ export type Product = {
   price?: number
   isAvailable?: boolean
   extras?: ProductExtra[]
+  vatRate?: 'FOUR' | 'FIVE' | 'TEN' | 'TWENTY_TWO'
   createdAt?: string | number
   [k: string]: unknown
 }
@@ -409,10 +408,14 @@ export type CreateProductPayload = {
   name: string
   description?: string
   image?: string
+  imageFile?: string
   typeId?: number | string
   ingredients?: string[]
   price?: number
   isAvailable?: boolean
+  vatRate?: 'FOUR' | 'FIVE' | 'TEN' | 'TWENTY_TWO'
+  extras?: Array<{ id?: number; name: string; price: number }>
+  discounts?: Array<{ id?: number; type: 'PERCENTAGE' | 'FIXED'; value: number; startsAt: string; endsAt?: string; isActive: boolean }>
   [k: string]: unknown
 }
 
@@ -442,11 +445,72 @@ export async function getProductById(id: string | number): Promise<Product | nul
   return data.data?.[0] || null
 }
 
-export async function createProduct(payload: CreateProductPayload) {
+export async function createProduct(payload: CreateProductPayload, imageFile?: File) {
+  let headers: HeadersInit = {}
+  let body: BodyInit
+
+  if (imageFile) {
+    // Use FormData when uploading a file
+    // Send data as individual fields with proper type conversion
+    const formData = new FormData()
+    formData.append('name', payload.name)
+    if (payload.description) formData.append('description', payload.description)
+    formData.append('imageFile', imageFile)
+    
+    // Append typeId - convert to number and send as string (backend should parse)
+    if (payload.typeId !== undefined && payload.typeId !== null && payload.typeId !== '') {
+      const typeIdNum = Number(payload.typeId)
+      if (!isNaN(typeIdNum)) {
+        formData.append('typeId', typeIdNum.toString())
+      }
+    }
+    
+    // Append ingredients array
+    if (payload.ingredients && payload.ingredients.length > 0) {
+      payload.ingredients.forEach((ingredient, index) => {
+        formData.append(`ingredients[${index}]`, ingredient)
+      })
+    }
+    
+    // Append price - convert to number and send as string (backend should parse)
+    if (payload.price !== undefined && payload.price !== null) {
+      const priceNum = Number(payload.price)
+      if (!isNaN(priceNum)) {
+        formData.append('price', priceNum.toString())
+      }
+    }
+    
+    // Append isAvailable - convert boolean to string (backend should parse)
+    const isAvailableValue = payload.isAvailable !== undefined ? Boolean(payload.isAvailable) : true
+    formData.append('isAvailable', isAvailableValue ? 'true' : 'false')
+    
+    // Append vatRate if provided
+    if (payload.vatRate) {
+      formData.append('vatRate', payload.vatRate)
+    }
+    
+    // Append extras as JSON string if provided
+    if (payload.extras && payload.extras.length > 0) {
+      formData.append('extras', JSON.stringify(payload.extras))
+    }
+    
+    // Append discounts as JSON string if provided
+    if (payload.discounts && payload.discounts.length > 0) {
+      formData.append('discounts', JSON.stringify(payload.discounts))
+    }
+    
+    body = formData
+    // Don't set Content-Type header - browser will set it with boundary for FormData
+  } else {
+    // Use JSON when no file is uploaded
+    headers = { 'Content-Type': 'application/json' }
+    body = JSON.stringify(payload)
+  }
+
   const res = await authFetch('/products/create', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    headers,
+    body,
   })
 
   if (!res.ok) {
@@ -465,12 +529,74 @@ export async function createProduct(payload: CreateProductPayload) {
   return data
 }
 
-export async function updateProduct(id: string | number, payload: CreateProductPayload) {
+export async function updateProduct(id: string | number, payload: CreateProductPayload, imageFile?: File) {
   if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
+  
+  let headers: HeadersInit = {}
+  let body: BodyInit
+
+  if (imageFile) {
+    // Use FormData when uploading a file
+    // Send data as individual fields - ensure proper formatting for backend parsing
+    const formData = new FormData()
+    formData.append('name', payload.name)
+    if (payload.description) formData.append('description', payload.description)
+    formData.append('imageFile', imageFile)
+    
+    // Append typeId - convert to number and send as string (backend should parse)
+    if (payload.typeId !== undefined && payload.typeId !== null && payload.typeId !== '') {
+      const typeIdNum = Number(payload.typeId)
+      if (!isNaN(typeIdNum)) {
+        formData.append('typeId', typeIdNum.toString())
+      }
+    }
+    
+    // Append ingredients array
+    if (payload.ingredients && payload.ingredients.length > 0) {
+      payload.ingredients.forEach((ingredient, index) => {
+        formData.append(`ingredients[${index}]`, ingredient)
+      })
+    }
+    
+    // Append price - convert to number and send as string (backend should parse)
+    if (payload.price !== undefined && payload.price !== null) {
+      const priceNum = Number(payload.price)
+      if (!isNaN(priceNum)) {
+        formData.append('price', priceNum.toString())
+      }
+    }
+    
+    // Append isAvailable - convert boolean to string (backend should parse)
+    const isAvailableValue = payload.isAvailable !== undefined ? Boolean(payload.isAvailable) : true
+    formData.append('isAvailable', isAvailableValue ? 'true' : 'false')
+    
+    // Append vatRate if provided
+    if (payload.vatRate) {
+      formData.append('vatRate', payload.vatRate)
+    }
+    
+    // Append extras as JSON string if provided
+    if (payload.extras && payload.extras.length > 0) {
+      formData.append('extras', JSON.stringify(payload.extras))
+    }
+    
+    // Append discounts as JSON string if provided
+    if (payload.discounts && payload.discounts.length > 0) {
+      formData.append('discounts', JSON.stringify(payload.discounts))
+    }
+    
+    body = formData
+    // Don't set Content-Type header - browser will set it with boundary for FormData
+  } else {
+    // Use JSON when no file is uploaded
+    headers = { 'Content-Type': 'application/json' }
+    body = JSON.stringify(payload)
+  }
+
   const res = await authFetch(`/products/${encodeURIComponent(String(id))}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    headers,
+    body,
   })
 
   if (!res.ok) {
@@ -489,7 +615,54 @@ export async function updateProduct(id: string | number, payload: CreateProductP
   return data
 }
 
+export async function restoreProduct(id: string | number) {
+  if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
+  const res = await authFetch(`/products/${encodeURIComponent(String(id))}/restore`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  })
+
+  if (!res.ok) {
+    let bodyText = ''
+    try {
+      const json = await res.json()
+      bodyText = parseErrorJson(json)
+    } catch {
+      try { bodyText = await res.text() } catch { bodyText = '' }
+    }
+
+    throw new Error(bodyText || `POST /products/${id}/restore failed (${res.status})`)
+  }
+
+  const data = await res.json().catch(() => null)
+  return data
+}
+
+export async function deleteProduct(id: string | number) {
+  if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
+  const res = await authFetch(`/products/${encodeURIComponent(String(id))}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+  })
+
+  if (!res.ok) {
+    let bodyText = ''
+    try {
+      const json = await res.json()
+      bodyText = parseErrorJson(json)
+    } catch {
+      try { bodyText = await res.text() } catch { bodyText = '' }
+    }
+
+    throw new Error(bodyText || `DELETE /products/${id} failed (${res.status})`)
+  }
+
+  const data = await res.json().catch(() => null)
+  return data
+}
+
 export type ProductExtra = {
+  id?: number | string
   productId?: string
   name: string
   price: number
@@ -540,6 +713,7 @@ export async function createProductExtra(payload: CreateProductExtraPayload) {
 
 
 export type ProductDiscount = {
+  id?: number | string
   productId: string
   type: 'PERCENTAGE' | 'FIXED'
   value: number
@@ -656,16 +830,19 @@ export type CreateMenuPayload = {
   name: string
   description?: string
   sectionIds?: Array<number | string>
-  restaurantIds?: Array<number | string>
+  restaurantId?: number | string
   [k: string]: unknown
 }
 
-export async function getMenusList(): Promise<MenuItem[]> {
-  const res = await authFetch('/menus')
+export async function getMenusList(restaurantId?: string | number): Promise<MenuItem[]> {
+  const url = restaurantId 
+    ? `/menus?restaurantId=${encodeURIComponent(String(restaurantId))}`
+    : '/menus'
+  const res = await authFetch(url)
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    throw new Error(text || `GET /menus failed (${res.status})`)
+    throw new Error(text || `GET ${url} failed (${res.status})`)
   }
 
   const data = await res.json().catch(() => null)
@@ -725,6 +902,52 @@ export async function updateMenu(id: string | number, payload: CreateMenuPayload
       try { bodyText = await res.text() } catch { bodyText = '' }
     }
     throw new Error(bodyText || `PUT /menus/${id} failed (${res.status})`)
+  }
+
+  const data = await res.json().catch(() => null)
+  return data
+}
+
+export async function restoreMenu(id: string | number) {
+  if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
+  const res = await authFetch(`/menus/${encodeURIComponent(String(id))}/restore`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  })
+
+  if (!res.ok) {
+    let bodyText = ''
+    try {
+      const json = await res.json()
+      bodyText = parseErrorJson(json)
+    } catch {
+      try { bodyText = await res.text() } catch { bodyText = '' }
+    }
+
+    throw new Error(bodyText || `POST /menus/${id}/restore failed (${res.status})`)
+  }
+
+  const data = await res.json().catch(() => null)
+  return data
+}
+
+export async function deleteMenu(id: string | number) {
+  if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
+  const res = await authFetch(`/menus/${encodeURIComponent(String(id))}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+  })
+
+  if (!res.ok) {
+    let bodyText = ''
+    try {
+      const json = await res.json()
+      bodyText = parseErrorJson(json)
+    } catch {
+      try { bodyText = await res.text() } catch { bodyText = '' }
+    }
+
+    throw new Error(bodyText || `DELETE /menus/${id} failed (${res.status})`)
   }
 
   const data = await res.json().catch(() => null)
@@ -1007,6 +1230,29 @@ export async function updateSection(id: string | number, payload: CreateSectionP
   return data
 }
 
+export async function deleteSection(id: string | number) {
+  if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
+  const res = await authFetch(`/sections/${encodeURIComponent(String(id))}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+  })
+
+  if (!res.ok) {
+    let bodyText = ''
+    try {
+      const json = await res.json()
+      bodyText = parseErrorJson(json)
+    } catch {
+      try { bodyText = await res.text() } catch { bodyText = '' }
+    }
+
+    throw new Error(bodyText || `DELETE /sections/${id} failed (${res.status})`)
+  }
+
+  const data = await res.json().catch(() => null)
+  return data
+}
+
 // Orders API
 export type OrderProductItem = {
   productId: number | string
@@ -1258,6 +1504,52 @@ export async function updateRestaurant(token: string, payload: CreateRestaurantP
     }
 
     throw new Error(bodyText || `PUT /restaurants/${token} failed (${res.status})`)
+  }
+
+  const data = await res.json().catch(() => null)
+  return data
+}
+
+export async function restoreRestaurant(id: string | number) {
+  if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
+  const res = await authFetch(`/restaurants/${encodeURIComponent(String(id))}/restore`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  })
+
+  if (!res.ok) {
+    let bodyText = ''
+    try {
+      const json = await res.json()
+      bodyText = parseErrorJson(json)
+    } catch {
+      try { bodyText = await res.text() } catch { bodyText = '' }
+    }
+
+    throw new Error(bodyText || `POST /restaurants/${id}/restore failed (${res.status})`)
+  }
+
+  const data = await res.json().catch(() => null)
+  return data
+}
+
+export async function deleteRestaurant(id: string | number) {
+  if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
+  const res = await authFetch(`/restaurants/${encodeURIComponent(String(id))}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+  })
+
+  if (!res.ok) {
+    let bodyText = ''
+    try {
+      const json = await res.json()
+      bodyText = parseErrorJson(json)
+    } catch {
+      try { bodyText = await res.text() } catch { bodyText = '' }
+    }
+
+    throw new Error(bodyText || `DELETE /restaurants/${id} failed (${res.status})`)
   }
 
   const data = await res.json().catch(() => null)

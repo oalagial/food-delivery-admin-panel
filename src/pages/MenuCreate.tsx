@@ -40,8 +40,12 @@ export default function MenuCreate() {
       if (menu) {
         setName(menu.name || '')
         setDescription(menu.description || '')
-        // take the first restaurant id if returned as an array
-        setRestaurantId(((menu.restaurants || [])[0] ?? '') + '')
+        // Get restaurant id from restaurantId, restaurant.id, or restaurants array
+        const menuAny = menu as any
+        const restaurantIdValue = menuAny.restaurantId 
+          || menuAny.restaurant?.id 
+          || (Array.isArray(menuAny.restaurants) && menuAny.restaurants[0] ? menuAny.restaurants[0] : null)
+        setRestaurantId(restaurantIdValue ? String(restaurantIdValue) : '')
         if (Array.isArray(menu.sections) && menu.sections.length > 0) {
           setSectionIds(menu.sections.map((s: any) => Number(s.id)))
         } else if (Array.isArray(menu.sectionIds)) {
@@ -63,8 +67,7 @@ export default function MenuCreate() {
       name: String(name).trim(),
       description: description || undefined,
       sectionIds: sectionIds.map(Number),
-      // backend expects an array of restaurant ids; wrap selected id if present
-      restaurantIds: restaurantId ? [Number(restaurantId)] : [],
+      restaurantId: restaurantId ? Number(restaurantId) : undefined,
     }
     try {
       setSaving(true)

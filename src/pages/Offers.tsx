@@ -44,12 +44,12 @@ function offerRowDetails(offer: any) {
                 </p>
               ) : (
                 <ul className="space-y-1">
-                  {group.offerGroupProducts.map((product: any) => (
+                  {group.offerGroupProducts.map((og: any) => (
                     <li
-                      key={product.id}
+                      key={og.id}
                       className="px-2 py-1 rounded bg-gray-50 border text-sm"
                     >
-                      {product.name || product.id}
+                      {og.product.name || og.product.id}
                     </li>
                   ))}
                 </ul>

@@ -71,10 +71,12 @@ export default function DeliveryLocationCreate() {
             if (Array.isArray((data as unknown as Record<string, unknown>)?.deliveredBy)) {
               const entries = ((data as unknown as Record<string, unknown>)?.deliveredBy as unknown[]).map((d) => {
                 const entry = d as Record<string, unknown>
+                // Handle both restaurantId (direct) and id (from restaurant object)
+                const restaurantId = entry['restaurantId'] ?? entry['id']
                 return {
-                  restaurantId: Number(String(entry['restaurantId'] ?? '')),
-                  deliveryFee: entry['deliveryFee'] ? Number(entry['deliveryFee']) : 0,
-                  minOrder: entry['minOrder'] ? Number(entry['minOrder']) : 0,
+                  restaurantId: Number(String(restaurantId ?? '')),
+                  deliveryFee: entry['deliveryFee'] !== undefined && entry['deliveryFee'] !== null ? Number(entry['deliveryFee']) : 0,
+                  minOrder: entry['minOrder'] !== undefined && entry['minOrder'] !== null ? Number(entry['minOrder']) : 0,
                   isActive: entry['isActive'] === undefined ? true : Boolean(entry['isActive']),
                 } as DeliveredByEntry
               })

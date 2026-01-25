@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { createRestaurant, getRestaurantsList, getRestaurantById, updateRestaurant } from '../utils/api'
-import type { CreateRestaurantPayload } from '../utils/api'
+import { createRestaurant, getRestaurantsList, getRestaurantById, updateRestaurant, getMenusList, updateMenu } from '../utils/api'
+import type { CreateRestaurantPayload, MenuItem } from '../utils/api'
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
@@ -42,6 +42,8 @@ export default function RestaurantCreate() {
   })
   const [files, setFiles] = useState<FileList | null>(null)
   const [openingHours, setOpeningHours] = useState<Array<{ day: string; open: string; close: string }>>([])
+  const [menus, setMenus] = useState<MenuItem[]>([])
+  const [loadingMenus, setLoadingMenus] = useState(false)
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
@@ -121,9 +123,13 @@ export default function RestaurantCreate() {
   useEffect(() => {
     if (!id) return
     let mounted = true
+    setLoadingMenus(true)
 
-    getRestaurantById(id)
-      .then((data) => {
+    Promise.all([
+      getRestaurantById(id),
+      getMenusList(id)
+    ])
+      .then(([data, menusData]) => {
         if (!mounted) return
         if (data) {
           setForm((s) => ({
@@ -150,15 +156,49 @@ export default function RestaurantCreate() {
         } else {
           setCreateError('Restaurant not found')
         }
+        setMenus(menusData || [])
       })
       .catch((err) => {
         setCreateError(err?.message || 'Failed to load restaurant')
+      })
+      .finally(() => {
+        if (mounted) setLoadingMenus(false)
       })
 
     return () => {
       mounted = false
     }
   }, [id])
+
+  const handleSetActiveMenu = async (menuId: string | number) => {
+    try {
+      setLoadingMenus(true)
+      const menu = menus.find((m) => m.id === menuId)
+      if (!menu) return
+
+      // Get current menu data
+      const menuAny = menu as any
+      const payload = {
+        name: menu.name || '',
+        description: menu.description || undefined,
+        sectionIds: Array.isArray(menu.sectionIds) ? menu.sectionIds : [],
+        restaurantId: menuAny.restaurantId || menuAny.restaurant?.id || id,
+        isActive: true,
+      }
+
+      await updateMenu(menuId, payload)
+      
+      // Reload menus to reflect the change
+      if (id) {
+        const updatedMenus = await getMenusList(id)
+        setMenus(updatedMenus || [])
+      }
+    } catch (err) {
+      setCreateError(err instanceof Error ? err.message : 'Failed to set menu as active')
+    } finally {
+      setLoadingMenus(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -343,6 +383,65 @@ export default function RestaurantCreate() {
                 <span className="text-sm text-gray-600">{files && files.length > 0 ? `${files.length} file(s) selected` : 'No files selected'}</span>
               </div>
             </div>
+
+            {/* Menus Section - Only show when editing */}
+            {id && (
+              <div>
+                <Label>Menus</Label>
+                <div className="mt-2 space-y-3">
+                  {loadingMenus ? (
+                    <div className="text-sm text-gray-500">Loading menus...</div>
+                  ) : menus.length === 0 ? (
+                    <div className="text-sm text-gray-500">No menus found for this restaurant</div>
+                  ) : (
+                    <>
+                      {/* Active Menu */}
+                      {menus.filter((m: any) => m.isActive === true).map((menu) => (
+                        <div key={menu.id} className="border rounded p-3 bg-green-50 border-green-200">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className="font-semibold text-green-800">{menu.name}</span>
+                              {menu.description && (
+                                <p className="text-sm text-gray-600 mt-1">{menu.description}</p>
+                              )}
+                              <span className="inline-block mt-1 px-2 py-1 text-xs bg-green-200 text-green-800 rounded">Active</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* Inactive Menus */}
+                      {menus.filter((m: any) => m.isActive !== true).length > 0 && (
+                        <div className="space-y-2">
+                          <div className="text-sm font-medium text-gray-700 mt-3">Other Menus:</div>
+                          {menus.filter((m: any) => m.isActive !== true).map((menu) => (
+                            <div key={menu.id} className="border rounded p-3 bg-gray-50">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <span className="font-semibold">{menu.name}</span>
+                                  {menu.description && (
+                                    <p className="text-sm text-gray-600 mt-1">{menu.description}</p>
+                                  )}
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="primary"
+                                  size="sm"
+                                  onClick={() => handleSetActiveMenu(menu.id!)}
+                                  disabled={loadingMenus}
+                                >
+                                  Set as Active
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
 
             {createError && (
               <Alert variant="destructive">

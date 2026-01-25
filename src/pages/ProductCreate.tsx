@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button'
@@ -6,9 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Label } from '../components/ui/label'
 import { Alert, AlertDescription } from '../components/ui/alert'
 import { AlertCircle } from 'lucide-react'
-import { createProduct, getProductById, updateProduct, getTypesList, getExtrasByProduct, createProductExtra, createBatchProductDiscount, getProductDiscount } from '../utils/api'
-import type { CreateProductExtraPayload, CreateProductPayload, ProductDiscount, ProductExtra } from '../utils/api'
+import { createProduct, getProductById, updateProduct, getTypesList, getExtrasByProduct, getProductDiscount } from '../utils/api'
+import type { CreateProductPayload, ProductDiscount, ProductExtra } from '../utils/api'
 import { Select } from '../components/ui/select';
+import { API_BASE } from '../config';
 
 function utcToLocalDateTimeInput(utc?: string | null): string {
   if (!utc) return ''
@@ -55,7 +56,7 @@ function ProductDiscountRow({ discount, index, onChange, onRemove }: ProductDisc
           </div>
 
           <div className="flex flex-col">
-            <Label className="mb-2">{ discount.type === 'FIXED' ? 'New Price (€)' : 'Discount (%)' }</Label>
+            <Label className="mb-2">{ discount.type === 'FIXED' ? 'Fixed Discount (€)' : 'Discount (%)' }</Label>
             <Input
               type="number"
               step="0.01"
@@ -107,7 +108,7 @@ function ProductDiscounts({ discounts, setDiscounts, productId }: ProductDiscoun
     setDiscounts([
       ...discounts,
       {
-        productId: productId ? Number(productId) : undefined,
+        productId: productId || '',
         type: 'FIXED',
         value: 0,
         startsAt: '',
@@ -155,8 +156,9 @@ export default function ProductCreate() {
   const navigate = useNavigate()
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [files, setFiles] = useState<FileList | null>(null)
-  
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [types, setTypes] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -174,6 +176,7 @@ export default function ProductCreate() {
     ingredients: [],
     price: undefined,
     isAvailable: true,
+    vatRate: undefined,
   })
 
   useEffect(() => {
@@ -202,12 +205,14 @@ export default function ProductCreate() {
           ingredients: p.ingredients ?? [],
           price: p.price,
           isAvailable: p.isAvailable,
+          vatRate: p.vatRate,
         })
         setIngredientsInput(Array.isArray(p.ingredients) ? p.ingredients.join(', ') : '')
       }
 
       if (pe) {
         setProductExtras(pe.map(e => ({
+          id: e.id,
           productId: e.productId,
           name: e.name,
           price: e.price
@@ -216,6 +221,7 @@ export default function ProductCreate() {
 
       if (pd) {
         setProductDiscount(pd.map(d => ({
+          id: d.id,
           productId: d.productId,
           type: d.type,
           value: d.value,
@@ -234,7 +240,7 @@ export default function ProductCreate() {
     setProductExtras(prev => [
       ...prev,
       {
-        productId: id ? Number(id) : undefined,
+        productId: id ? String(id) : undefined,
         name: '',
         price: 0
       }
@@ -249,6 +255,28 @@ export default function ProductCreate() {
     setProductExtras(prev => prev.map((extra, i) => i === index ? { ...extra, [field]: value } : extra));
   }
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError('Please select an image file')
+        return
+      }
+      setSelectedFile(file)
+      // Create preview
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleChooseImageClick = () => {
+    fileInputRef.current?.click()
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
@@ -257,28 +285,57 @@ export default function ProductCreate() {
     const payload: CreateProductPayload = {
       name: String(form.name ?? '').trim(),
       description: String(form.description ?? '').trim(),
-      image: String(form.image ?? '').trim(),
+      image: form.image, // Keep existing image if no new file is selected
       typeId: form.typeId,
       ingredients: ingredientsInput.split(',').map((x) => x.trim()).filter(Boolean),
       price: form.price !== undefined ? Number(form.price) : undefined,
       isAvailable: !!form.isAvailable,
+      vatRate: form.vatRate,
     }
 
     try {
       if (id) {
-        await updateProduct(id, payload)
-        await Promise.all(productExtras.map(async (extra: any) => {
-          extra.price = Number(extra.price);
-          createProductExtra(extra)
-        }))
-        productDiscount.map(discount => {
-          discount.value = Number(discount.value);
-          discount.startsAt = new Date(discount.startsAt).toISOString();
-          discount.endsAt = discount.endsAt ? new Date(discount.endsAt).toISOString() : undefined;
-        });
-        await createBatchProductDiscount(id, productDiscount);
+        // Include extras and discounts in the payload when editing
+        payload.extras = productExtras
+          .filter(extra => extra.name.trim() !== '') // Only include extras with names
+          .map(extra => ({
+            id: extra.id ? Number(extra.id) : undefined,
+            name: extra.name,
+            price: Number(extra.price)
+          }))
+        
+        payload.discounts = productDiscount
+          .map(discount => ({
+            id: discount.id ? Number(discount.id) : undefined,
+            type: discount.type,
+            value: Number(discount.value),
+            startsAt: new Date(discount.startsAt).toISOString(),
+            endsAt: discount.endsAt ? new Date(discount.endsAt).toISOString() : undefined,
+            isActive: discount.isActive
+          }))
+        
+        // Pass the selected file if one was chosen
+        await updateProduct(id, payload, selectedFile || undefined)
       } else {
-        const createdProduct = await createProduct(payload)
+        // For new products, include extras and discounts in the payload
+        payload.extras = productExtras
+          .filter(extra => extra.name.trim() !== '') // Only include extras with names
+          .map(extra => ({
+            name: extra.name,
+            price: Number(extra.price)
+          }))
+        
+        payload.discounts = productDiscount
+          .map(discount => ({
+            type: discount.type,
+            value: Number(discount.value),
+            startsAt: new Date(discount.startsAt).toISOString(),
+            endsAt: discount.endsAt ? new Date(discount.endsAt).toISOString() : undefined,
+            isActive: discount.isActive
+          }))
+        
+        // Pass the selected file if one was chosen
+        const createdProduct = await createProduct(payload, selectedFile || undefined)
         console.log('Created product:', createdProduct);
       }
       navigate('/products')
@@ -353,6 +410,22 @@ export default function ProductCreate() {
               </div>
 
               <div>
+                <Label htmlFor="vatRate">VAT Rate</Label>
+                <Select
+                  id="vatRate"
+                  className="mt-2 w-full"
+                  value={form.vatRate || ''}
+                  onChange={(e) => setForm(s => ({ ...s, vatRate: e.target.value ? e.target.value as 'FOUR' | 'FIVE' | 'TEN' | 'TWENTY_TWO' : undefined }))}
+                >
+                  <option value="">Select VAT Rate</option>
+                  <option value="FOUR">4%</option>
+                  <option value="FIVE">5%</option>
+                  <option value="TEN">10%</option>
+                  <option value="TWENTY_TWO">22%</option>
+                </Select>
+              </div>
+
+              <div>
                 <Label htmlFor="ingredients">Ingredients (comma separated)</Label>
                 <Input
                   id="ingredients"
@@ -364,19 +437,50 @@ export default function ProductCreate() {
               </div>
 
               <div>
-                <Label htmlFor="image">Image URL</Label>
-                <div className="mt-2 flex items-center gap-4">
-                  <input id="images" type="file" multiple className="hidden" onChange={(e) => setFiles(e.target.files)} />
-                  <label htmlFor="images"><Button variant="primary" type="button">Choose Images</Button></label>
-                  <span className="text-sm text-gray-600">{files && files.length > 0 ? `${files.length} file(s) selected` : 'No files selected'}</span>
+                <Label htmlFor="image">Image</Label>
+                <div className="mt-2 space-y-4">
+                  <div className="flex items-center gap-4">
+                    <input 
+                      ref={fileInputRef}
+                      id="image-input" 
+                      type="file" 
+                      accept="image/*" 
+                      className="hidden" 
+                      onChange={handleFileSelect} 
+                    />
+                    <Button 
+                      variant="primary" 
+                      type="button" 
+                      onClick={handleChooseImageClick}
+                    >
+                      Choose Image
+                    </Button>
+                    {selectedFile && (
+                      <span className="text-sm text-gray-600">{selectedFile.name}</span>
+                    )}
+                    {!selectedFile && form.image && (
+                      <span className="text-sm text-gray-500">Using existing image</span>
+                    )}
+                  </div>
+                  {imagePreview && (
+                    <div className="mt-2">
+                      <img 
+                        src={imagePreview} 
+                        alt="Preview" 
+                        className="w-32 h-32 object-cover rounded border"
+                      />
+                    </div>
+                  )}
+                  {!imagePreview && form.image && (
+                    <div className="mt-2">
+                      <img 
+                        src={`${API_BASE}/images/${form.image}`} 
+                        alt="Current" 
+                        className="w-32 h-32 object-cover rounded border"
+                      />
+                    </div>
+                  )}
                 </div>
-                {/* <Input 
-                  id="image"
-                  className="mt-2 w-full"
-                  value={form.image as string} 
-                  onChange={(e)=> setForm(s=>({...s, image: e.target.value}))} 
-                  placeholder="https://example.com/image.jpg" 
-                /> */}
               </div>
               
               <div className="flex items-end gap-3">

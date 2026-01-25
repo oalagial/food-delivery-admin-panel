@@ -122,9 +122,25 @@ function OrderRow({ order, isOpen, onToggle, onAccept, onReject }: OrderRowProps
                     <p className="text-xs font-semibold text-gray-600 uppercase mb-1">Products ({order.products.length})</p>
                     <div className="space-y-1">
                       {order.products.map(p => (
-                        <div key={p.id} className="flex justify-between text-xs p-2 bg-gray-50 rounded">
-                          <span><strong>{p.name}</strong> ×{p.quantity}</span>
-                          <span className="font-semibold">€{p.total}</span>
+                        <div key={p.id} className="text-xs p-2 bg-gray-50 rounded">
+                          <div className="flex justify-between">
+                            <span><strong>{p.name}</strong> ×{p.quantity}</span>
+                            <span className="font-semibold">€{p.total}</span>
+                          </div>
+                          {p.extras && p.extras.length > 0 && (
+                            <div className="mt-1 ml-2 space-y-0.5">
+                              {p.extras.map((extra: any) => (
+                                <div key={extra.id} className="text-gray-600">
+                                  • {extra.name} ×{extra.quantity} <span className="text-gray-500">(€{extra.price})</span>
+                                </div>
+                              ))}
+                              {p.extrasPrice && Number(p.extrasPrice) > 0 && (
+                                <div className="text-gray-700 font-semibold mt-0.5">
+                                  Extras Total: €{p.extrasPrice}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -270,7 +286,7 @@ export default function Orders(){
                 key={String(it.id)}
                 order={it}
                 isOpen={openRowId === String(it.id)}
-                onToggle={() => toggleRow(it.id)}
+                onToggle={() => toggleRow(it.id ?? '')}
                 onAccept={acceptOrder}
                 onReject={rejectOrder}
               />

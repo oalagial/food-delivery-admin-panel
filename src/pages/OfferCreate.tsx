@@ -65,7 +65,7 @@ export default function OfferCreate () {
     let mounted = true
     
     Promise.all([
-      getRestaurantsList().catch(() => []),
+      getRestaurantsList('deletedBy=null').catch(() => []),
       getProductsList().catch(() => []),
       id ? getOfferById(id).catch(() => null) : Promise.resolve(null)
     ]).then(([rs, pr, offer]) => {
@@ -246,7 +246,19 @@ export default function OfferCreate () {
                       disabled={!form.restaurantId}  // Disable if no restaurant selected
                     >
                       <option value="">Select a menu</option>
-                      {selectedRestaurant?.menu.map(m => <option key={String(m.id)} value={String(m.id)}>{m.name ?? String(m.id)}</option>)}
+                      {selectedRestaurant?.menu && (
+                        Array.isArray(selectedRestaurant.menu) ? (
+                          selectedRestaurant.menu.map(m => (
+                            <option key={String(m.id)} value={String(m.id)}>
+                              {m.name ?? String(m.id)}
+                            </option>
+                          ))
+                        ) : (
+                          <option key={String((selectedRestaurant.menu as any).id)} value={String((selectedRestaurant.menu as any).id)}>
+                            {(selectedRestaurant.menu as any).name ?? String((selectedRestaurant.menu as any).id)}
+                          </option>
+                        )
+                      )}
                     </Select>
                   </div>
 
