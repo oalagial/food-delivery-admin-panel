@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Label } from '../components/ui/label'
 import { Alert, AlertDescription } from '../components/ui/alert'
 import { AlertCircle } from 'lucide-react'
-import { createProduct, getProductById, updateProduct, getTypesList, getExtrasByProduct, getProductDiscount } from '../utils/api'
+import { createProduct, getProductById, updateProduct, updateProductImage, getTypesList, getExtrasByProduct, getProductDiscount } from '../utils/api'
 import type { CreateProductPayload, ProductDiscount, ProductExtra } from '../utils/api'
 import { Select } from '../components/ui/select';
 import { API_BASE } from '../config';
@@ -314,8 +314,16 @@ export default function ProductCreate() {
             isActive: discount.isActive
           }))
         
-        // Pass the selected file if one was chosen
-        await updateProduct(id, payload, selectedFile || undefined)
+        // Remove image from payload - it will be sent separately if needed
+        delete payload.image
+        
+        // First, update product data without image (classic JSON request)
+        await updateProduct(id, payload)
+        
+        // Then, if there's an image, upload it separately using FormData
+        if (selectedFile) {
+          await updateProductImage(id, selectedFile)
+        }
       } else {
         // For new products, include extras and discounts in the payload
         payload.extras = productExtras
@@ -373,6 +381,17 @@ export default function ProductCreate() {
                   onChange={(e) => setForm(s => ({...s, name: e.target.value}))} 
                   placeholder="Product name" 
                   required 
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <textarea
+                  id="description"
+                  className="mt-2 w-full border rounded px-3 py-2 min-h-[100px] resize-y"
+                  value={form.description as string}
+                  onChange={(e) => setForm(s => ({...s, description: e.target.value}))}
+                  placeholder="Product description"
                 />
               </div>
 

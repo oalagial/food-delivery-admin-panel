@@ -1,16 +1,20 @@
 import { useEffect, useState } from "react";
-import { getOfferList } from "../utils/api";
-import { FiPlus, FiEdit, FiTrash, FiCheckCircle, FiXCircle } from "react-icons/fi";
+import { getOfferList, deleteOffer, restoreOffer, updateOffer } from "../utils/api";
+import { FiPlus, FiEdit, FiTrash, FiCheckCircle, FiXCircle, FiRotateCw, FiAlertCircle } from "react-icons/fi";
 import { Link } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeadCell, TableRow } from "../components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Alert, AlertTitle, AlertDescription } from "../components/ui/alert";
 
 type OfferRowProps = {
   offer: any;
   isOpen: boolean;
   onToggle: () => void;
+  onDelete?: (id: string | number, name?: string) => void;
+  isDeleting?: boolean;
+  onToggleActive?: (offer: any) => void;
 };
 
 function offerRowDetails(offer: any) {
@@ -63,7 +67,7 @@ function offerRowDetails(offer: any) {
   )
 }
 
-function OfferRow({ offer, isOpen, onToggle }: OfferRowProps) {
+function OfferRow({ offer, isOpen, onToggle, onDelete, isDeleting = false, onToggleActive }: OfferRowProps) {
   return (
     <>
       {/* MAIN ROW */}
@@ -72,11 +76,16 @@ function OfferRow({ offer, isOpen, onToggle }: OfferRowProps) {
         <TableCell>{offer.description}</TableCell>
         <TableCell>{offer.price}</TableCell>
         <TableCell className="text-center">
-            <span className="inline-flex items-center justify-center">
+          <button
+            type="button"
+            className="inline-flex items-center justify-center focus:outline-none"
+            onClick={() => onToggleActive && onToggleActive(offer)}
+            aria-label={offer.isActive ? 'Set inactive' : 'Set active'}
+          >
               {offer.isActive
-                ? <FiCheckCircle className="w-5 h-5 text-green-500" aria-label="Available" />
-                : <FiXCircle className="w-5 h-5 text-red-500" aria-label="Not available" />}
-            </span>
+              ? <FiCheckCircle className="w-5 h-5 text-green-500" aria-label="Active" />
+              : <FiXCircle className="w-5 h-5 text-red-500" aria-label="Inactive" />}
+          </button>
           </TableCell>
         <TableCell>
           <div className="flex justify-center gap-2">
@@ -96,6 +105,8 @@ function OfferRow({ offer, isOpen, onToggle }: OfferRowProps) {
               variant="danger"
               size="sm"
               icon={<FiTrash className="w-4 h-4" />}
+              onClick={() => onDelete && onDelete(offer.id, offer.name)}
+              disabled={isDeleting}
             />
           </div>
         </TableCell>
@@ -125,35 +136,155 @@ export default function Offers() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null)
   const [openRowId, setOpenRowId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | number | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    show: boolean;
+    type: 'delete' | 'restore' | null;
+    id: string | number | null;
+    name: string | null;
+  }>({
+    show: false,
+    type: null,
+    id: null,
+    name: null,
+  });
 
   const toggleRow = (id: string) => {
     setOpenRowId(prev => (prev === id ? null : id));
   }
 
-  useEffect(() => {
-    let mounted = true;
+  const loadOffers = () => {
+    setLoading(true);
     getOfferList()
       .then((data) => {
-        if (!mounted) return;
-        setOffers(data)
-        setError(null)
+        setOffers(data);
+        setError(null);
       })
       .catch((err) => {
-        if (!mounted) return
-        setError(err?.message || 'Failed to load')
-        setOffers([]) 
+        setError(err?.message || 'Failed to load');
+        setOffers([]);
       })
       .finally(() => {
-        if (mounted) setLoading(false)
-      })
+        setLoading(false);
+      });
+  };
 
-    return () => {
-      mounted = false
-    } 
-  }, [])
+  useEffect(() => {
+    loadOffers();
+  }, []);
+
+  const handleDelete = async (id: string | number, name?: string) => {
+    setConfirmDialog({
+      show: true,
+      type: 'delete',
+      id,
+      name: name ?? null,
+    });
+  };
+
+  const handleRestore = async (id: string | number, name?: string) => {
+    setConfirmDialog({
+      show: true,
+      type: 'restore',
+      id,
+      name: name ?? null,
+    });
+  };
+
+  const closeConfirmDialog = () => {
+    setConfirmDialog({
+      show: false,
+      type: null,
+      id: null,
+      name: null,
+    });
+  };
+
+  const handleConfirm = async () => {
+    if (!confirmDialog.id || !confirmDialog.type) return;
+
+    try {
+      if (confirmDialog.type === 'delete') {
+        setDeletingId(confirmDialog.id);
+        await deleteOffer(confirmDialog.id);
+      } else if (confirmDialog.type === 'restore') {
+        await restoreOffer(confirmDialog.id);
+      }
+      loadOffers();
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : `Failed to ${confirmDialog.type} offer`);
+    } finally {
+      setDeletingId(null);
+      closeConfirmDialog();
+    }
+  };
+
+  const activeOffers = offers.filter((o) => {
+    const anyOffer = o as Record<string, unknown>;
+    return !anyOffer.deletedBy;
+  });
+
+  const deletedOffers = offers.filter((o) => {
+    const anyOffer = o as Record<string, unknown>;
+    return !!anyOffer.deletedBy;
+  });
+
+  const handleToggleActive = async (offer: any) => {
+    if (!offer.id) return;
+    try {
+      await updateOffer(offer.id, { isActive: !offer.isActive });
+      setOffers((prev) =>
+        prev.map((o) =>
+          o.id === offer.id ? { ...o, isActive: !offer.isActive } : o
+        )
+      );
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update offer status');
+    }
+  };
 
   return (
     <div className="space-y-6">
+      {/* Confirmation Dialog Modal */}
+      {confirmDialog.show && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+          onClick={closeConfirmDialog}
+        >
+          <div
+            className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6">
+              <Alert variant="default">
+                <FiAlertCircle className="h-4 w-4" />
+                <AlertTitle>
+                  {confirmDialog.type === 'delete' ? 'Delete Offer' : 'Restore Offer'}
+                </AlertTitle>
+                <AlertDescription>
+                  {confirmDialog.type === 'delete'
+                    ? `Are you sure you want to delete "${confirmDialog.name}"?`
+                    : `Are you sure you want to restore "${confirmDialog.name}"?`}
+                </AlertDescription>
+              </Alert>
+              <div className="flex justify-end gap-3 mt-6">
+                <Button variant="ghost" onClick={closeConfirmDialog}>
+                  Cancel
+                </Button>
+                <Button
+                  variant={confirmDialog.type === 'delete' ? 'danger' : 'primary'}
+                  onClick={handleConfirm}
+                >
+                  {confirmDialog.type === 'delete' ? 'Delete' : 'Restore'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Offers</h1>
@@ -183,7 +314,10 @@ export default function Offers() {
         </Table>
       )}
       {error && <p style={{ color: 'red' }}>{error}</p>}
-      {!loading && <div>
+      {!loading && (
+        <div className="space-y-8">
+          <div>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-4">Active Offers</h2>
         <Table>
           <TableHead>
             <tr>
@@ -195,21 +329,76 @@ export default function Offers() {
             </tr>
           </TableHead>
           <TableBody>
-            {offers.length === 0 && (
+                {activeOffers.length === 0 && (
               <TableRow>
-                <TableCell colSpan={4}>No offers found.</TableCell>
+                    <TableCell colSpan={5}>No active offers found.</TableCell>
               </TableRow>
             )}
-            {offers.map((o) => (
+                {activeOffers.map((o) => (
               <OfferRow
+                    key={o.id}
                 offer={o}
-                isOpen={openRowId === o.id}
-                onToggle={() => toggleRow(o.id)}
+                    isOpen={openRowId === String(o.id)}
+                    onToggle={() => toggleRow(String(o.id))}
+                    onDelete={handleDelete}
+                    isDeleting={deletingId === o.id}
+                    onToggleActive={handleToggleActive}
               />
             ))}
           </TableBody>
         </Table>
-      </div>}
+          </div>
+
+          {deletedOffers.length > 0 && (
+            <div>
+              <h2 className="text-2xl font-semibold text-gray-600 mb-4">Deleted Offers</h2>
+              <Table>
+                <TableHead>
+                  <tr className="bg-gray-100">
+                    <TableHeadCell className="text-gray-600">Name</TableHeadCell>
+                    <TableHeadCell className="text-gray-600">Description</TableHeadCell>
+                    <TableHeadCell className="text-gray-600">Price</TableHeadCell>
+                    <TableHeadCell className="text-gray-600">Active</TableHeadCell>
+                    <TableHeadCell className="text-gray-600">Deleted By</TableHeadCell>
+                    <TableHeadCell className="text-gray-600">Actions</TableHeadCell>
+                  </tr>
+                </TableHead>
+                <TableBody>
+                  {deletedOffers.map((o) => {
+                    const anyOffer = o as Record<string, unknown>;
+                    return (
+                      <TableRow key={o.id} className="bg-gray-50 opacity-75">
+                        <TableCell className="text-gray-600">{o.name}</TableCell>
+                        <TableCell className="text-gray-600">{o.description}</TableCell>
+                        <TableCell className="text-gray-600">{o.price}</TableCell>
+                        <TableCell className="text-gray-600">
+                          {o.isActive
+                            ? <FiCheckCircle className="w-5 h-5 text-green-500" aria-label="Available" />
+                            : <FiXCircle className="w-5 h-5 text-red-500" aria-label="Not available" />}
+                        </TableCell>
+                        <TableCell className="text-gray-500 text-sm">
+                          {String(anyOffer.deletedBy ?? '')}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex justify-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="p-2"
+                              icon={<FiRotateCw className="w-4 h-4" />}
+                              onClick={() => handleRestore(o.id, o.name)}
+                            />
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

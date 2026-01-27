@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { Button } from '../components/ui/button'
 import { FiPlus, FiEdit, FiTrash, FiCheckCircle, FiXCircle, FiRotateCw, FiAlertCircle } from 'react-icons/fi'
-import { getProductsList, restoreProduct, deleteProduct } from '../utils/api'
+import { getProductsList, restoreProduct, deleteProduct, updateProduct } from '../utils/api'
 import type { Product } from '../utils/api'
 import { Skeleton } from '../components/ui/skeleton'
 import { API_BASE } from '../config'
@@ -18,6 +18,7 @@ type ProductRowProps = {
   isDeleted?: boolean;
   onRestore?: (id: string | number, name: string) => void;
   onDelete?: (id: string | number, name: string) => void;
+  onToggleAvailability?: (product: Product) => void;
 };
 
 function productRowDetails(product: Product) {
@@ -59,7 +60,7 @@ function productRowDetails(product: Product) {
   )
 }
 
-function ProductRow({ product, isOpen, onToggle, isDeleted = false, onRestore, onDelete }: ProductRowProps) {
+function ProductRow({ product, isOpen, onToggle, isDeleted = false, onRestore, onDelete, onToggleAvailability }: ProductRowProps) {
   const anyProduct = product as unknown as Record<string, unknown>
   
   return (
@@ -85,11 +86,17 @@ function ProductRow({ product, isOpen, onToggle, isDeleted = false, onRestore, o
           ) : '-'}
         </TableCell>
         <TableCell className={`text-center ${isDeleted ? "text-gray-600" : ""}`}>
-          <span className="inline-flex items-center justify-center">
+          <button
+            type="button"
+            className="inline-flex items-center justify-center focus:outline-none"
+            disabled={isDeleted}
+            onClick={() => !isDeleted && onToggleAvailability && onToggleAvailability(product)}
+            aria-label={product.isAvailable ? 'Set unavailable' : 'Set available'}
+          >
             {product.isAvailable
               ? <FiCheckCircle className="w-5 h-5 text-green-500" aria-label="Available" />
               : <FiXCircle className="w-5 h-5 text-red-500" aria-label="Not available" />}
-          </span>
+          </button>
         </TableCell>
         {isDeleted ? (
           <>
@@ -218,6 +225,21 @@ export default function Products() {
 
   const handleDelete = (id: string | number, name: string) => {
     openConfirmDialog('delete', id, name)
+  }
+
+  const handleToggleAvailability = async (product: Product) => {
+    if (!product.id) return
+    try {
+      await updateProduct(product.id, { isAvailable: !product.isAvailable })
+      setItems((prev) =>
+        prev.map((p) =>
+          p.id === product.id ? { ...p, isAvailable: !product.isAvailable } : p
+        )
+      )
+      setError(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update availability')
+    }
   }
 
   // Separate active and deleted products
@@ -355,6 +377,7 @@ export default function Products() {
                     isOpen={openRowId === String(p.id)}
                     onToggle={() => toggleRow(String(p.id))}
                     onDelete={() => handleDelete(p.id ?? '', p.name ?? '')}
+                    onToggleAvailability={handleToggleAvailability}
                   />
                 ))}
               </TableBody>

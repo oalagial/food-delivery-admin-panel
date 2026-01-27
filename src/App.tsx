@@ -28,6 +28,7 @@ import { getToken } from './utils/api'
 import { FiHome, FiShoppingCart, FiCoffee, FiMapPin, FiUsers, FiShield, FiKey, FiSettings, FiTag, FiBox, FiList, FiLayers } from 'react-icons/fi'
 import Offers from './pages/Offers'
 import OfferCreate from './pages/OfferCreate'
+import CustomerCollection from './pages/CustomerCollection'
 
 function NavSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -287,6 +288,7 @@ function App() {
               <Route path="/offers" element={<RequireAuth><Offers /></RequireAuth>} />
               <Route path="/offers/creation" element={<RequireAuth><OfferCreate /></RequireAuth>} />
               <Route path="/offers/creation/:id" element={<RequireAuth><OfferCreate /></RequireAuth>} />
+              <Route path="/customers" element={<RequireAuth><CustomerCollection /></RequireAuth>} />
               <Route path="/" element={<RequireAuth><Dashboard /></RequireAuth>} />
             </Routes>
           </div>

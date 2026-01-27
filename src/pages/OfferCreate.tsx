@@ -38,23 +38,29 @@ export default function OfferCreate () {
     groups: []
   });
 
-  const addProductToGroup = (groupIndex: number, productId: number) => {
+  const addProductToGroup = (groupIndex: number, productId: number | string | undefined) => {
+    if (productId === undefined || productId === null) return
+    const productIdNum = Number(productId)
+    if (isNaN(productIdNum)) return
     setForm(prev => ({
       ...prev,
       groups: prev.groups.map((g, i) =>
         i === groupIndex
-          ? { ...g, productsIds: [...g.productsIds, productId] }
+          ? { ...g, productsIds: [...g.productsIds, productIdNum] }
           : g
       )
-      }));
-    };
+    }));
+  };
 
-  const removeProductFromGroup = (groupIndex: number, productId: number) => {
+  const removeProductFromGroup = (groupIndex: number, productId: number | string | undefined) => {
+    if (productId === undefined || productId === null) return
+    const productIdNum = Number(productId)
+    if (isNaN(productIdNum)) return
     setForm(prev => ({
       ...prev,
       groups: prev.groups.map((g, i) =>
         i === groupIndex
-          ? { ...g, productsIds: g.productsIds.filter(id => id !== productId) }
+          ? { ...g, productsIds: g.productsIds.filter(id => id !== productIdNum) }
           : g
       )
     }));
@@ -84,7 +90,7 @@ export default function OfferCreate () {
             name: g.name,
             minItems: g.minItems,
             maxItems: g.maxItems,
-            productsIds: g.offerGroupProducts?.map(p => p.id)
+            productsIds: g.offerGroupProducts?.map(p => Number(p.product?.id || p.productId || p.id)).filter((id): id is number => !isNaN(id)) || []
           }))
 
         });
