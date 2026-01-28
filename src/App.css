@@ -52,7 +52,7 @@ body,
 /* SIDEBAR */
 .sidebar {
   width: 280px;
-  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+  background: linear-gradient(135deg, #fac77e 100%);
   color: white;
   display: flex;
   flex-direction: column;
@@ -64,7 +64,7 @@ body,
 .sidebar-header {
   padding: 1.5rem 1.5rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: linear-gradient(135deg, rgba(30, 58, 138, 0.5), rgba(30, 64, 175, 0.5));
+  background: linear-gradient(135deg, #cd7d3e);
 }
 
 .sidebar-logo {
@@ -74,6 +74,7 @@ body,
   font-size: 1.25rem;
   font-weight: 700;
   letter-spacing: -0.5px;
+  justify-content: center;
 }
 
 .sidebar-nav {
@@ -107,7 +108,7 @@ body,
   border-radius: var(--radius);
   font-size: 0.95rem;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(0, 0, 0, 0.75);
   text-decoration: none;
   transition: all 0.2s ease;
   position: relative;
@@ -117,13 +118,13 @@ body,
 }
 
 .nav-link:hover {
-  color: white;
+  color: #2563eb;
   background: rgba(255, 255, 255, 0.1);
   transform: translateX(4px);
 }
 
 .nav-link.active {
-  color: white;
+  color: #2563eb;
   background: rgba(255, 255, 255, 0.2);
   font-weight: 600;
   box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);

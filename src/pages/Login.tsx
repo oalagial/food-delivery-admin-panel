@@ -30,15 +30,16 @@ export default function Login(){
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 via-blue-50 to-indigo-100 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-100 via-orange-300 to-amber-600 p-4">
       <div className="w-full max-w-md">
-        <Card className="shadow-2xl border-0">
-          <CardHeader className="space-y-3 pb-6">
-            <div className="flex items-center justify-center mb-2">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
-                <span className="text-white text-2xl font-bold">FD</span>
+        <div className="flex items-center justify-center mb-2">
+              <div className="w-48 h-48">
+                {/* <span className="text-white text-2xl font-bold">FD</span> */}
+                <img src='src/assets/logo.png'></img>
               </div>
             </div>
+        <Card className="shadow-2xl border-0">
+          <CardHeader className="space-y-3">
             <CardTitle className="text-5xl text-center font-bold text-gray-900">Welcome</CardTitle>
             <CardDescription className="text-center text-lg text-gray-600">Sign in to your admin account to continue</CardDescription>
           </CardHeader>

@@ -7,7 +7,7 @@ import { Label } from '../components/ui/label'
 import { Textarea } from '../components/ui/textarea'
 import { Alert, AlertDescription } from '../components/ui/alert'
 import { AlertCircle } from 'lucide-react'
-
+import { getRoleById } from '../utils/api'
 import { API_BASE } from '../config'
 
 export default function RoleCreate() {
@@ -21,20 +21,38 @@ export default function RoleCreate() {
   useEffect(() => {
     if (!id) return
     let mounted = true
-    ;(async () => {
-      try {
-        const res = await fetch(`${API_BASE}/roles${id}`)
-        if (!res.ok) throw new Error(`Failed to load role: ${res.status}`)
-        const json = await res.json()
+    getRoleById(id)
+      .then((data) => {
         if (!mounted) return
-        setForm({ name: String(json.name ?? ''), description: String(json.description ?? '') })
-      } catch (err: unknown) {
-        if (!mounted) return
-        setError(err instanceof Error ? err.message : String(err))
-      }
-    })()
+        if (data) {
+          setForm((s) => ({
+            ...s,
+            name: String(data.name ?? ''),
+            description: String(data.description ?? '')
 
-    return () => { mounted = false }
+          })
+        )} else {
+          setError('Role not found')
+        }
+      })
+      .catch((err) => {
+        setError(err?.message || 'Failed to load role')
+      })
+    // ;(async () => {
+    //   try {
+    //     // const res = await fetch(`${API_BASE}/roles?id=${id}`)
+    //     const res = await getRoleById(id); 
+    //     // if (!res.ok) throw new Error(`Failed to load role: ${res.status}`)
+    //     // const json = await res.json()
+    //     // if (!mounted) return
+    //     setForm({ name: String(json.name ?? ''), description: String(json.description ?? '') })
+    //   } catch (err: unknown) {
+    //     if (!mounted) return
+    //     setError(err instanceof Error ? err.message : String(err))
+    //   }
+    // })()
+
+    // return () => { mounted = false }
   }, [id])
 
   async function handleSave(e: React.FormEvent) {
@@ -113,7 +131,7 @@ export default function RoleCreate() {
             </div>
 
             <div className="flex justify-end gap-3 pt-4">
-              <Link to="/roles"><Button variant="ghost" type="button">Cancel</Button></Link>
+              <Link to="/roles"><Button variant="default" type="button">Cancel</Button></Link>
               <Button variant="primary" type="submit" disabled={saving}>{saving ? (id ? 'Saving...' : 'Creating...') : (id ? 'Update' : 'Create')}</Button>
             </div>
           </form>

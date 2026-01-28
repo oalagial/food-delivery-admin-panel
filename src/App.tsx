@@ -26,11 +26,14 @@ import Login from './pages/Login'
 import RequireAuth from './components/RequireAuth'
 import { getToken } from './utils/api'
 import { FiHome, FiShoppingCart, FiCoffee, FiMapPin, FiUsers, FiShield, FiKey, FiSettings, FiTag, FiBox, FiList, FiLayers } from 'react-icons/fi'
+import Offers from './pages/Offers'
+import OfferCreate from './pages/OfferCreate'
+import CustomerCollection from './pages/CustomerCollection'
 
 function NavSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mt-8 first:mt-0">
-      <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 px-4">{title}</div>
+      <div className="text-xs font-bold text-blue-800 uppercase tracking-wider mb-4 px-4">{title}</div>
       <div className="space-y-1">{children}</div>
     </div>
   )
@@ -67,8 +70,8 @@ function App() {
         <aside className="sidebar">
           <div className="sidebar-header">
             <div className="sidebar-logo">
-              <FiMapPin className="w-6 h-6 text-white" />
-              <span>Delivery Admin</span>
+              {/* <FiMapPin className="w-6 h-6 text-white" /> */}
+              <img src="src/assets/logo.png" alt="Image"  style={{ width: "100px", height: "auto" }}/>
             </div>
           </div>
 
@@ -224,6 +227,17 @@ function App() {
                 </li>
                 <li>
                   <NavLink
+                    to="/offers"
+                    className={({ isActive }) =>
+                      `nav-link ${isActive ? 'active' : ''}`
+                    }
+                  >
+                    <FiHome className="w-5 h-5" />
+                    <span>Offers</span>
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink
                     to="/customers"
                     className={({ isActive }) =>
                       `nav-link ${isActive ? 'active' : ''}`
@@ -271,6 +285,10 @@ function App() {
               <Route path="/roles/creation/:id" element={<RequireAuth><RoleCreate /></RequireAuth>} />
               <Route path="/permits" element={<RequireAuth><Permits /></RequireAuth>} />
               <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
+              <Route path="/offers" element={<RequireAuth><Offers /></RequireAuth>} />
+              <Route path="/offers/creation" element={<RequireAuth><OfferCreate /></RequireAuth>} />
+              <Route path="/offers/creation/:id" element={<RequireAuth><OfferCreate /></RequireAuth>} />
+              <Route path="/customers" element={<RequireAuth><CustomerCollection /></RequireAuth>} />
               <Route path="/" element={<RequireAuth><Dashboard /></RequireAuth>} />
             </Routes>
           </div>

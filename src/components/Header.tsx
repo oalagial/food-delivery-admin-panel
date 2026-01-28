@@ -1,13 +1,21 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getToken, clearToken } from '../utils/api'
 import { Button } from './ui/button'
 import { FiLogOut, FiClock } from 'react-icons/fi'
 
 export default function Header(){
-  const time = useMemo(()=> new Date().toLocaleTimeString(), [])
+  const [time, setTime] = useState<string>(new Date().toLocaleTimeString())
   const [token, setToken] = useState<string | null>(getToken())
   const navigate = useNavigate()
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTime(new Date().toLocaleTimeString())
+    }, 1000)
+    return () => clearInterval(interval) // καθαρισμός interval
+  }, [])
+
 
   useEffect(()=>{
     const onStorage = () => setToken(getToken())

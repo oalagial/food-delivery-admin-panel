@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { FiPlus, FiEdit, FiTrash } from 'react-icons/fi'
+import { FiPlus, FiEdit, FiTrash, FiCheckCircle, FiXCircle } from 'react-icons/fi'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { Button } from '../components/ui/button'
 import { Skeleton } from '../components/ui/skeleton'
-import { getDeliveryLocationsList, getRestaurantsList } from '../utils/api'
+import { getDeliveryLocationsList, getRestaurantsList, updateDeliveryLocation } from '../utils/api'
 import type { CreateDeliveryLocationPayload as DeliveryLocation, Restaurant as RestaurantType } from '../utils/api'
 
 export default function DeliveryLocations() {
@@ -53,6 +53,86 @@ export default function DeliveryLocations() {
     }
   }, [])
 
+  // Separate active and deleted locations
+  const activeLocations = locations.filter((loc) => {
+    const anyLoc = loc as unknown as Record<string, unknown>
+    return !anyLoc.deletedBy
+  })
+  const deletedLocations = locations.filter((loc) => {
+    const anyLoc = loc as unknown as Record<string, unknown>
+    return anyLoc.deletedBy
+  })
+
+  // Function to toggle active status
+  const toggleActiveStatus = async (loc: Partial<DeliveryLocation>) => {
+    const locId = (loc as any).id
+    if (!locId) return
+    
+    try {
+      const currentStatus = loc.isActive ?? false
+      const updatedPayload: DeliveryLocation = {
+        name: loc.name ?? '',
+        address: loc.address,
+        streetNumber: loc.streetNumber,
+        city: loc.city,
+        province: loc.province,
+        image: loc.image,
+        zipCode: loc.zipCode,
+        country: loc.country,
+        description: loc.description,
+        isActive: !currentStatus,
+      }
+      
+      await updateDeliveryLocation(String(locId), updatedPayload)
+      
+      // Reload the list
+      const locsRaw = await getDeliveryLocationsList()
+      const locsArray = Array.isArray(locsRaw) ? locsRaw : (locsRaw && (locsRaw as any).items) || (locsRaw && (locsRaw as any).data) || []
+      setLocations(locsArray as unknown as Partial<DeliveryLocation>[])
+      setError(null)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err) || 'Failed to update location')
+    }
+  }
+
+  // Helper function to render restaurants cell
+  const renderRestaurantsCell = (loc: Partial<DeliveryLocation>) => {
+    const anyLoc = loc as unknown as Record<string, unknown>
+    // Try several possible shapes returned by different API versions
+    const maybeArray = (key: string): unknown[] | null => {
+      const v = anyLoc[key]
+      return Array.isArray(v) ? (v as unknown[]) : null
+    }
+    const list = maybeArray('deliveredBy') ?? maybeArray('deliveredByRestaurants') ?? maybeArray('delivedByRestaurants') ?? []
+
+    if (list.length === 0) return <span className="text-xs text-gray-400">None</span>;
+
+    return (
+      <div className="flex flex-col gap-1">
+        {list.map((d, idx) => {
+          const item = d as Record<string, unknown>
+          let name = ''
+          if (typeof item.name === 'string' || item.id !== undefined) {
+            name = String(item.name ?? item.id)
+          } else if (item.restaurantId !== undefined) {
+            name = restaurantsMap[String(item.restaurantId ?? '')] ?? String(item.restaurantId ?? '')
+          }
+          const fee = (typeof item.deliveryFee === 'number' || typeof item.deliveryFee === 'string') ? `Fee: €${String(item.deliveryFee)}` : ''
+          const min = (typeof item.minOrder === 'number' || typeof item.minOrder === 'string') ? `Min: €${String(item.minOrder)}` : ''
+          const inactive = item.isActive === false
+          return (
+            <span key={idx} className={inactive ? 'opacity-60' : ''}>
+              <span className="font-medium">{name}</span>
+              {fee && <span className="ml-2 bg-gray-100 rounded px-2 py-0.5 text-xs">{fee}</span>}
+              {min && <span className="ml-2 bg-gray-100 rounded px-2 py-0.5 text-xs">{min}</span>}
+              {inactive && <span className="ml-2 bg-red-200 text-red-800 rounded px-2 py-0.5 text-xs">Inactive</span>}
+            </span>
+          )
+        })}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
 
@@ -66,8 +146,8 @@ export default function DeliveryLocations() {
 
       {error && <p className="text-red-600">{error}</p>}
 
-      <div className="mt-4">
-        {loading ? (
+      {loading ? (
+        <div className="mt-4">
           <Table>
             <TableHead>
               <tr>
@@ -77,8 +157,6 @@ export default function DeliveryLocations() {
                 <TableHeadCell>Province</TableHeadCell>
                 <TableHeadCell>Zip</TableHeadCell>
                 <TableHeadCell>Country</TableHeadCell>
-                <TableHeadCell>Lat</TableHeadCell>
-                <TableHeadCell>Lon</TableHeadCell>
                 <TableHeadCell>Active</TableHeadCell>
                 <TableHeadCell>Restaurants</TableHeadCell>
                 <TableHeadCell>Actions</TableHeadCell>
@@ -87,94 +165,109 @@ export default function DeliveryLocations() {
             <TableBody>
               {Array.from({ length: 6 }).map((_, r) => (
                 <TableRow key={r} className="animate-pulse">
-                  {Array.from({ length: 13 }).map((__, c) => (
+                  {Array.from({ length: 11 }).map((__, c) => (
                     <TableCell key={c}><Skeleton className="h-4 w-full bg-gray-200" /></TableCell>
                   ))}
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-        ) : (
-          <Table>
-            <TableHead>
-              <tr>
-                <TableHeadCell>Name</TableHeadCell>
-                <TableHeadCell>Address</TableHeadCell>
-                <TableHeadCell>City</TableHeadCell>
-                <TableHeadCell>Province</TableHeadCell>
-                <TableHeadCell>Zip</TableHeadCell>
-                <TableHeadCell>Country</TableHeadCell>
-                <TableHeadCell>Lat</TableHeadCell>
-                <TableHeadCell>Lon</TableHeadCell>
-                <TableHeadCell>Active</TableHeadCell>
-                <TableHeadCell>Restaurants</TableHeadCell>
-                <TableHeadCell>Actions</TableHeadCell>
-              </tr>
-            </TableHead>
-            <TableBody>
-              {(!loading && locations.length === 0) && (
-                <TableRow>
-                  <TableCell colSpan={13}>No delivery locations found.</TableCell>
-                </TableRow>
-              )}
+        </div>
+      ) : (
+        <>
+          <div className="mt-4">
+            <h2 className="text-2xl font-semibold text-gray-800 mb-4">Active Delivery Locations</h2>
+            <Table>
+              <TableHead>
+                <tr>
+                  <TableHeadCell>Name</TableHeadCell>
+                  <TableHeadCell>Address</TableHeadCell>
+                  <TableHeadCell>City</TableHeadCell>
+                  <TableHeadCell>Province</TableHeadCell>
+                  <TableHeadCell>Zip</TableHeadCell>
+                  <TableHeadCell>Country</TableHeadCell>
+                  <TableHeadCell>Active</TableHeadCell>
+                  <TableHeadCell>Restaurants</TableHeadCell>
+                  <TableHeadCell>Actions</TableHeadCell>
+                </tr>
+              </TableHead>
+              <TableBody>
+                {activeLocations.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={11}>No active delivery locations found.</TableCell>
+                  </TableRow>
+                )}
 
-              {locations.map((loc) => (
-                <TableRow key={String(loc.id ?? '') + String(loc.name ?? '')}>
-                  <TableCell>{loc.name ?? ''}</TableCell>
-                  <TableCell>{loc.address ?? ''}</TableCell>
-                  <TableCell>{loc.city ?? ''}</TableCell>
-                  <TableCell>{loc.province ?? ''}</TableCell>
-                  <TableCell>{loc.zipCode ?? ''}</TableCell>
-                  <TableCell>{loc.country ?? ''}</TableCell>
-                  <TableCell>{loc.latitude ?? ''}</TableCell>
-                  <TableCell>{loc.longitude ?? ''}</TableCell>
-                  <TableCell>{loc.isActive ? 'Yes' : 'No'}</TableCell>
-                  <TableCell>{(() => {
-                    const anyLoc = loc as unknown as Record<string, unknown>
-                    // Try several possible shapes returned by different API versions
-                    const maybeArray = (key: string): unknown[] | null => {
-                      const v = anyLoc[key]
-                      return Array.isArray(v) ? (v as unknown[]) : null
-                    }
-                    const list = maybeArray('deliveredBy') ?? maybeArray('deliveredByRestaurants') ?? maybeArray('delivedByRestaurants') ?? []
-
-                    if (list.length === 0) return <span className="text-xs text-gray-400">None</span>;
-
-                    return (
-                      <div className="flex flex-col gap-1">
-                        {list.map((d, idx) => {
-                          const item = d as Record<string, unknown>
-                          let name = ''
-                          if (typeof item.name === 'string' || item.id !== undefined) {
-                            name = String(item.name ?? item.id)
-                          } else if (item.restaurantId !== undefined) {
-                            name = restaurantsMap[String(item.restaurantId ?? '')] ?? String(item.restaurantId ?? '')
-                          }
-                          const fee = (typeof item.deliveryFee === 'number' || typeof item.deliveryFee === 'string') ? `Fee: €${String(item.deliveryFee)}` : ''
-                          const min = (typeof item.minOrder === 'number' || typeof item.minOrder === 'string') ? `Min: €${String(item.minOrder)}` : ''
-                          const inactive = item.isActive === false
-                          return (
-                            <span key={idx} className={inactive ? 'opacity-60' : ''}>
-                              <span className="font-medium">{name}</span>
-                              {fee && <span className="ml-2 bg-gray-100 rounded px-2 py-0.5 text-xs">{fee}</span>}
-                              {min && <span className="ml-2 bg-gray-100 rounded px-2 py-0.5 text-xs">{min}</span>}
-                              {inactive && <span className="ml-2 bg-red-200 text-red-800 rounded px-2 py-0.5 text-xs">Inactive</span>}
-                            </span>
-                          )
-                        })}
+                {activeLocations.map((loc) => (
+                  <TableRow key={String(loc.id ?? '') + String(loc.name ?? '')}>
+                    <TableCell>{loc.name ?? ''}</TableCell>
+                    <TableCell>{loc.address ?? ''}</TableCell>
+                    <TableCell>{loc.city ?? ''}</TableCell>
+                    <TableCell>{loc.province ?? ''}</TableCell>
+                    <TableCell>{loc.zipCode ?? ''}</TableCell>
+                    <TableCell>{loc.country ?? ''}</TableCell>
+                    <TableCell>{loc.isActive ? 'Yes' : 'No'}</TableCell>
+                    <TableCell>{renderRestaurantsCell(loc)}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Link to={`/delivery-locations/creation/${encodeURIComponent(String(loc.id ?? ''))}`}><Button variant="ghost" className='p-2' size="sm" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
+                        <Button 
+                          variant={loc.isActive ? "ghost" : "ghost"} 
+                          size="sm" 
+                          className='p-2' 
+                          icon={loc.isActive ? <FiCheckCircle className="w-4 h-4 text-green-600" /> : <FiXCircle className="w-4 h-4 text-red-600" />}
+                          onClick={() => toggleActiveStatus(loc)}
+                          title={loc.isActive ? "Deactivate" : "Activate"}
+                        ></Button>
+                        <Button variant="danger" size="sm" className='p-2' icon={<FiTrash className="w-4 h-4" />}></Button>
                       </div>
-                    );
-                  })()}</TableCell>
-                  <TableCell>
-                    <Link to={`/delivery-locations/creation/${encodeURIComponent(String(loc.id ?? ''))}`} className='mr-2' ><Button variant="ghost" className='p-2' size="sm" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
-                    <Button variant="danger" size="sm" className='p-2' icon={<FiTrash className="w-4 h-4" />}></Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {deletedLocations.length > 0 && (
+            <div className="mt-8">
+              <h2 className="text-2xl font-semibold text-gray-600 mb-4">Deleted Delivery Locations</h2>
+              <Table>
+                <TableHead>
+                  <tr className="bg-gray-100">
+                    <TableHeadCell className="text-gray-600">Name</TableHeadCell>
+                    <TableHeadCell className="text-gray-600">Address</TableHeadCell>
+                    <TableHeadCell className="text-gray-600">City</TableHeadCell>
+                    <TableHeadCell className="text-gray-600">Province</TableHeadCell>
+                    <TableHeadCell className="text-gray-600">Zip</TableHeadCell>
+                    <TableHeadCell className="text-gray-600">Country</TableHeadCell>
+                    <TableHeadCell className="text-gray-600">Active</TableHeadCell>
+                    <TableHeadCell className="text-gray-600">Restaurants</TableHeadCell>
+                    <TableHeadCell className="text-gray-600">Deleted By</TableHeadCell>
+                  </tr>
+                </TableHead>
+                <TableBody>
+                  {deletedLocations.map((loc) => {
+                    const anyLoc = loc as unknown as Record<string, unknown>
+                    return (
+                      <TableRow key={String(loc.id ?? '') + String(loc.name ?? '')} className="bg-gray-50 opacity-75">
+                        <TableCell className="text-gray-600">{loc.name ?? ''}</TableCell>
+                        <TableCell className="text-gray-600">{loc.address ?? ''}</TableCell>
+                        <TableCell className="text-gray-600">{loc.city ?? ''}</TableCell>
+                        <TableCell className="text-gray-600">{loc.province ?? ''}</TableCell>
+                        <TableCell className="text-gray-600">{loc.zipCode ?? ''}</TableCell>
+                        <TableCell className="text-gray-600">{loc.country ?? ''}</TableCell>
+                        <TableCell className="text-gray-600">{loc.isActive ? 'Yes' : 'No'}</TableCell>
+                        <TableCell className="text-gray-600">{renderRestaurantsCell(loc)}</TableCell>
+                        <TableCell className="text-gray-500 text-sm">{String(anyLoc.deletedBy ?? '')}</TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </>
+      )}
     </div>
   )
 }
