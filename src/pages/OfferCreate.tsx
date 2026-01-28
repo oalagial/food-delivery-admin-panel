@@ -366,12 +366,12 @@ export default function OfferCreate () {
                           <div className="flex-1">
                             <div className="font-semibold mb-1 text-sm">Available</div>
                             <div className="border rounded p-2 h-48 overflow-y-auto bg-white">
-                              {products.filter(p => !g.productsIds.includes(p.id)).length === 0 && (
+                              {products.filter(p => !g.productsIds.includes(Number(p.id))).length === 0 && (
                                 <div className="text-xs text-gray-400">No more products</div>
                               )}
 
                               {products
-                                .filter(p => !g.productsIds.includes(p.id))
+                                .filter(p => !g.productsIds.includes(Number(p.id)))
                                 .map(p => (
                                   <div
                                     key={p.id}
@@ -399,7 +399,7 @@ export default function OfferCreate () {
                               )}
 
                               {products
-                                .filter(p => g.productsIds.includes(p.id))
+                                .filter(p => g.productsIds.includes(Number(p.id)))
                                 .map(p => (
                                   <div
                                     key={p.id}
