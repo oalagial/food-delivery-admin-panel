@@ -15,7 +15,6 @@ export default function RoleCreate() {
   const navigate = useNavigate()
 
   const [saving, setSaving] = useState(false)
-  const [createError, setCreateError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState({ name: '', description: '' })
 
@@ -33,11 +32,11 @@ export default function RoleCreate() {
 
           })
         )} else {
-          setCreateError('Role not found')
+          setError('Role not found')
         }
       })
       .catch((err) => {
-        setCreateError(err?.message || 'Failed to load role')
+        setError(err?.message || 'Failed to load role')
       })
     // ;(async () => {
     //   try {

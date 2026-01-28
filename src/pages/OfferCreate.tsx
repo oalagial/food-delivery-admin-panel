@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
-import { createOffer, getOfferById, getProductsList, getRestaurantsList, updateOffer, type CreateOfferPayload, type MenuItem, type OfferGroup, type Product, type Restaurant } from "../utils/api"
+import { createOffer, getOfferById, getProductsList, getRestaurantsList, updateOffer, type CreateOfferPayload, type OfferGroup, type Product, type Restaurant } from "../utils/api"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
 import { Label } from "../components/ui/label"
@@ -12,9 +12,7 @@ export default function OfferCreate () {
   const editing = !!id;
   const navigate = useNavigate()
 
-  const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
-  const [createResult, setCreateResult] = useState<boolean>(false)
   const [saving, setSaving] = useState(false)
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null)
@@ -183,6 +181,11 @@ export default function OfferCreate () {
               <CardDescription>Fill in the offer information below</CardDescription>
             </CardHeader>
             <CardContent>
+              {createError && (
+                <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
+                  {createError}
+                </div>
+              )}
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
