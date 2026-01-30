@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeadCell, TableRow } from "../components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Card, CardContent } from "../components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from "../components/ui/alert";
 
 type OfferRowProps = {
