@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Label } from '../components/ui/label'
 import { Alert, AlertDescription } from '../components/ui/alert'
 import { AlertCircle } from 'lucide-react'
-import { createProduct, getProductById, updateProduct, updateProductImage, getTypesList, getExtrasByProduct, getProductDiscount } from '../utils/api'
+import { createProduct, getProductById, updateProduct, updateProductImage, getTypesList, getExtrasByProduct, getProductDiscount, ProductAllergy } from '../utils/api'
 import type { CreateProductPayload, ProductDiscount, ProductExtra } from '../utils/api'
 import { Select } from '../components/ui/select';
 import { API_BASE } from '../config';
@@ -167,6 +167,7 @@ export default function ProductCreate() {
   
   // Keep a raw ingredients text input so typing a trailing comma doesn't get trimmed away
   const [ingredientsInput, setIngredientsInput] = useState('')
+  const [selectedAllergies, setSelectedAllergies] = useState<ProductAllergy[]>([])
 
   const [form, setForm] = useState<Partial<CreateProductPayload>>({
     name: '',
@@ -174,6 +175,7 @@ export default function ProductCreate() {
     image: '',
     typeId: undefined,
     ingredients: [],
+    allergies: [],
     price: undefined,
     isAvailable: true,
     vatRate: undefined,
@@ -203,11 +205,13 @@ export default function ProductCreate() {
           image: p.image,
           typeId: p.typeId,
           ingredients: p.ingredients ?? [],
+          allergies: p.allergies ?? [],
           price: p.price,
           isAvailable: p.isAvailable,
           vatRate: p.vatRate,
         })
         setIngredientsInput(Array.isArray(p.ingredients) ? p.ingredients.join(', ') : '')
+        setSelectedAllergies(Array.isArray(p.allergies) ? p.allergies : [])
       }
 
       if (pe) {
@@ -288,6 +292,7 @@ export default function ProductCreate() {
       image: form.image, // Keep existing image if no new file is selected
       typeId: form.typeId,
       ingredients: ingredientsInput.split(',').map((x) => x.trim()).filter(Boolean),
+      allergies: selectedAllergies,
       price: form.price !== undefined ? Number(form.price) : undefined,
       isAvailable: !!form.isAvailable,
       vatRate: form.vatRate,
@@ -342,9 +347,19 @@ export default function ProductCreate() {
             isActive: discount.isActive
           }))
         
-        // Pass the selected file if one was chosen
-        const createdProduct = await createProduct(payload, selectedFile || undefined)
-        console.log('Created product:', createdProduct);
+        // Remove image from payload - it will be sent separately if needed
+        delete payload.image
+        
+        // First, create product without image (JSON request)
+        const createdProduct = await createProduct(payload, undefined)
+        
+        // Extract the product ID from the response
+        const createdProductId = (createdProduct as any)?.id || (createdProduct as any)?.data?.id
+        
+        // Then, if there's an image, upload it separately using FormData
+        if (selectedFile && createdProductId) {
+          await updateProductImage(createdProductId, selectedFile)
+        }
       }
       navigate('/products')
     } catch (err: unknown) {
@@ -453,6 +468,32 @@ export default function ProductCreate() {
                   onChange={(e)=> setIngredientsInput(e.target.value)}
                   placeholder="Tomato, Cheese, Basil"
                 />
+              </div>
+
+              <div>
+                <Label className="block mb-2">Allergies</Label>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {Object.values(ProductAllergy).map((allergy) => (
+                    <div key={allergy} className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id={`allergy-${allergy}`}
+                        checked={selectedAllergies.includes(allergy)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedAllergies([...selectedAllergies, allergy])
+                          } else {
+                            setSelectedAllergies(selectedAllergies.filter(a => a !== allergy))
+                          }
+                        }}
+                        className="h-4 w-4 rounded border-gray-300"
+                      />
+                      <Label htmlFor={`allergy-${allergy}`} className="mb-0 cursor-pointer text-sm">
+                        {allergy.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div>

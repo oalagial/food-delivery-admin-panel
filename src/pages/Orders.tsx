@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '../components/ui/button'
 import { FiEdit, FiChevronDown, FiTrash, FiCheck, FiCheckCircle, FiSlash } from 'react-icons/fi'
@@ -7,6 +7,8 @@ import type { OrderItem } from '../utils/api'
 import { Skeleton } from '../components/ui/skeleton'
 import { Card, CardContent } from '../components/ui/card'
 import { Table, TableBody, TableHead, TableRow, TableCell, TableHeadCell } from '../components/ui/table'
+import { Input } from '../components/ui/input'
+import { Select } from '../components/ui/select'
 
 type OrderRowProps = {
   order: OrderItem;
@@ -46,6 +48,7 @@ function OrderRow({ order, isOpen, onToggle, onAccept, onReject }: OrderRowProps
             {order.status}
           </span>
         </TableCell>
+        <TableCell>{new Date(order.createdAt || '').toLocaleString()}</TableCell>
         <TableCell>
           <div className="flex justify-center gap-1" onClick={(e) => e.stopPropagation()}>
             {/* <Link to={`/orders/creation/${order.id}`}>
@@ -81,7 +84,7 @@ function OrderRow({ order, isOpen, onToggle, onAccept, onReject }: OrderRowProps
       {/* Expandable Details Row */}
       {isOpen && (
         <TableRow className="bg-gray-50">
-          <TableCell colSpan={7}>
+          <TableCell colSpan={8}>
             <div className="p-4 space-y-3">
               {/* Quick Info Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-6 gap-3 pb-3 border-b">
@@ -205,9 +208,54 @@ export default function Orders(){
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [openRowId, setOpenRowId] = useState<string | null>(null);
+  const [statusSort, setStatusSort] = useState<'asc' | 'desc' | null>(null)
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState<OrderStatus | 'ALL'>('ALL')
 
   const toggleRow = (id: string | number) => {
     setOpenRowId(prev => (prev === String(id) ? null : String(id)));
+  }
+
+  const statusRank: Record<string, number> = {
+    [OrderStatus.PENDING]: 1,
+    [OrderStatus.CONFIRMED]: 2,
+    [OrderStatus.PREPARING]: 3,
+    [OrderStatus.READY]: 4,
+    [OrderStatus.ON_THE_WAY]: 5,
+    [OrderStatus.DELIVERED]: 6,
+    [OrderStatus.CANCELLED]: 7,
+    [OrderStatus.REJECTED]: 8,
+  }
+
+  const filteredItems = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    return items.filter((o) => {
+      if (statusFilter !== 'ALL' && String(o.status) !== statusFilter) return false
+
+      if (!q) return true
+      const delivery = String(o.deliveryLocation?.name ?? '').toLowerCase()
+      const customer = String(o.customer?.name ?? '').toLowerCase()
+      return delivery.includes(q) || customer.includes(q)
+    })
+  }, [items, search, statusFilter])
+
+  const sortedItems = useMemo(() => {
+    if (!statusSort) return filteredItems
+    const dir = statusSort === 'asc' ? 1 : -1
+    return [...filteredItems].sort((a, b) => {
+      const ar = statusRank[String(a.status)] ?? 999
+      const br = statusRank[String(b.status)] ?? 999
+      if (ar !== br) return (ar - br) * dir
+      // fallback: stable-ish tiebreakers
+      const at = new Date(a.createdAt || '').getTime()
+      const bt = new Date(b.createdAt || '').getTime()
+      if (!Number.isNaN(at) && !Number.isNaN(bt) && at !== bt) return (bt - at) // newest first
+      return String(a.id ?? '').localeCompare(String(b.id ?? ''))
+    })
+  }, [filteredItems, statusRank, statusSort])
+
+  const toggleStatusSort = () => {
+    setStatusSort((prev) => (prev === null ? 'asc' : prev === 'asc' ? 'desc' : null))
   }
 
   const acceptOrder = (id: string) => {
@@ -234,6 +282,28 @@ export default function Orders(){
         <p className="text-gray-600 mt-1">View and manage customer orders</p>
       </div>
 
+      <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+        <div className="w-full sm:max-w-md">
+          <Input
+            placeholder="Search by delivery location or customer name..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="w-full sm:max-w-[220px]">
+          <Select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as OrderStatus | 'ALL')}
+            aria-label="Filter by status"
+          >
+            <option value="ALL">All statuses</option>
+            {Object.values(OrderStatus).map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </Select>
+        </div>
+      </div>
+
       {loading ? (
         <Table>
           <TableHead>
@@ -243,14 +313,28 @@ export default function Orders(){
               <TableHeadCell>Delivery Location</TableHeadCell>
               <TableHeadCell>Customer</TableHeadCell>
               <TableHeadCell>Price</TableHeadCell>
-              <TableHeadCell>Status</TableHeadCell>
+              <TableHeadCell>
+                <button
+                  type="button"
+                  className="inline-flex items-center justify-center gap-2 w-full select-none"
+                  onClick={toggleStatusSort}
+                  aria-label="Sort by status"
+                >
+                  <span>Status</span>
+                  <FiChevronDown
+                    className={`w-4 h-4 transition-transform ${statusSort === 'asc' ? 'rotate-180' : statusSort === 'desc' ? 'rotate-0' : 'opacity-40'}`}
+                    aria-hidden="true"
+                  />
+                </button>
+              </TableHeadCell>
+              <TableHeadCell>Created At</TableHeadCell>
               <TableHeadCell>Actions</TableHeadCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {Array.from({ length: 4 }).map((_, r) => (
               <TableRow key={r} className="animate-pulse">
-                {Array.from({ length: 7 }).map((__, c) => (
+                {Array.from({ length: 8 }).map((__, c) => (
                   <TableCell key={c}><Skeleton className="h-4 w-full bg-gray-200" /></TableCell>
                 ))}
               </TableRow>
@@ -261,10 +345,10 @@ export default function Orders(){
         <Card className="bg-red-50 border-red-200">
           <CardContent className="p-4 text-red-600">{error}</CardContent>
         </Card>
-      ) : items.length === 0 ? (
+      ) : sortedItems.length === 0 ? (
         <Card>
           <CardContent className="p-8 text-center text-gray-400">
-            <p>No orders found</p>
+            <p>{search.trim() ? 'No matching orders found' : 'No orders found'}</p>
           </CardContent>
         </Card>
       ) : (
@@ -276,12 +360,26 @@ export default function Orders(){
               <TableHeadCell>Delivery Location</TableHeadCell>
               <TableHeadCell>Customer</TableHeadCell>
               <TableHeadCell>Price</TableHeadCell>
-              <TableHeadCell>Status</TableHeadCell>
+              <TableHeadCell>
+                <button
+                  type="button"
+                  className="inline-flex items-center justify-center gap-2 w-full select-none"
+                  onClick={toggleStatusSort}
+                  aria-label="Sort by status"
+                >
+                  <span>Status</span>
+                  <FiChevronDown
+                    className={`w-4 h-4 transition-transform ${statusSort === 'asc' ? 'rotate-180' : statusSort === 'desc' ? 'rotate-0' : 'opacity-40'}`}
+                    aria-hidden="true"
+                  />
+                </button>
+              </TableHeadCell>
+              <TableHeadCell>Created At</TableHeadCell>
               <TableHeadCell>Actions</TableHeadCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {items.map(it => (
+            {sortedItems.map(it => (
               <OrderRow
                 key={String(it.id)}
                 order={it}

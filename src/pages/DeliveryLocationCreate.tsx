@@ -14,6 +14,7 @@ type DeliveredByEntry = {
   restaurantId: number
   deliveryFee: number
   minOrder: number
+  minDeliveryTimeMinutes?: number
   isActive?: boolean
 }
 
@@ -77,6 +78,7 @@ export default function DeliveryLocationCreate() {
                   restaurantId: Number(String(restaurantId ?? '')),
                   deliveryFee: entry['deliveryFee'] !== undefined && entry['deliveryFee'] !== null ? Number(entry['deliveryFee']) : 0,
                   minOrder: entry['minOrder'] !== undefined && entry['minOrder'] !== null ? Number(entry['minOrder']) : 0,
+                  minDeliveryTimeMinutes: entry['minDeliveryTimeMinutes'] !== undefined && entry['minDeliveryTimeMinutes'] !== null ? Number(entry['minDeliveryTimeMinutes']) : undefined,
                   isActive: entry['isActive'] === undefined ? true : Boolean(entry['isActive']),
                 } as DeliveredByEntry
               })
@@ -161,6 +163,7 @@ export default function DeliveryLocationCreate() {
         restaurantId: entry.restaurantId,
         deliveryFee: entry.deliveryFee,
         minOrder: entry.minOrder,
+        minDeliveryTimeMinutes: entry.minDeliveryTimeMinutes,
         isActive: entry.isActive,
       })),
     }
@@ -340,7 +343,7 @@ export default function DeliveryLocationCreate() {
                       {restaurants.filter(r => !selectedDeliveredBy.some(e => e.restaurantId === Number(r.id))).map(r => (
                         <div key={r.id} className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 rounded cursor-pointer group">
                           <span>{r.name ?? String(r.id)}</span>
-                          <button type="button" className="ml-2 text-green-600 hover:text-green-800 text-xs font-bold opacity-80 group-hover:opacity-100" onClick={() => setSelectedDeliveredBy(list => [...list, { restaurantId: Number(r.id), deliveryFee: 0, minOrder: 0, isActive: true }])}>Add</button>
+                          <button type="button" className="ml-2 text-green-600 hover:text-green-800 text-xs font-bold opacity-80 group-hover:opacity-100" onClick={() => setSelectedDeliveredBy(list => [...list, { restaurantId: Number(r.id), deliveryFee: 0, minOrder: 0, minDeliveryTimeMinutes: undefined, isActive: true }])}>Add</button>
                         </div>
                       ))}
                     </div>
@@ -374,7 +377,7 @@ export default function DeliveryLocationCreate() {
                 {selectedDeliveredBy.map((entry, idx) => {
                   const rest = restaurants.find((r) => String(r.id) === String(entry.restaurantId))
                   return (
-                    <div key={entry.restaurantId} className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end p-3 bg-white rounded border">
+                    <div key={entry.restaurantId} className="grid grid-cols-1 md:grid-cols-7 gap-3 items-end p-3 bg-white rounded border">
                       <div className="md:col-span-2">
                         <div className="text-sm font-medium">{rest?.name ?? entry.restaurantId}</div>
                       </div>
@@ -402,6 +405,21 @@ export default function DeliveryLocationCreate() {
                             setSelectedDeliveredBy((s) => s.map((it, i) => i === idx ? { ...it, minOrder: Number.isNaN(v) ? 0 : v } : it))
                           }} 
                           className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Min Delivery Time (min)</Label>
+                        <Input 
+                          type="number" 
+                          step="1" 
+                          min="1"
+                          value={entry.minDeliveryTimeMinutes !== undefined ? String(entry.minDeliveryTimeMinutes) : ''} 
+                          onChange={(e) => {
+                            const v = Number(e.target.value)
+                            setSelectedDeliveredBy((s) => s.map((it, i) => i === idx ? { ...it, minDeliveryTimeMinutes: Number.isNaN(v) || v <= 0 ? undefined : v } : it))
+                          }} 
+                          className="mt-1"
+                          placeholder="e.g., 10"
                         />
                       </div>
                       <div className="flex items-center gap-2">

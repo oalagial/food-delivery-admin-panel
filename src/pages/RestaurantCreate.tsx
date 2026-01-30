@@ -39,6 +39,8 @@ export default function RestaurantCreate() {
     description: '',
     latitude: '',
     longitude: '',
+    timeslotDurationMinutes: '',
+    ordersPerTimeslot: '',
   })
   const [files, setFiles] = useState<FileList | null>(null)
   const [openingHours, setOpeningHours] = useState<Array<{ day: string; open: string; close: string }>>([])
@@ -61,6 +63,24 @@ export default function RestaurantCreate() {
       country: String(form.country || '').trim(),
       image: String(form.image || '').trim(),
       description: String(form.description || '').trim(),
+    }
+
+    // Add timeslotDurationMinutes if provided
+    const timeslotDurationRaw = String(form.timeslotDurationMinutes || '').trim()
+    if (timeslotDurationRaw !== '') {
+      const timeslotDurationNum = Number(timeslotDurationRaw)
+      if (!Number.isNaN(timeslotDurationNum) && timeslotDurationNum > 0) {
+        ;(payload as unknown as { timeslotDurationMinutes?: number }).timeslotDurationMinutes = timeslotDurationNum
+      }
+    }
+
+    // Add ordersPerTimeslot if provided
+    const ordersPerTimeslotRaw = String(form.ordersPerTimeslot || '').trim()
+    if (ordersPerTimeslotRaw !== '') {
+      const ordersPerTimeslotNum = Number(ordersPerTimeslotRaw)
+      if (!Number.isNaN(ordersPerTimeslotNum) && ordersPerTimeslotNum > 0) {
+        ;(payload as unknown as { ordersPerTimeslot?: number }).ordersPerTimeslot = ordersPerTimeslotNum
+      }
     }
     if (openingHours.length > 0) {
       payload.openingHours = openingHours
@@ -145,6 +165,8 @@ export default function RestaurantCreate() {
             description: String(data.description ?? ''),
             latitude: data.latitude != null ? String(data.latitude) : '',
             longitude: data.longitude != null ? String(data.longitude) : '',
+            timeslotDurationMinutes: (data as any).timeslotDurationMinutes != null ? String((data as any).timeslotDurationMinutes) : '',
+            ordersPerTimeslot: (data as any).ordersPerTimeslot != null ? String((data as any).ordersPerTimeslot) : '',
           }))
           if (Array.isArray(data.openingHours)) {
             setOpeningHours(data.openingHours.map((oh: any) => ({
@@ -335,6 +357,35 @@ export default function RestaurantCreate() {
                   placeholder="e.g., -74.0060"
                   type="number"
                   step="any"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="timeslotDurationMinutes">Timeslot Duration (minutes)</Label>
+                <Input
+                  id="timeslotDurationMinutes"
+                  className="mt-2 w-full"
+                  name="timeslotDurationMinutes"
+                  value={form.timeslotDurationMinutes}
+                  onChange={(e) => setForm((s) => ({ ...s, timeslotDurationMinutes: e.target.value }))}
+                  placeholder="e.g., 15"
+                  type="number"
+                  min="1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="ordersPerTimeslot">Orders Per Timeslot</Label>
+                <Input
+                  id="ordersPerTimeslot"
+                  className="mt-2 w-full"
+                  name="ordersPerTimeslot"
+                  value={form.ordersPerTimeslot}
+                  onChange={(e) => setForm((s) => ({ ...s, ordersPerTimeslot: e.target.value }))}
+                  placeholder="e.g., 10"
+                  type="number"
+                  min="1"
                 />
               </div>
             </div>

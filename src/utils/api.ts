@@ -411,6 +411,23 @@ export async function deleteType(id: string | number) {
 }
 
 // Product types + APIs
+export enum ProductAllergy {
+  GLUTEN = 'GLUTEN',
+  DAIRY = 'DAIRY',
+  EGGS = 'EGGS',
+  FISH = 'FISH',
+  SHELLFISH = 'SHELLFISH',
+  TREE_NUTS = 'TREE_NUTS',
+  PEANUTS = 'PEANUTS',
+  SOY = 'SOY',
+  SESAME = 'SESAME',
+  SULPHITES = 'SULPHITES',
+  LUPIN = 'LUPIN',
+  MOLLUSCS = 'MOLLUSCS',
+  MUSTARD = 'MUSTARD',
+  CELERY = 'CELERY',
+}
+
 export type Product = {
   id?: string | number
   name?: string
@@ -419,6 +436,7 @@ export type Product = {
   typeId?: number | string
   type: any
   ingredients?: string[]
+  allergies?: ProductAllergy[]
   price?: number
   isAvailable?: boolean
   extras?: ProductExtra[]
@@ -434,6 +452,7 @@ export type CreateProductPayload = {
   imageFile?: string
   typeId?: number | string
   ingredients?: string[]
+  allergies?: ProductAllergy[]
   price?: number
   isAvailable?: boolean
   vatRate?: 'FOUR' | 'FIVE' | 'TEN' | 'TWENTY_TWO'
@@ -492,6 +511,13 @@ export async function createProduct(payload: CreateProductPayload, imageFile?: F
     if (payload.ingredients && payload.ingredients.length > 0) {
       payload.ingredients.forEach((ingredient, index) => {
         formData.append(`ingredients[${index}]`, ingredient)
+      })
+    }
+    
+    // Append allergies array
+    if (payload.allergies && payload.allergies.length > 0) {
+      payload.allergies.forEach((allergy, index) => {
+        formData.append(`allergies[${index}]`, allergy)
       })
     }
     

@@ -23,7 +23,7 @@ type ProductRowProps = {
 
 function productRowDetails(product: Product) {
   return (
-    <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {/* Ingredients */}
       <Card className='shadow-md'>
         <CardTitle className='m-2'>Ingredients</CardTitle>
@@ -36,6 +36,23 @@ function productRowDetails(product: Product) {
                 </ul>
               ))
             ) : (<h3>No ingredients listed.</h3>)  
+          }
+        </CardContent>
+      </Card>
+      {/* Allergies */}
+      <Card className='shadow-md'>
+        <CardTitle className='m-2'>Allergies</CardTitle>
+        <CardDescription>Allergens present in this product</CardDescription>
+        <CardContent>
+          { product.allergies && product.allergies.length > 0 ? (
+              product.allergies.map((allergy, index) => (
+                <ul>
+                  <li key={index} className="px-2 py-1 rounded bg-red-50 border border-red-200 text-sm text-red-800">
+                    {String(allergy).replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  </li>
+                </ul>
+              ))
+            ) : (<h3>No allergens listed.</h3>)  
           }
         </CardContent>
       </Card>
