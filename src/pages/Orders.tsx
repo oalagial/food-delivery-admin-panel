@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Button } from '../components/ui/button'
-import { FiCheckCircle, FiSlash } from 'react-icons/fi'
-import { getOrdersList } from '../utils/api'
-import type { OrderItem } from '../utils/api'
+import { FiCheckCircle, FiChevronDown, FiSlash } from 'react-icons/fi'
+import { type OrderItem, OrderStatus, getOrdersList } from '../utils/api'
 import { Skeleton } from '../components/ui/skeleton'
 import { Card, CardContent } from '../components/ui/card'
 import { Table, TableBody, TableHead, TableRow, TableCell, TableHeadCell } from '../components/ui/table'
@@ -378,7 +377,7 @@ export default function Orders(){
             </TableRow>
           </TableHead>
           <TableBody>
-            {sortedItems.map(it => (
+            {sortedItems.map((it: OrderItem) => (
               <OrderRow
                 key={String(it.id)}
                 order={it}
