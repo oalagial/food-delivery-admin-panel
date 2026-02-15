@@ -1,12 +1,43 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Button } from '../components/ui/button'
-import { FiCheckCircle, FiChevronDown, FiSlash } from 'react-icons/fi'
-import { type OrderItem, OrderStatus, getOrdersList } from '../utils/api'
+import { FiCheckCircle, FiChevronDown, FiSlash, FiAlertTriangle } from 'react-icons/fi'
+import { type OrderItem, OrderStatus, getOrdersList, updateOrder, getProductsList, type Product } from '../utils/api'
 import { Skeleton } from '../components/ui/skeleton'
 import { Card, CardContent } from '../components/ui/card'
 import { Table, TableBody, TableHead, TableRow, TableCell, TableHeadCell } from '../components/ui/table'
 import { Input } from '../components/ui/input'
 import { Select } from '../components/ui/select'
+
+export type MissingProductInfo = {
+  productId: string | number
+  name: string
+  requested: number
+  inStock: number | null
+  missing: number
+}
+
+function getMissingProductsForOrder(order: OrderItem, products: Product[]): MissingProductInfo[] {
+  const result: MissingProductInfo[] = []
+  const productsList = order.products ?? []
+  for (const op of productsList) {
+    const productId = op.productId ?? op.id
+    const requested = Number(op.quantity ?? 0)
+    if (requested <= 0) continue
+    const product = products.find((p) => String(p.id) === String(productId))
+    const inStock = product?.stockQuantity != null ? Number(product.stockQuantity) : null
+    if (inStock === null) continue // no stock limit → not missing
+    if (requested > inStock) {
+      result.push({
+        productId: productId ?? '',
+        name: String(op.name ?? product?.name ?? `Product #${productId}`),
+        requested,
+        inStock,
+        missing: requested - inStock,
+      })
+    }
+  }
+  return result
+}
 
 type OrderRowProps = {
   order: OrderItem;
@@ -40,7 +71,7 @@ function OrderRow({ order, isOpen, onToggle, onAccept, onReject }: OrderRowProps
           <span className={`px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
             order.status === 'DELIVERED' ? 'bg-green-100 text-green-800' :
             order.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
-            order.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
+            order.status === 'CANCELLED' || order.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
             'bg-blue-100 text-blue-800'
           }`}>
             {order.status}
@@ -203,12 +234,18 @@ function OrderRow({ order, isOpen, onToggle, onAccept, onReject }: OrderRowProps
 
 export default function Orders(){
   const [items, setItems] = useState<OrderItem[]>([])
+  const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [openRowId, setOpenRowId] = useState<string | null>(null);
   const [statusSort, setStatusSort] = useState<'asc' | 'desc' | null>(null)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'ALL'>('ALL')
+  const [confirmModal, setConfirmModal] = useState<{
+    show: boolean
+    orderId: string | null
+    missing: MissingProductInfo[]
+  }>({ show: false, orderId: null, missing: [] })
 
   const toggleRow = (id: string | number) => {
     setOpenRowId(prev => (prev === String(id) ? null : String(id)));
@@ -257,24 +294,92 @@ export default function Orders(){
   }
 
   const acceptOrder = (id: string) => {
-    const selectedOrder = items.filter(i => i.id == id);
-    
-    console.log(selectedOrder)
+    const order = items.find((o) => String(o.id) === id)
+    if (!order) return
+    const missing = getMissingProductsForOrder(order, products)
+    if (missing.length > 0) {
+      setConfirmModal({ show: true, orderId: id, missing })
+      return
+    }
+    doConfirmOrder(id)
   }
 
-  const rejectOrder = (id: string) => {
-    console.log('Reject Id:', id)
+  const doConfirmOrder = async (id: string) => {
+    try {
+      await updateOrder(id, { status: 'CONFIRMED' })
+      setItems((prev) =>
+        prev.map((o) => (String(o.id) === id ? { ...o, status: 'CONFIRMED' as const } : o))
+      )
+      setError(null)
+      setConfirmModal({ show: false, orderId: null, missing: [] })
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    }
+  }
+
+  const closeConfirmModal = () => {
+    setConfirmModal({ show: false, orderId: null, missing: [] })
+  }
+
+  const rejectOrder = async (id: string) => {
+    try {
+      await updateOrder(id, { status: 'REJECTED' })
+      setItems((prev) =>
+        prev.map((o) => (String(o.id) === id ? { ...o, status: 'REJECTED' as const } : o))
+      )
+      setError(null)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    }
   }
 
 
-  useEffect(()=>{
+  useEffect(() => {
     let mounted = true
-    getOrdersList().then(d=>{ if(mounted) setItems(d)}).catch(e=>{ if(mounted) setError(String(e)) }).finally(()=>{ if(mounted) setLoading(false) })
-    return ()=>{ mounted = false }
+    Promise.all([getOrdersList(), getProductsList()])
+      .then(([ordersData, productsData]) => {
+        if (mounted) setItems(ordersData)
+        if (mounted) setProducts(productsData)
+        if (mounted) setError(null)
+      })
+      .catch((e) => { if (mounted) setError(String(e)); if (mounted) setItems([]) })
+      .finally(() => { if (mounted) setLoading(false) })
+    return () => { mounted = false }
   }, [])
 
   return (
     <div className="space-y-6">
+      {/* Modal: missing products before confirm */}
+      {confirmModal.show && confirmModal.orderId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={closeConfirmModal}>
+          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="p-4 border-b flex items-center gap-2">
+              <FiAlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />
+              <h3 className="text-lg font-semibold text-gray-900">Προϊόντα με ανεπαρκές stock</h3>
+            </div>
+            <div className="p-4 overflow-y-auto flex-1">
+              <p className="text-sm text-gray-600 mb-3">Στην παραγγελία ζητήθηκαν περισσότερα από το διαθέσιμο stock για τα ακόλουθα προϊόντα:</p>
+              <ul className="space-y-2">
+                {confirmModal.missing.map((m) => (
+                  <li key={String(m.productId)} className="text-sm p-2 bg-amber-50 border border-amber-200 rounded">
+                    <span className="font-semibold">{m.name}</span>
+                    <span className="text-gray-600">
+                      {' '}— ζητήθηκαν: {m.requested}, διαθέσιμα: {m.inStock ?? '—'}, λείπουν: <strong className="text-red-700">{m.missing}</strong>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="p-4 border-t flex justify-end gap-2">
+              <Button variant="default" onClick={closeConfirmModal}>Ακύρωση</Button>
+              <Button variant="primary" onClick={() => confirmModal.orderId && doConfirmOrder(confirmModal.orderId)}>
+                Επιβεβαίωση παρόλα αυτά
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Orders</h1>
         <p className="text-gray-600 mt-1">View and manage customer orders</p>

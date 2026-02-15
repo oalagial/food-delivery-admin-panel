@@ -178,6 +178,7 @@ export default function ProductCreate() {
     allergies: [],
     price: undefined,
     isAvailable: true,
+    stockQuantity: undefined,
     vatRate: undefined,
   })
 
@@ -208,6 +209,7 @@ export default function ProductCreate() {
           allergies: p.allergies ?? [],
           price: p.price,
           isAvailable: p.isAvailable,
+          stockQuantity: p.stockQuantity ?? undefined,
           vatRate: p.vatRate,
         })
         setIngredientsInput(Array.isArray(p.ingredients) ? p.ingredients.join(', ') : '')
@@ -295,6 +297,7 @@ export default function ProductCreate() {
       allergies: selectedAllergies,
       price: form.price !== undefined ? Number(form.price) : undefined,
       isAvailable: !!form.isAvailable,
+      stockQuantity: form.stockQuantity != null ? Number(form.stockQuantity) : null,
       vatRate: form.vatRate,
     }
 
@@ -440,6 +443,23 @@ export default function ProductCreate() {
                   placeholder="0.00"
                   type="number"
                   step="0.01"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="stockQuantity">Stock quantity</Label>
+                <Input
+                  id="stockQuantity"
+                  className="mt-2 w-full"
+                  value={form.stockQuantity != null ? String(form.stockQuantity) : ''}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setForm(s => ({ ...s, stockQuantity: v === '' ? undefined : Number(v) }));
+                  }}
+                  placeholder="Leave empty for no limit"
+                  type="number"
+                  min={0}
+                  step={1}
                 />
               </div>
 

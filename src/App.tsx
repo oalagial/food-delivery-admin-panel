@@ -23,12 +23,14 @@ import Sections from './pages/Sections'
 import SectionCreate from './pages/SectionCreate'
 import Header from './components/Header'
 import Login from './pages/Login'
+import SetPassword from './pages/SetPassword'
 import RequireAuth from './components/RequireAuth'
 import { getToken } from './utils/api'
 import { FiHome, FiShoppingCart, FiCoffee, FiMapPin, FiUsers, FiShield, FiKey, FiSettings, FiTag, FiBox, FiList, FiLayers } from 'react-icons/fi'
 import Offers from './pages/Offers'
 import OfferCreate from './pages/OfferCreate'
 import CustomerCollection from './pages/CustomerCollection'
+import Coupons from './pages/Coupons'
 
 function NavSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -58,6 +60,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/set-password" element={<SetPassword />} />
           <Route path="/*" element={<Login />} />
         </Routes>
       </BrowserRouter>
@@ -238,6 +241,17 @@ function App() {
                 </li>
                 <li>
                   <NavLink
+                    to="/coupons"
+                    className={({ isActive }) =>
+                      `nav-link ${isActive ? 'active' : ''}`
+                    }
+                  >
+                    <FiTag className="w-5 h-5" />
+                    <span>Coupons</span>
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink
                     to="/customers"
                     className={({ isActive }) =>
                       `nav-link ${isActive ? 'active' : ''}`
@@ -286,6 +300,7 @@ function App() {
               <Route path="/permits" element={<RequireAuth><Permits /></RequireAuth>} />
               <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
               <Route path="/offers" element={<RequireAuth><Offers /></RequireAuth>} />
+              <Route path="/coupons" element={<RequireAuth><Coupons /></RequireAuth>} />
               <Route path="/offers/creation" element={<RequireAuth><OfferCreate /></RequireAuth>} />
               <Route path="/offers/creation/:id" element={<RequireAuth><OfferCreate /></RequireAuth>} />
               <Route path="/customers" element={<RequireAuth><CustomerCollection /></RequireAuth>} />

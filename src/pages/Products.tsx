@@ -95,6 +95,9 @@ function ProductRow({ product, isOpen, onToggle, isDeleted = false, onRestore, o
         <TableCell className={isDeleted ? "text-gray-600" : ""}>{product.type?.name ?? ''}</TableCell>
         <TableCell className={isDeleted ? "text-gray-600" : ""}>{product.price != null ? String(product.price) : ''} €</TableCell>
         <TableCell className={isDeleted ? "text-gray-600" : ""}>
+          {product.stockQuantity != null ? String(product.stockQuantity) : '—'}
+        </TableCell>
+        <TableCell className={isDeleted ? "text-gray-600" : ""}>
           {product.vatRate ? (
             product.vatRate === 'FOUR' ? '4%' :
             product.vatRate === 'FIVE' ? '5%' :
@@ -151,7 +154,7 @@ function ProductRow({ product, isOpen, onToggle, isDeleted = false, onRestore, o
       {/* DETAILS ROW */}
       {isOpen && !isDeleted && (
         <TableRow className="bg-gray-50">
-          <TableCell colSpan={isDeleted ? 7 : 6}>
+          <TableCell colSpan={8}>
             {productRowDetails(product)}
           </TableCell>
         </TableRow>
@@ -341,6 +344,7 @@ export default function Products() {
               <TableHeadCell>Type</TableHeadCell>
               {/* <TableHeadCell>Ingredients</TableHeadCell> */}
               <TableHeadCell>Price</TableHeadCell>
+              <TableHeadCell>Stock</TableHeadCell>
               <TableHeadCell>VAT</TableHeadCell>
               <TableHeadCell>Available</TableHeadCell>
               {/* <TableHeadCell>Created</TableHeadCell> */}
@@ -373,6 +377,7 @@ export default function Products() {
                   <TableHeadCell>Type</TableHeadCell>
                   {/* <TableHeadCell>Ingredients</TableHeadCell> */}
                   <TableHeadCell>Price</TableHeadCell>
+                  <TableHeadCell>Stock</TableHeadCell>
                   <TableHeadCell>VAT</TableHeadCell>
                   <TableHeadCell>Available</TableHeadCell>
                   {/* <TableHeadCell>Created</TableHeadCell> */}
@@ -411,6 +416,7 @@ export default function Products() {
                     <TableHeadCell className="text-gray-600">Image</TableHeadCell>
                     <TableHeadCell className="text-gray-600">Type</TableHeadCell>
                     <TableHeadCell className="text-gray-600">Price</TableHeadCell>
+                    <TableHeadCell className="text-gray-600">Stock</TableHeadCell>
                     <TableHeadCell className="text-gray-600">VAT</TableHeadCell>
                     <TableHeadCell className="text-gray-600">Available</TableHeadCell>
                     <TableHeadCell className="text-gray-600">Deleted By</TableHeadCell>

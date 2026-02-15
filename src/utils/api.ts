@@ -60,6 +60,24 @@ export function getToken(): string | null {
   try { return localStorage.getItem('access_token') } catch { return null }
 }
 
+/** Returns the current user id from the JWT payload (sub, id, or userId), or null if not available. */
+export function getCurrentUserId(): string | number | null {
+  const token = getToken()
+  if (!token || typeof token !== 'string') return null
+  const parts = token.split('.')
+  if (parts.length !== 3) return null
+  try {
+    const payload = JSON.parse(
+      atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'))
+    ) as Record<string, unknown>
+    const id = payload.sub ?? payload.id ?? payload.userId ?? payload.user_id
+    if (id === undefined || id === null) return null
+    return typeof id === 'number' ? id : String(id)
+  } catch {
+    return null
+  }
+}
+
 export function authFetch(input: RequestInfo, init?: RequestInit) {
   const token = getToken()
   const headers = new Headers(init?.headers || {})
@@ -296,6 +314,27 @@ export async function getRoleById(id: string | number): Promise<Restaurant | nul
   return data.data?.[0] || null
 }
 
+export async function deleteUser(id: string | number): Promise<void> {
+  if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
+  const res = await authFetch(`/users/${encodeURIComponent(String(id))}`, { method: 'DELETE' })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(text || `Delete user failed (${res.status})`)
+  }
+}
+
+export async function setUserActive(id: string | number, active: boolean): Promise<void> {
+  if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
+  const res = await authFetch(`/users/${encodeURIComponent(String(id))}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ active }),
+  })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(text || `Update user failed (${res.status})`)
+  }
+}
 
 export type TypeItem = {
   id?: string | number
@@ -455,6 +494,7 @@ export type CreateProductPayload = {
   allergies?: ProductAllergy[]
   price?: number
   isAvailable?: boolean
+  stockQuantity?: number | null
   vatRate?: 'FOUR' | 'FIVE' | 'TEN' | 'TWENTY_TWO'
   extras?: Array<{ id?: number; name: string; price: number }>
   discounts?: Array<{ id?: number; type: 'PERCENTAGE' | 'FIXED'; value: number; startsAt: string; endsAt?: string; isActive: boolean }>
