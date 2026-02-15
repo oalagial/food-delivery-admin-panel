@@ -11,8 +11,6 @@ import Users from './pages/Users'
 import UserCreate from './pages/UserCreate'
 import Roles from './pages/Roles'
 import RoleCreate from './pages/RoleCreate'
-import Permits from './pages/Permits'
-import SettingsPage from './pages/Settings'
 import Types from './pages/Types'
 import TypeCreate from './pages/TypeCreate'
 import Products from './pages/Products'
@@ -138,11 +136,6 @@ function App() {
                     <span>Users</span>
                   </NavLink>
                 </li>
-              </ul>
-            </NavSection>
-
-            <NavSection title="CONFIGURATION">
-              <ul className="space-y-1">
                 <li>
                   <NavLink
                     to="/roles"
@@ -152,28 +145,6 @@ function App() {
                   >
                     <FiShield className="w-5 h-5" />
                     <span>Roles</span>
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink
-                    to="/permits"
-                    className={({ isActive }) =>
-                      `nav-link ${isActive ? 'active' : ''}`
-                    }
-                  >
-                    <FiKey className="w-5 h-5" />
-                    <span>Permits</span>
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink
-                    to="/settings"
-                    className={({ isActive }) =>
-                      `nav-link ${isActive ? 'active' : ''}`
-                    }
-                  >
-                    <FiSettings className="w-5 h-5" />
-                    <span>Settings</span>
                   </NavLink>
                 </li>
               </ul>
@@ -283,8 +254,6 @@ function App() {
               <Route path="/roles" element={<RequireAuth><Roles /></RequireAuth>} />
               <Route path="/roles/creation" element={<RequireAuth><RoleCreate /></RequireAuth>} />
               <Route path="/roles/creation/:id" element={<RequireAuth><RoleCreate /></RequireAuth>} />
-              <Route path="/permits" element={<RequireAuth><Permits /></RequireAuth>} />
-              <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
               <Route path="/offers" element={<RequireAuth><Offers /></RequireAuth>} />
               <Route path="/offers/creation" element={<RequireAuth><OfferCreate /></RequireAuth>} />
               <Route path="/offers/creation/:id" element={<RequireAuth><OfferCreate /></RequireAuth>} />
