@@ -199,19 +199,22 @@ function OrderRow({ order, isOpen, onToggle, onAccept, onReject }: OrderRowProps
   );
 }
 
-export default function Orders(){
+export default function Orders() {
   const [items, setItems] = useState<OrderItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [openRowId, setOpenRowId] = useState<string | null>(null);
+  const [openRowId, setOpenRowId] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
+  const [limit] = useState(10)
+  const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
 
   const toggleRow = (id: string | number) => {
-    setOpenRowId(prev => (prev === String(id) ? null : String(id)));
+    setOpenRowId(prev => (prev === String(id) ? null : String(id)))
   }
 
   const acceptOrder = (id: string) => {
-    const selectedOrder = items.filter(i => i.id == id);
-    
+    const selectedOrder = items.filter(i => i.id == id)
     console.log(selectedOrder)
   }
 
@@ -219,12 +222,33 @@ export default function Orders(){
     console.log('Reject Id:', id)
   }
 
-
-  useEffect(()=>{
+  useEffect(() => {
     let mounted = true
-    getOrdersList().then(d=>{ if(mounted) setItems(d)}).catch(e=>{ if(mounted) setError(String(e)) }).finally(()=>{ if(mounted) setLoading(false) })
-    return ()=>{ mounted = false }
-  }, [])
+    setLoading(true)
+    setError(null)
+    // Simulate paginated API: getOrdersList(page, limit)
+    getOrdersList(page, limit)
+      .then((res: any) => {
+        if (!mounted) return
+        // Support both paginated and non-paginated responses
+        let data, totalItems, totalPagesVal
+        if (res && typeof res === 'object' && 'data' in res && 'totalPages' in res) {
+          data = res.data
+          totalItems = res.total
+          totalPagesVal = res.totalPages
+        } else {
+          data = Array.isArray(res) ? res : res?.data ?? Object.values(res ?? {})
+          totalItems = data.length
+          totalPagesVal = 1
+        }
+        setItems(data)
+        setTotal(totalItems)
+        setTotalPages(totalPagesVal)
+      })
+      .catch(e => { if (mounted) setError(String(e)) })
+      .finally(() => { if (mounted) setLoading(false) })
+    return () => { mounted = false }
+  }, [page, limit])
 
   return (
     <div className="space-y-6">
@@ -267,31 +291,101 @@ export default function Orders(){
           </CardContent>
         </Card>
       ) : (
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableHeadCell>Order</TableHeadCell>
-              <TableHeadCell>Restaurant</TableHeadCell>
-              <TableHeadCell>Delivery Location</TableHeadCell>
-              <TableHeadCell>Customer</TableHeadCell>
-              <TableHeadCell>Price</TableHeadCell>
-              <TableHeadCell>Status</TableHeadCell>
-              <TableHeadCell>Actions</TableHeadCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {items.map(it => (
-              <OrderRow
-                key={String(it.id)}
-                order={it}
-                isOpen={openRowId === String(it.id)}
-                onToggle={() => toggleRow(it.id ?? '')}
-                onAccept={acceptOrder}
-                onReject={rejectOrder}
-              />
-            ))}
-          </TableBody>
-        </Table>
+        <>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableHeadCell>Order</TableHeadCell>
+                <TableHeadCell>Restaurant</TableHeadCell>
+                <TableHeadCell>Delivery Location</TableHeadCell>
+                <TableHeadCell>Customer</TableHeadCell>
+                <TableHeadCell>Price</TableHeadCell>
+                <TableHeadCell>Status</TableHeadCell>
+                <TableHeadCell>Actions</TableHeadCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {items.map(it => (
+                <OrderRow
+                  key={String(it.id)}
+                  order={it}
+                  isOpen={openRowId === String(it.id)}
+                  onToggle={() => toggleRow(it.id ?? '')}
+                  onAccept={acceptOrder}
+                  onReject={rejectOrder}
+                />
+              ))}
+            </TableBody>
+          </Table>
+
+          {/* Enhanced Pagination Controls */}
+          <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-2">
+            <div className="text-gray-600 text-sm mb-2 sm:mb-0">
+              Page {page} of {totalPages} | Total: {total}
+            </div>
+            <div className="flex items-center gap-1 flex-wrap">
+              <button
+                className="px-3 py-1 rounded border bg-white disabled:opacity-50 hover:bg-gray-100 transition"
+                onClick={() => setPage(1)}
+                disabled={page === 1}
+                aria-label="First page"
+              >
+                «
+              </button>
+              <button
+                className="px-3 py-1 rounded border bg-white disabled:opacity-50 hover:bg-gray-100 transition"
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                aria-label="Previous page"
+              >
+                ‹
+              </button>
+              {/* Numbered page buttons, show up to 5 around current */}
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(pn =>
+                  pn === 1 ||
+                  pn === totalPages ||
+                  (pn >= page - 2 && pn <= page + 2)
+                )
+                .reduce((arr, pn, idx, src) => {
+                  if (idx > 0 && pn - src[idx - 1] > 1) arr.push('ellipsis')
+                  arr.push(pn)
+                  return arr
+                }, [] as (number | 'ellipsis')[])
+                .map((pn, idx) =>
+                  pn === 'ellipsis' ? (
+                    <span key={"ellipsis-" + idx} className="px-2 text-gray-400">…</span>
+                  ) : (
+                    <button
+                      key={pn}
+                      className={`px-3 py-1 rounded border ${pn === page ? 'bg-blue-600 text-white border-blue-600' : 'bg-white hover:bg-gray-100'} transition`}
+                      onClick={() => setPage(pn as number)}
+                      disabled={pn === page}
+                      aria-current={pn === page ? 'page' : undefined}
+                    >
+                      {pn}
+                    </button>
+                  )
+                )}
+              <button
+                className="px-3 py-1 rounded border bg-white disabled:opacity-50 hover:bg-gray-100 transition"
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                aria-label="Next page"
+              >
+                ›
+              </button>
+              <button
+                className="px-3 py-1 rounded border bg-white disabled:opacity-50 hover:bg-gray-100 transition"
+                onClick={() => setPage(totalPages)}
+                disabled={page === totalPages}
+                aria-label="Last page"
+              >
+                »
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </div>
   )
