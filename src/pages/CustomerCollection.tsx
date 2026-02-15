@@ -12,10 +12,12 @@ type Customer = {
   [key: string]: unknown
 }
 
+
 export default function CustomerCollection() {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
 
   async function fetchCustomers() {
     setLoading(true)
@@ -69,11 +71,32 @@ export default function CustomerCollection() {
     )
   }
 
+  // Filter customers based on search query
+  const filteredCustomers = customers.filter((customer) => {
+    const q = search.trim().toLowerCase()
+    if (!q) return true
+    return (
+      (customer.name && String(customer.name).toLowerCase().includes(q)) ||
+      (customer.email && String(customer.email).toLowerCase().includes(q)) ||
+      (customer.phone && String(customer.phone).toLowerCase().includes(q))
+    )
+  })
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Customer Collection</h1>
         <p className="text-gray-600 mt-1">View and manage customers</p>
+      </div>
+
+      <div>
+        <input
+          type="text"
+          className="border rounded px-3 py-2 w-full max-w-xs mb-4"
+          placeholder="Search customers..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
       </div>
 
       {error && <div className="text-red-600"><strong>Error:</strong> {error}</div>}
@@ -90,12 +113,13 @@ export default function CustomerCollection() {
             </tr>
           </TableHead>
           <TableBody>
-            {customers.length === 0 && !loading && (
+            {/* Show message if no filtered customers */}
+            {filteredCustomers.length === 0 && !loading && (
               <TableRow>
                 <TableCell colSpan={5}>No customers found.</TableCell>
               </TableRow>
             )}
-            {customers.map((customer) => (
+            {filteredCustomers.map((customer) => (
               <TableRow key={customer.id}>
                 <TableCell>{String(customer.name ?? '—')}</TableCell>
                 <TableCell>{String(customer.email ?? '—')}</TableCell>

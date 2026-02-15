@@ -69,7 +69,7 @@ function App() {
           <div className="sidebar-header">
             <div className="sidebar-logo">
               {/* <FiMapPin className="w-6 h-6 text-white" /> */}
-              <img src="src/assets/logo.png" alt="Image"  style={{ width: "100px", height: "auto" }}/>
+              <img src="/logo.png" alt="Image"  style={{ width: "100px", height: "auto" }}/>
             </div>
           </div>
 
