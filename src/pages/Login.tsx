@@ -35,7 +35,7 @@ export default function Login(){
         <div className="flex items-center justify-center mb-2">
               <div className="w-48 h-48">
                 {/* <span className="text-white text-2xl font-bold">FD</span> */}
-                <img src='src/assets/logo.png'></img>
+                <img src='/logo.png' alt="Logo" />
               </div>
             </div>
         <Card className="shadow-2xl border-0">

@@ -1442,14 +1442,16 @@ export type CreateOrderPayload = {
   [k: string]: unknown
 }
 
-export async function getOrdersList(): Promise<OrderItem[]> {
-  const res = await authFetch('/orders')
+export async function getOrdersList(page = 1, limit = 10): Promise<any> {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) })
+  const res = await authFetch(`/orders?${params}`)
   if (!res.ok) {
     const text = await res.text().catch(() => '')
     throw new Error(text || `GET /orders failed (${res.status})`)
   }
   const data = await res.json().catch(() => null)
-  return Array.isArray(data) ? data : (data?.items || data?.data || [])
+  // Return paginated response as-is for consumers to handle
+  return data
 }
 
 export async function getOrderById(id: string | number): Promise<OrderItem | null> {

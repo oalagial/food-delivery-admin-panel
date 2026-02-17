@@ -11,8 +11,6 @@ import Users from './pages/Users'
 import UserCreate from './pages/UserCreate'
 import Roles from './pages/Roles'
 import RoleCreate from './pages/RoleCreate'
-import Permits from './pages/Permits'
-import SettingsPage from './pages/Settings'
 import Types from './pages/Types'
 import TypeCreate from './pages/TypeCreate'
 import Products from './pages/Products'
@@ -26,7 +24,7 @@ import Login from './pages/Login'
 import SetPassword from './pages/SetPassword'
 import RequireAuth from './components/RequireAuth'
 import { getToken } from './utils/api'
-import { FiHome, FiShoppingCart, FiCoffee, FiMapPin, FiUsers, FiShield, FiKey, FiSettings, FiTag, FiBox, FiList, FiLayers } from 'react-icons/fi'
+import { FiHome, FiShoppingCart, FiCoffee, FiMapPin, FiUsers, FiShield, FiTag, FiBox, FiList, FiLayers } from 'react-icons/fi'
 import Offers from './pages/Offers'
 import OfferCreate from './pages/OfferCreate'
 import CustomerCollection from './pages/CustomerCollection'
@@ -74,7 +72,7 @@ function App() {
           <div className="sidebar-header">
             <div className="sidebar-logo">
               {/* <FiMapPin className="w-6 h-6 text-white" /> */}
-              <img src="src/assets/logo.png" alt="Image"  style={{ width: "100px", height: "auto" }}/>
+              <img src="/logo.png" alt="Image"  style={{ width: "100px", height: "auto" }}/>
             </div>
           </div>
 
@@ -141,11 +139,6 @@ function App() {
                     <span>Users</span>
                   </NavLink>
                 </li>
-              </ul>
-            </NavSection>
-
-            <NavSection title="CONFIGURATION">
-              <ul className="space-y-1">
                 <li>
                   <NavLink
                     to="/roles"
@@ -155,28 +148,6 @@ function App() {
                   >
                     <FiShield className="w-5 h-5" />
                     <span>Roles</span>
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink
-                    to="/permits"
-                    className={({ isActive }) =>
-                      `nav-link ${isActive ? 'active' : ''}`
-                    }
-                  >
-                    <FiKey className="w-5 h-5" />
-                    <span>Permits</span>
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink
-                    to="/settings"
-                    className={({ isActive }) =>
-                      `nav-link ${isActive ? 'active' : ''}`
-                    }
-                  >
-                    <FiSettings className="w-5 h-5" />
-                    <span>Settings</span>
                   </NavLink>
                 </li>
               </ul>
@@ -297,8 +268,6 @@ function App() {
               <Route path="/roles" element={<RequireAuth><Roles /></RequireAuth>} />
               <Route path="/roles/creation" element={<RequireAuth><RoleCreate /></RequireAuth>} />
               <Route path="/roles/creation/:id" element={<RequireAuth><RoleCreate /></RequireAuth>} />
-              <Route path="/permits" element={<RequireAuth><Permits /></RequireAuth>} />
-              <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
               <Route path="/offers" element={<RequireAuth><Offers /></RequireAuth>} />
               <Route path="/coupons" element={<RequireAuth><Coupons /></RequireAuth>} />
               <Route path="/offers/creation" element={<RequireAuth><OfferCreate /></RequireAuth>} />

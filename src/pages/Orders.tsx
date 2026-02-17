@@ -232,23 +232,61 @@ function OrderRow({ order, isOpen, onToggle, onAccept, onReject }: OrderRowProps
   );
 }
 
-export default function Orders(){
+export default function Orders() {
   const [items, setItems] = useState<OrderItem[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [openRowId, setOpenRowId] = useState<string | null>(null);
-  const [statusSort, setStatusSort] = useState<'asc' | 'desc' | null>(null)
-  const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<OrderStatus | 'ALL'>('ALL')
-  const [confirmModal, setConfirmModal] = useState<{
-    show: boolean
-    orderId: string | null
-    missing: MissingProductInfo[]
-  }>({ show: false, orderId: null, missing: [] })
+  const [openRowId, setOpenRowId] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
+  const [limit] = useState(10)
+  const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
 
   const toggleRow = (id: string | number) => {
-    setOpenRowId(prev => (prev === String(id) ? null : String(id)));
+    setOpenRowId(prev => (prev === String(id) ? null : String(id)))
+  }
+
+  const statusRank: Record<string, number> = {
+    [OrderStatus.PENDING]: 1,
+    [OrderStatus.CONFIRMED]: 2,
+    [OrderStatus.PREPARING]: 3,
+    [OrderStatus.READY]: 4,
+    [OrderStatus.ON_THE_WAY]: 5,
+    [OrderStatus.DELIVERED]: 6,
+    [OrderStatus.CANCELLED]: 7,
+    [OrderStatus.REJECTED]: 8,
+  }
+
+  const filteredItems = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    return items.filter((o) => {
+      if (statusFilter !== 'ALL' && String(o.status) !== statusFilter) return false
+
+      if (!q) return true
+      const delivery = String(o.deliveryLocation?.name ?? '').toLowerCase()
+      const customer = String(o.customer?.name ?? '').toLowerCase()
+      return delivery.includes(q) || customer.includes(q)
+    })
+  }, [items, search, statusFilter])
+
+  const sortedItems = useMemo(() => {
+    if (!statusSort) return filteredItems
+    const dir = statusSort === 'asc' ? 1 : -1
+    return [...filteredItems].sort((a, b) => {
+      const ar = statusRank[String(a.status)] ?? 999
+      const br = statusRank[String(b.status)] ?? 999
+      if (ar !== br) return (ar - br) * dir
+      // fallback: stable-ish tiebreakers
+      const at = new Date(a.createdAt || '').getTime()
+      const bt = new Date(b.createdAt || '').getTime()
+      if (!Number.isNaN(at) && !Number.isNaN(bt) && at !== bt) return (bt - at) // newest first
+      return String(a.id ?? '').localeCompare(String(b.id ?? ''))
+    })
+  }, [filteredItems, statusRank, statusSort])
+
+  const toggleStatusSort = () => {
+    setStatusSort((prev) => (prev === null ? 'asc' : prev === 'asc' ? 'desc' : null))
   }
 
   const statusRank: Record<string, number> = {
@@ -294,31 +332,8 @@ export default function Orders(){
   }
 
   const acceptOrder = (id: string) => {
-    const order = items.find((o) => String(o.id) === id)
-    if (!order) return
-    const missing = getMissingProductsForOrder(order, products)
-    if (missing.length > 0) {
-      setConfirmModal({ show: true, orderId: id, missing })
-      return
-    }
-    doConfirmOrder(id)
-  }
-
-  const doConfirmOrder = async (id: string) => {
-    try {
-      await updateOrder(id, { status: 'CONFIRMED' })
-      setItems((prev) =>
-        prev.map((o) => (String(o.id) === id ? { ...o, status: 'CONFIRMED' as const } : o))
-      )
-      setError(null)
-      setConfirmModal({ show: false, orderId: null, missing: [] })
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
-    }
-  }
-
-  const closeConfirmModal = () => {
-    setConfirmModal({ show: false, orderId: null, missing: [] })
+    const selectedOrder = items.filter(i => i.id == id)
+    console.log(selectedOrder)
   }
 
   const rejectOrder = async (id: string) => {
@@ -333,19 +348,33 @@ export default function Orders(){
     }
   }
 
-
   useEffect(() => {
     let mounted = true
-    Promise.all([getOrdersList(), getProductsList()])
-      .then(([ordersData, productsData]) => {
-        if (mounted) setItems(ordersData)
-        if (mounted) setProducts(productsData)
-        if (mounted) setError(null)
+    setLoading(true)
+    setError(null)
+    // Simulate paginated API: getOrdersList(page, limit)
+    getOrdersList(page, limit)
+      .then((res: any) => {
+        if (!mounted) return
+        // Support both paginated and non-paginated responses
+        let data, totalItems, totalPagesVal
+        if (res && typeof res === 'object' && 'data' in res && 'totalPages' in res) {
+          data = res.data
+          totalItems = res.total
+          totalPagesVal = res.totalPages
+        } else {
+          data = Array.isArray(res) ? res : res?.data ?? Object.values(res ?? {})
+          totalItems = data.length
+          totalPagesVal = 1
+        }
+        setItems(data)
+        setTotal(totalItems)
+        setTotalPages(totalPagesVal)
       })
-      .catch((e) => { if (mounted) setError(String(e)); if (mounted) setItems([]) })
+      .catch(e => { if (mounted) setError(String(e)) })
       .finally(() => { if (mounted) setLoading(false) })
     return () => { mounted = false }
-  }, [])
+  }, [page, limit])
 
   return (
     <div className="space-y-6">
@@ -455,45 +484,101 @@ export default function Orders(){
           </CardContent>
         </Card>
       ) : (
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableHeadCell>Order</TableHeadCell>
-              <TableHeadCell>Restaurant</TableHeadCell>
-              <TableHeadCell>Delivery Location</TableHeadCell>
-              <TableHeadCell>Customer</TableHeadCell>
-              <TableHeadCell>Price</TableHeadCell>
-              <TableHeadCell>
-                <button
-                  type="button"
-                  className="inline-flex items-center justify-center gap-2 w-full select-none"
-                  onClick={toggleStatusSort}
-                  aria-label="Sort by status"
-                >
-                  <span>Status</span>
-                  <FiChevronDown
-                    className={`w-4 h-4 transition-transform ${statusSort === 'asc' ? 'rotate-180' : statusSort === 'desc' ? 'rotate-0' : 'opacity-40'}`}
-                    aria-hidden="true"
-                  />
-                </button>
-              </TableHeadCell>
-              <TableHeadCell>Created At</TableHeadCell>
-              <TableHeadCell>Actions</TableHeadCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {sortedItems.map((it: OrderItem) => (
-              <OrderRow
-                key={String(it.id)}
-                order={it}
-                isOpen={openRowId === String(it.id)}
-                onToggle={() => toggleRow(it.id ?? '')}
-                onAccept={acceptOrder}
-                onReject={rejectOrder}
-              />
-            ))}
-          </TableBody>
-        </Table>
+        <>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableHeadCell>Order</TableHeadCell>
+                <TableHeadCell>Restaurant</TableHeadCell>
+                <TableHeadCell>Delivery Location</TableHeadCell>
+                <TableHeadCell>Customer</TableHeadCell>
+                <TableHeadCell>Price</TableHeadCell>
+                <TableHeadCell>Status</TableHeadCell>
+                <TableHeadCell>Actions</TableHeadCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {items.map(it => (
+                <OrderRow
+                  key={String(it.id)}
+                  order={it}
+                  isOpen={openRowId === String(it.id)}
+                  onToggle={() => toggleRow(it.id ?? '')}
+                  onAccept={acceptOrder}
+                  onReject={rejectOrder}
+                />
+              ))}
+            </TableBody>
+          </Table>
+
+          {/* Enhanced Pagination Controls */}
+          <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-2">
+            <div className="text-gray-600 text-sm mb-2 sm:mb-0">
+              Page {page} of {totalPages} | Total: {total}
+            </div>
+            <div className="flex items-center gap-1 flex-wrap">
+              <button
+                className="px-3 py-1 rounded border bg-white disabled:opacity-50 hover:bg-gray-100 transition"
+                onClick={() => setPage(1)}
+                disabled={page === 1}
+                aria-label="First page"
+              >
+                «
+              </button>
+              <button
+                className="px-3 py-1 rounded border bg-white disabled:opacity-50 hover:bg-gray-100 transition"
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                aria-label="Previous page"
+              >
+                ‹
+              </button>
+              {/* Numbered page buttons, show up to 5 around current */}
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(pn =>
+                  pn === 1 ||
+                  pn === totalPages ||
+                  (pn >= page - 2 && pn <= page + 2)
+                )
+                .reduce((arr, pn, idx, src) => {
+                  if (idx > 0 && pn - src[idx - 1] > 1) arr.push('ellipsis')
+                  arr.push(pn)
+                  return arr
+                }, [] as (number | 'ellipsis')[])
+                .map((pn, idx) =>
+                  pn === 'ellipsis' ? (
+                    <span key={"ellipsis-" + idx} className="px-2 text-gray-400">…</span>
+                  ) : (
+                    <button
+                      key={pn}
+                      className={`px-3 py-1 rounded border ${pn === page ? 'bg-blue-600 text-white border-blue-600' : 'bg-white hover:bg-gray-100'} transition`}
+                      onClick={() => setPage(pn as number)}
+                      disabled={pn === page}
+                      aria-current={pn === page ? 'page' : undefined}
+                    >
+                      {pn}
+                    </button>
+                  )
+                )}
+              <button
+                className="px-3 py-1 rounded border bg-white disabled:opacity-50 hover:bg-gray-100 transition"
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                aria-label="Next page"
+              >
+                ›
+              </button>
+              <button
+                className="px-3 py-1 rounded border bg-white disabled:opacity-50 hover:bg-gray-100 transition"
+                onClick={() => setPage(totalPages)}
+                disabled={page === totalPages}
+                aria-label="Last page"
+              >
+                »
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </div>
   )
