@@ -8,6 +8,16 @@ import { Alert, AlertDescription } from '../components/ui/alert'
 import { AlertCircle } from 'lucide-react'
 import { createProduct, getProductById, updateProduct, updateProductImage, getTypesList, getExtrasByProduct, getProductDiscount } from '../utils/api'
 import type { CreateProductPayload, ProductDiscount, ProductExtra } from '../utils/api'
+
+const ProductLabel = {
+  GLUTEN_FREE: 'GLUTEN_FREE',
+  LACTOSE_FREE: 'LACTOSE_FREE',
+  VEGAN: 'VEGAN',
+  VEGETARIAN: 'VEGETARIAN',
+} as const;
+
+type ProductLabel = typeof ProductLabel[keyof typeof ProductLabel];
+
 import { Select } from '../components/ui/select';
 import { API_BASE } from '../config';
 
@@ -177,6 +187,7 @@ export default function ProductCreate() {
     price: undefined,
     isAvailable: true,
     vatRate: undefined,
+    labels: [],
   })
 
   useEffect(() => {
@@ -206,6 +217,7 @@ export default function ProductCreate() {
           price: p.price,
           isAvailable: p.isAvailable,
           vatRate: p.vatRate,
+          labels: p.labels || [],
         })
         setIngredientsInput(Array.isArray(p.ingredients) ? p.ingredients.join(', ') : '')
       }
@@ -291,6 +303,7 @@ export default function ProductCreate() {
       price: form.price !== undefined ? Number(form.price) : undefined,
       isAvailable: !!form.isAvailable,
       vatRate: form.vatRate,
+      labels: form.labels || [],
     }
 
     try {
@@ -453,6 +466,31 @@ export default function ProductCreate() {
                   onChange={(e)=> setIngredientsInput(e.target.value)}
                   placeholder="Tomato, Cheese, Basil"
                 />
+              </div>
+
+              <div>
+                <Label>Product Labels</Label>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {Object.values(ProductLabel).map(label => (
+                    <label key={label} className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={form.labels?.includes(label)}
+                        onChange={e => {
+                          setForm(s => {
+                            const labels = s.labels || [];
+                            if (e.target.checked) {
+                              return { ...s, labels: [...labels, label] };
+                            } else {
+                              return { ...s, labels: labels.filter(l => l !== label) };
+                            }
+                          });
+                        }}
+                      />
+                      <span className="text-xs">{label.replace('_', ' ').replace(/_/g, ' ')}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
 
               <div>
