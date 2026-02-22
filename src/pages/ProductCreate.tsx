@@ -217,7 +217,7 @@ export default function ProductCreate() {
           price: p.price,
           isAvailable: p.isAvailable,
           vatRate: p.vatRate,
-          labels: p.labels || [],
+          labels: (Array.isArray(p.labels) ? p.labels : []) as ProductLabel[],
         })
         setIngredientsInput(Array.isArray(p.ingredients) ? p.ingredients.join(', ') : '')
       }
