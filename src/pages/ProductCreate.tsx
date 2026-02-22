@@ -178,7 +178,7 @@ export default function ProductCreate() {
   // Keep a raw ingredients text input so typing a trailing comma doesn't get trimmed away
   const [ingredientsInput, setIngredientsInput] = useState('')
 
-  const [form, setForm] = useState<Partial<CreateProductPayload>>({
+  const [form, setForm] = useState<Partial<CreateProductPayload> & { labels: ProductLabel[] }>({
     name: '',
     description: '',
     image: '',
@@ -187,7 +187,7 @@ export default function ProductCreate() {
     price: undefined,
     isAvailable: true,
     vatRate: undefined,
-    labels: [],
+    labels: [] as ProductLabel[],
   })
 
   useEffect(() => {
