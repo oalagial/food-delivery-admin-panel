@@ -1670,3 +1670,124 @@ export async function deleteRestaurant(id: string | number) {
   const data = await res.json().catch(() => null)
   return data
 }
+
+// Stats API
+export type StatsOverviewResponse = {
+  totalRevenue: number
+  totalOrders: number
+  averageOrderValue: number
+  deliveredOrders: number
+  cancelledOrders: number
+  deliveryRate: number
+  cancellationRate: number
+  newCustomers: number
+  ordersWithCoupon: number
+}
+
+export type StatsRevenueItem = {
+  period: string
+  revenue: number
+  orderCount: number
+}
+
+export type StatsProductItem = {
+  productId: number
+  productName: string
+  quantity: number
+  revenue: number
+}
+
+export type StatsPaymentMethodItem = {
+  method: string
+  count: number
+  total: number
+}
+
+export type StatsTopCustomerItem = {
+  customerId: number
+  customerName: string
+  customerEmail: string
+  customerPhone: string
+  orderCount: number
+  totalRevenue: number
+  averageOrderValue: number
+}
+
+export type StatsParams = {
+  from?: string
+  to?: string
+  restaurantId?: number
+  groupBy?: 'day' | 'week' | 'month'
+}
+
+export async function getStatsOverview(params?: StatsParams): Promise<StatsOverviewResponse> {
+  const search = new URLSearchParams()
+  if (params?.from) search.set('from', params.from)
+  if (params?.to) search.set('to', params.to)
+  if (params?.restaurantId != null) search.set('restaurantId', String(params.restaurantId))
+  if (params?.groupBy) search.set('groupBy', params.groupBy)
+  const res = await authFetch(`/stats/overview?${search}`)
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(text || `GET /stats/overview failed (${res.status})`)
+  }
+  return res.json()
+}
+
+export async function getStatsRevenue(params?: StatsParams): Promise<StatsRevenueItem[]> {
+  const search = new URLSearchParams()
+  if (params?.from) search.set('from', params.from)
+  if (params?.to) search.set('to', params.to)
+  if (params?.restaurantId != null) search.set('restaurantId', String(params.restaurantId))
+  if (params?.groupBy) search.set('groupBy', params.groupBy)
+  const res = await authFetch(`/stats/revenue?${search}`)
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(text || `GET /stats/revenue failed (${res.status})`)
+  }
+  const data = await res.json()
+  return Array.isArray(data) ? data : []
+}
+
+export async function getStatsProducts(params?: StatsParams): Promise<StatsProductItem[]> {
+  const search = new URLSearchParams()
+  if (params?.from) search.set('from', params.from)
+  if (params?.to) search.set('to', params.to)
+  if (params?.restaurantId != null) search.set('restaurantId', String(params.restaurantId))
+  if (params?.groupBy) search.set('groupBy', params.groupBy)
+  const res = await authFetch(`/stats/products/top?${search}`)
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(text || `GET /stats/products/top failed (${res.status})`)
+  }
+  const data = await res.json()
+  return Array.isArray(data) ? data : []
+}
+
+export async function getStatsPaymentMethods(params?: StatsParams): Promise<StatsPaymentMethodItem[]> {
+  const search = new URLSearchParams()
+  if (params?.from) search.set('from', params.from)
+  if (params?.to) search.set('to', params.to)
+  if (params?.restaurantId != null) search.set('restaurantId', String(params.restaurantId))
+  const res = await authFetch(`/stats/payment-methods?${search}`)
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(text || `GET /stats/payment-methods failed (${res.status})`)
+  }
+  const data = await res.json()
+  return Array.isArray(data) ? data : []
+}
+
+export async function getStatsTopCustomers(params?: StatsParams): Promise<StatsTopCustomerItem[]> {
+  const search = new URLSearchParams()
+  if (params?.from) search.set('from', params.from)
+  if (params?.to) search.set('to', params.to)
+  if (params?.restaurantId != null) search.set('restaurantId', String(params.restaurantId))
+  const res = await authFetch(`/stats/customers/top?${search}`)
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(text || `GET /stats/customers/top failed (${res.status})`)
+  }
+  const data = await res.json()
+  return Array.isArray(data) ? data : []
+}

@@ -2,6 +2,7 @@ import './App.css'
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import Dashboard from './pages/Dashboard'
+import Stats from './pages/Stats'
 import Orders from './pages/Orders'
 import Restaurant from './pages/Restaurant'
 import RestaurantCreate from './pages/RestaurantCreate'
@@ -24,7 +25,7 @@ import Login from './pages/Login'
 import SetPassword from './pages/SetPassword'
 import RequireAuth from './components/RequireAuth'
 import { getToken } from './utils/api'
-import { FiHome, FiShoppingCart, FiCoffee, FiMapPin, FiUsers, FiShield, FiTag, FiBox, FiList, FiLayers } from 'react-icons/fi'
+import { FiHome, FiShoppingCart, FiCoffee, FiMapPin, FiUsers, FiShield, FiTag, FiBox, FiList, FiLayers, FiBarChart2 } from 'react-icons/fi'
 import Offers from './pages/Offers'
 import OfferCreate from './pages/OfferCreate'
 import CustomerCollection from './pages/CustomerCollection'
@@ -99,6 +100,17 @@ function App() {
                   >
                     <FiShoppingCart className="w-5 h-5" />
                     <span>Orders</span>
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink
+                    to="/stats"
+                    className={({ isActive }) =>
+                      `nav-link ${isActive ? 'active' : ''}`
+                    }
+                  >
+                    <FiBarChart2 className="w-5 h-5" />
+                    <span>Statistics</span>
                   </NavLink>
                 </li>
                 <li>
@@ -244,6 +256,7 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
               <Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} />
+              <Route path="/stats" element={<RequireAuth><Stats /></RequireAuth>} />
               <Route path="/restaurant" element={<RequireAuth><Restaurant /></RequireAuth>} />
               <Route path="/restaurant/creation" element={<RequireAuth><RestaurantCreate /></RequireAuth>} />
               <Route path="/restaurant/creation/:id" element={<RequireAuth><RestaurantCreate /></RequireAuth>} />
