@@ -107,8 +107,8 @@ export default function Types() {
       )}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Product Types</h1>
-          <p className="text-gray-600 mt-1">Manage product categories and types</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Product Types</h1>
+          <p className="text-gray-600 mt-1 dark:text-slate-400">Manage product categories and types</p>
         </div>
         <Link to="/types/creation" className="w-full sm:w-auto">
           <Button

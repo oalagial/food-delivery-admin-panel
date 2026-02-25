@@ -187,37 +187,37 @@ export default function Stats() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Statistics</h1>
-          <p className="text-sm text-gray-500 mt-1">Analytics and insights for your business</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100 tracking-tight">Statistics</h1>
+          <p className="text-xs sm:text-sm text-gray-500 mt-1">Analytics and insights for your business</p>
         </div>
-        <div className="flex flex-wrap items-end gap-3 bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-end gap-3 bg-white dark:bg-slate-900/80 p-3 sm:p-4 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm w-full sm:w-auto">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="from" className="text-xs font-semibold text-gray-700">From</Label>
+            <Label htmlFor="from" className="text-xs font-semibold text-gray-700 dark:text-slate-100">From</Label>
             <Input
               id="from"
               type="date"
               value={from}
               onChange={(e) => setFrom(e.target.value)}
-              className="w-36 text-sm"
+              className="w-full sm:w-36 text-sm"
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="to" className="text-xs font-semibold text-gray-700">To</Label>
+            <Label htmlFor="to" className="text-xs font-semibold text-gray-700 dark:text-slate-100">To</Label>
             <Input
               id="to"
               type="date"
               value={to}
               onChange={(e) => setTo(e.target.value)}
-              className="w-36 text-sm"
+              className="w-full sm:w-36 text-sm"
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="restaurant" className="text-xs font-semibold text-gray-700">Restaurant</Label>
+            <Label htmlFor="restaurant" className="text-xs font-semibold text-gray-700 dark:text-slate-100">Restaurant</Label>
             <Select
               id="restaurant"
               value={restaurantId}
               onChange={(e) => setRestaurantId(e.target.value)}
-              className="w-44 text-sm"
+              className="w-full sm:w-44 text-sm"
             >
               <option value="">All Restaurants</option>
               {restaurants.map((r) => (
@@ -228,12 +228,12 @@ export default function Stats() {
             </Select>
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="groupBy" className="text-xs font-semibold text-gray-700">Group by</Label>
+            <Label htmlFor="groupBy" className="text-xs font-semibold text-gray-700 dark:text-slate-100">Group by</Label>
             <Select
               id="groupBy"
               value={groupBy}
               onChange={(e) => setGroupBy(e.target.value as 'day' | 'week' | 'month')}
-              className="w-28 text-sm"
+              className="w-full sm:w-28 text-sm"
             >
               <option value="day">Day</option>
               <option value="week">Week</option>
@@ -265,59 +265,59 @@ export default function Stats() {
           ) : overview ? (
             <>
               <Card className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow border-0 bg-gradient-to-br from-amber-500 to-amber-600 text-white">
-                <CardContent className="p-6">
+                <CardContent className="p-4 sm:p-6">
                   <div className="flex items-start justify-between mb-2">
                     <div className="p-3 rounded-xl bg-white/20 backdrop-blur-sm">
                       <FiDollarSign className="w-6 h-6" />
                     </div>
                   </div>
-                  <p className="text-sm font-medium text-amber-100 mb-1">Total Revenue</p>
-                  <p className="text-3xl font-bold">{formatCurrency(overview.totalRevenue)}</p>
+                  <p className="text-xs sm:text-sm font-medium text-amber-100 mb-1">Total Revenue</p>
+                  <p className="text-2xl sm:text-3xl font-bold">{formatCurrency(overview.totalRevenue)}</p>
                 </CardContent>
               </Card>
               <Card className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow border-0 bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-                <CardContent className="p-6">
+                <CardContent className="p-4 sm:p-6">
                   <div className="flex items-start justify-between mb-2">
                     <div className="p-3 rounded-xl bg-white/20 backdrop-blur-sm">
                       <FiShoppingCart className="w-6 h-6" />
                     </div>
                   </div>
-                  <p className="text-sm font-medium text-blue-100 mb-1">Total Orders</p>
-                  <p className="text-3xl font-bold">{overview.totalOrders}</p>
+                  <p className="text-xs sm:text-sm font-medium text-blue-100 mb-1">Total Orders</p>
+                  <p className="text-2xl sm:text-3xl font-bold">{overview.totalOrders}</p>
                 </CardContent>
               </Card>
               <Card className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow border-0 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
-                <CardContent className="p-6">
+                <CardContent className="p-4 sm:p-6">
                   <div className="flex items-start justify-between mb-2">
                     <div className="p-3 rounded-xl bg-white/20 backdrop-blur-sm">
                       <FiTrendingUp className="w-6 h-6" />
                     </div>
                   </div>
-                  <p className="text-sm font-medium text-emerald-100 mb-1">Avg Order Value</p>
-                  <p className="text-3xl font-bold">{formatCurrency(overview.averageOrderValue)}</p>
+                  <p className="text-xs sm:text-sm font-medium text-emerald-100 mb-1">Avg Order Value</p>
+                  <p className="text-2xl sm:text-3xl font-bold">{formatCurrency(overview.averageOrderValue)}</p>
                 </CardContent>
               </Card>
               <Card className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow border-0 bg-gradient-to-br from-violet-500 to-violet-600 text-white">
-                <CardContent className="p-6">
+                <CardContent className="p-4 sm:p-6">
                   <div className="flex items-start justify-between mb-2">
                     <div className="p-3 rounded-xl bg-white/20 backdrop-blur-sm">
                       <FiUsers className="w-6 h-6" />
                     </div>
                   </div>
-                  <p className="text-sm font-medium text-violet-100 mb-1">New Customers</p>
-                  <p className="text-3xl font-bold">{overview.newCustomers}</p>
+                  <p className="text-xs sm:text-sm font-medium text-violet-100 mb-1">New Customers</p>
+                  <p className="text-2xl sm:text-3xl font-bold">{overview.newCustomers}</p>
                 </CardContent>
               </Card>
               <Card className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow border-0 bg-gradient-to-br from-rose-500 to-rose-600 text-white">
-                <CardContent className="p-6">
+                <CardContent className="p-4 sm:p-6">
                   <div className="flex items-start justify-between mb-2">
                     <div className="p-3 rounded-xl bg-white/20 backdrop-blur-sm">
                       <FiPercent className="w-6 h-6" />
                     </div>
                   </div>
-                  <p className="text-sm font-medium text-rose-100 mb-1">Delivery Rate</p>
-                  <p className="text-2xl font-bold">{overview.deliveryRate.toFixed(1)}%</p>
-                  <p className="text-xs text-rose-200 mt-1">Cancel: {overview.cancellationRate.toFixed(1)}%</p>
+                  <p className="text-xs sm:text-sm font-medium text-rose-100 mb-1">Delivery Rate</p>
+                  <p className="text-xl sm:text-2xl font-bold">{overview.deliveryRate.toFixed(1)}%</p>
+                  <p className="text-[10px] sm:text-xs text-rose-200 mt-1">Cancel: {overview.cancellationRate.toFixed(1)}%</p>
                 </CardContent>
               </Card>
             </>
@@ -343,8 +343,9 @@ export default function Stats() {
                 </div>
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height={400}>
-                <ComposedChart data={revenue} margin={{ top: 20, right: 30, left: 20, bottom: 50 }}>
+              <div className="h-64 md:h-96">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={revenue} margin={{ top: 20, right: 30, left: 20, bottom: 50 }}>
                   <defs>
                     <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.8}/>
@@ -392,25 +393,26 @@ export default function Stats() {
                     wrapperStyle={{ paddingTop: '20px' }}
                     iconType="circle"
                   />
-                  <Bar 
-                    yAxisId="left" 
-                    dataKey="revenue" 
-                    fill="url(#revenueGradient)" 
-                    radius={[8, 8, 0, 0]} 
-                    name="Revenue"
-                  />
-                  <Line 
-                    yAxisId="right" 
-                    type="monotone" 
-                    dataKey="orderCount" 
-                    stroke="#3b82f6" 
-                    strokeWidth={3}
-                    dot={{ fill: '#3b82f6', r: 5 }}
-                    activeDot={{ r: 7 }}
-                    name="Orders"
-                  />
-                </ComposedChart>
-              </ResponsiveContainer>
+                    <Bar 
+                      yAxisId="left" 
+                      dataKey="revenue" 
+                      fill="url(#revenueGradient)" 
+                      radius={[8, 8, 0, 0]} 
+                      name="Revenue"
+                    />
+                    <Line 
+                      yAxisId="right" 
+                      type="monotone" 
+                      dataKey="orderCount" 
+                      stroke="#3b82f6" 
+                      strokeWidth={3}
+                      dot={{ fill: '#3b82f6', r: 5 }}
+                      activeDot={{ r: 7 }}
+                      name="Orders"
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -434,8 +436,13 @@ export default function Stats() {
                 </div>
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={productChartData} layout="vertical" margin={{ top: 10, right: 30, left: 120, bottom: 10 }}>
+              <div className="h-64 md:h-96">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={productChartData}
+                    layout="vertical"
+                    margin={{ top: 10, right: 8, left: 8, bottom: 10 }}
+                  >
                   <defs>
                     <linearGradient id="productGradient" x1="0" y1="0" x2="1" y2="0">
                       <stop offset="5%" stopColor="#10b981" stopOpacity={0.9}/>
@@ -449,10 +456,10 @@ export default function Stats() {
                     tickFormatter={(v) => v.toString()}
                     stroke="#9ca3af"
                   />
-                  <YAxis 
-                    type="category" 
-                    dataKey="name" 
-                    width={110} 
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    width={70}
                     tick={{ fontSize: 11, fill: '#6b7280' }}
                     stroke="#9ca3af"
                   />
@@ -476,14 +483,15 @@ export default function Stats() {
                       )
                     }}
                   />
-                  <Bar 
-                    dataKey="quantity" 
-                    fill="url(#productGradient)" 
-                    radius={[0, 8, 8, 0]} 
-                    name="Quantity"
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+                    <Bar 
+                      dataKey="quantity" 
+                      fill="url(#productGradient)" 
+                      radius={[0, 8, 8, 0]} 
+                      name="Quantity"
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -506,8 +514,9 @@ export default function Stats() {
               </div>
             ) : (
               <div className="space-y-6">
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
+                <div className="h-64 md:h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
                     <defs>
                       {pieData.map((item, index) => {
                         const color = PAYMENT_COLORS[item.name as keyof typeof PAYMENT_COLORS] || CHART_COLORS[index % CHART_COLORS.length]
@@ -519,17 +528,17 @@ export default function Stats() {
                         )
                       })}
                     </defs>
-                    <Pie
-                      data={pieData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={70}
-                      outerRadius={120}
-                      paddingAngle={3}
-                      dataKey="value"
-                      nameKey="name"
-                      label={false}
-                    >
+                      <Pie
+                        data={pieData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={70}
+                        outerRadius={120}
+                        paddingAngle={3}
+                        dataKey="value"
+                        nameKey="name"
+                        label={false}
+                      >
                       {pieData.map((item, index) => {
                         const color = PAYMENT_COLORS[item.name as keyof typeof PAYMENT_COLORS] || CHART_COLORS[index % CHART_COLORS.length]
                         return (
@@ -537,21 +546,22 @@ export default function Stats() {
                         )
                       })}
                     </Pie>
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'white',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                      }}
-                      formatter={(value: any, name: string | undefined, props: any) => {
-                        const count = props?.payload?.count ?? 0
-                        const nameStr = name ?? 'Unknown'
-                        return [formatCurrency(Number(value ?? 0)), `${nameStr} (${count} orders)`]
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'white',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                        }}
+                        formatter={(value: any, name: string | undefined, props: any) => {
+                          const count = props?.payload?.count ?? 0
+                          const nameStr = name ?? 'Unknown'
+                          return [formatCurrency(Number(value ?? 0)), `${nameStr} (${count} orders)`]
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
                 <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">
                   {pieData.map((item, index) => {
                     const itemColor = PAYMENT_COLORS[item.name as keyof typeof PAYMENT_COLORS] || CHART_COLORS[index % CHART_COLORS.length]
@@ -601,30 +611,30 @@ export default function Stats() {
                 {topCustomers.map((customer, index) => (
                   <div
                     key={customer.customerId}
-                    className="flex items-center gap-4 p-4 bg-gradient-to-r from-gray-50 to-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
+                    className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-gradient-to-r from-gray-50 to-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
                   >
-                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
+                    <div className="flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white font-bold text-base sm:text-lg shadow-md">
                       {index + 1}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-4">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-base font-semibold text-gray-900 truncate">{customer.customerName}</h3>
-                          <p className="text-sm text-gray-600 truncate">{customer.customerEmail}</p>
-                          <p className="text-xs text-gray-500 mt-1">{customer.customerPhone}</p>
+                          <h3 className="text-sm sm:text-base font-semibold text-gray-900 truncate">{customer.customerName}</h3>
+                          <p className="text-xs sm:text-sm text-gray-600 truncate">{customer.customerEmail}</p>
+                          <p className="text-[11px] sm:text-xs text-gray-500 mt-1">{customer.customerPhone}</p>
                         </div>
-                        <div className="flex items-center gap-6 text-right">
-                          <div>
-                            <p className="text-xs text-gray-500 mb-1">Total Revenue</p>
-                            <p className="text-lg font-bold text-gray-900">{formatCurrency(customer.totalRevenue)}</p>
+                        <div className="mt-2 sm:mt-0 flex flex-wrap gap-3 sm:gap-6 text-left sm:text-right justify-between sm:justify-end w-full sm:w-auto">
+                          <div className="min-w-[90px]">
+                            <p className="text-[11px] sm:text-xs text-gray-500 mb-0.5">Total Revenue</p>
+                            <p className="text-sm sm:text-lg font-bold text-gray-900">{formatCurrency(customer.totalRevenue)}</p>
                           </div>
-                          <div>
-                            <p className="text-xs text-gray-500 mb-1">Orders</p>
-                            <p className="text-lg font-bold text-purple-600">{customer.orderCount}</p>
+                          <div className="min-w-[70px]">
+                            <p className="text-[11px] sm:text-xs text-gray-500 mb-0.5">Orders</p>
+                            <p className="text-sm sm:text-lg font-bold text-purple-600">{customer.orderCount}</p>
                           </div>
-                          <div>
-                            <p className="text-xs text-gray-500 mb-1">Avg Order</p>
-                            <p className="text-lg font-bold text-emerald-600">{formatCurrency(customer.averageOrderValue)}</p>
+                          <div className="min-w-[90px]">
+                            <p className="text-[11px] sm:text-xs text-gray-500 mb-0.5">Avg Order</p>
+                            <p className="text-sm sm:text-lg font-bold text-emerald-600">{formatCurrency(customer.averageOrderValue)}</p>
                           </div>
                         </div>
                       </div>

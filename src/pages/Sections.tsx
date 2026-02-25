@@ -108,8 +108,8 @@ export default function Sections() {
       <div className="space-y-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Sections</h1>
-            <p className="text-gray-600 mt-1">Organize products into sections</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Sections</h1>
+            <p className="text-gray-600 mt-1 dark:text-slate-400">Organize products into sections</p>
           </div>
           <Link to="/sections/creation" className="w-full sm:w-auto">
             <Button

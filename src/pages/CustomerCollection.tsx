@@ -76,8 +76,10 @@ export default function CustomerCollection() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Customer Collection</h1>
-        <p className="text-gray-600 mt-1">View and manage customers</p>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Customer Collection</h1>
+          <p className="text-gray-600 mt-1 dark:text-slate-400">View and manage customers</p>
+        </div>
         <div className="w-full sm:w-64">
           <Input
             type="text"

@@ -70,7 +70,7 @@ function OrderDetails({ order }: OrderDetailsProps) {
             </p>
             <div className="space-y-1">
               {order.products.map(p => (
-                <div key={p.id} className="text-xs p-2 bg-gray-50 rounded">
+                <div key={p.id} className="text-xs p-2 bg-gray-50 rounded dark:bg-slate-800">
                   <div className="flex justify-between">
                     <span>
                       <strong>{p.name}</strong> ×{p.quantity}
@@ -160,7 +160,7 @@ function OrderRow({ order, isOpen, onToggle, onAccept, onReject }: OrderRowProps
   return (
     <>
       {/* Header Row */}
-      <TableRow onClick={onToggle} className="cursor-pointer hover:bg-gray-50">
+      <TableRow onClick={onToggle} className="cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800">
         <TableCell>
           <div className="flex items-center gap-3">
             <div>
@@ -177,12 +177,11 @@ function OrderRow({ order, isOpen, onToggle, onAccept, onReject }: OrderRowProps
           <p className="text-xs text-gray-600">Subtotal: €{order.subtotal}</p>
         </TableCell>
         <TableCell>
-          <span className={`px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
-            order.status === 'DELIVERED' ? 'bg-green-100 text-green-800' :
-            order.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
-            order.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
-            'bg-blue-100 text-blue-800'
-          }`}>
+          <span className={`px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${order.status === 'DELIVERED' ? 'bg-green-100 text-green-800' :
+              order.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                order.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
+                  'bg-blue-100 text-blue-800'
+            }`}>
             {order.status}
           </span>
         </TableCell>
@@ -213,14 +212,14 @@ function OrderRow({ order, isOpen, onToggle, onAccept, onReject }: OrderRowProps
               onClick={() => onReject(String(order.id))}
             >
             </Button>
-          
+
           </div>
         </TableCell>
       </TableRow>
 
       {/* Expandable Details Row */}
       {isOpen && (
-        <TableRow className="bg-gray-50">
+        <TableRow className="bg-gray-50 dark:bg-slate-900">
           <TableCell colSpan={7}>
             <OrderDetails order={order} />
           </TableCell>
@@ -251,15 +250,14 @@ function OrderCard({ order, isOpen, onToggle, onAccept, onReject }: OrderCardPro
           </p>
         </div>
         <span
-          className={`px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
-            order.status === 'DELIVERED'
+          className={`px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${order.status === 'DELIVERED'
               ? 'bg-green-100 text-green-800'
               : order.status === 'PENDING'
-              ? 'bg-yellow-100 text-yellow-800'
-              : order.status === 'CANCELLED'
-              ? 'bg-red-100 text-red-800'
-              : 'bg-blue-100 text-blue-800'
-          }`}
+                ? 'bg-yellow-100 text-yellow-800'
+                : order.status === 'CANCELLED'
+                  ? 'bg-red-100 text-red-800'
+                  : 'bg-blue-100 text-blue-800'
+            }`}
         >
           {order.status}
         </span>
@@ -363,8 +361,8 @@ export default function Orders() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Orders</h1>
-        <p className="text-gray-600 mt-1">View and manage customer orders</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Orders</h1>
+        <p className="text-gray-600 mt-1 dark:text-slate-400">View and manage customer orders</p>
       </div>
 
       {loading ? (

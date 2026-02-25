@@ -66,8 +66,8 @@ export default function Roles() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Roles</h1>
-          <p className="text-gray-600 mt-1">Manage user roles and permissions</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Roles</h1>
+          <p className="text-gray-600 mt-1 dark:text-slate-400">Manage user roles and permissions</p>
         </div>
         <Link to="/roles/creation" className="w-full sm:w-auto">
           <Button

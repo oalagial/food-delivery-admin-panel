@@ -287,8 +287,8 @@ export default function Offers() {
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Offers</h1>
-          <p className="text-gray-600 mt-1">Manage your offers</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Offers</h1>
+          <p className="text-gray-600 mt-1 dark:text-slate-400">Manage your offers</p>
         </div>
         <Link to="/offers/creation" className="w-full sm:w-auto">
           <Button
@@ -460,20 +460,20 @@ export default function Offers() {
               <h2 className="text-2xl font-semibold text-gray-600 mb-4">Deleted Offers</h2>
               <Table>
                 <TableHead>
-                  <tr className="bg-gray-100">
-                    <TableHeadCell className="text-gray-600">Name</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">Description</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">Price</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">Active</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">Deleted By</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">Actions</TableHeadCell>
+                  <tr className="bg-gray-100 dark:bg-slate-900">
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">Name</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">Description</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">Price</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">Active</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">Deleted By</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">Actions</TableHeadCell>
                   </tr>
                 </TableHead>
                 <TableBody>
                   {deletedOffers.map((o) => {
                     const anyOffer = o as Record<string, unknown>;
-                    return (
-                      <TableRow key={o.id} className="bg-gray-50 opacity-75">
+                      return (
+                      <TableRow key={o.id} className="bg-gray-50 opacity-75 dark:bg-slate-800">
                         <TableCell className="text-gray-600">{o.name}</TableCell>
                         <TableCell className="text-gray-600">{o.description}</TableCell>
                         <TableCell className="text-gray-600">{o.price}</TableCell>

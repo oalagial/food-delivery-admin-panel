@@ -134,8 +134,8 @@ export default function Menus() {
       <div className="space-y-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Menus</h1>
-            <p className="text-gray-600 mt-1">Organize products into menus</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Menus</h1>
+            <p className="text-gray-600 mt-1 dark:text-slate-400">Organize products into menus</p>
           </div>
           <Link to="/menus/creation" className="w-full sm:w-auto">
             <Button
@@ -304,14 +304,14 @@ export default function Menus() {
                 <h2 className="text-2xl font-semibold text-gray-600 mb-4">Deleted Menus</h2>
                 <Table>
                   <TableHead>
-                    <TableRow className="bg-gray-100">
-                      <TableHeadCell className="text-gray-600">Name</TableHeadCell>
-                      <TableHeadCell className="text-gray-600">Description</TableHeadCell>
-                      <TableHeadCell className="text-gray-600">Restaurant</TableHeadCell>
-                      <TableHeadCell className="text-gray-600">Sections</TableHeadCell>
-                      <TableHeadCell className="text-gray-600">Created</TableHeadCell>
-                      <TableHeadCell className="text-gray-600">Deleted By</TableHeadCell>
-                      <TableHeadCell className="text-gray-600">Actions</TableHeadCell>
+                    <TableRow className="bg-gray-100 dark:bg-slate-900">
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Name</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Description</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Restaurant</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Sections</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Created</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Deleted By</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Actions</TableHeadCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -319,7 +319,7 @@ export default function Menus() {
                       const anyMenu = m as unknown as Record<string, unknown>
                       const restaurant = (anyMenu.restaurant as any) || null
                       return (
-                        <TableRow key={String(m.id)} className="bg-gray-50 opacity-75">
+                        <TableRow key={String(m.id)} className="bg-gray-50 opacity-75 dark:bg-slate-800">
                           <TableCell className="text-gray-600">{m.name}</TableCell>
                           <TableCell className="text-gray-600">{m.description}</TableCell>
                           <TableCell className="text-gray-600">{restaurant?.name || ''}</TableCell>

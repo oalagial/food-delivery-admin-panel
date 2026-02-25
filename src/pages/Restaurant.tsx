@@ -133,8 +133,8 @@ export default function Restaurant() {
       <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Restaurants</h1>
-          <p className="text-gray-600 mt-1">Manage your restaurant locations</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Restaurants</h1>
+          <p className="text-gray-600 mt-1 dark:text-slate-400">Manage your restaurant locations</p>
         </div>
         <Link to="/restaurant/creation" className="w-full sm:w-auto">
           <Button
@@ -396,18 +396,18 @@ export default function Restaurant() {
               <div className="hidden md:block">
                 <Table>
                   <TableHead>
-                    <tr className="bg-gray-100">
-                      <TableHeadCell className="text-gray-600">Name</TableHeadCell>
-                      <TableHeadCell className="text-gray-600">Address</TableHeadCell>
-                      <TableHeadCell className="text-gray-600">City</TableHeadCell>
-                      <TableHeadCell className="text-gray-600">Province</TableHeadCell>
-                      <TableHeadCell className="text-gray-600">Zip</TableHeadCell>
-                      <TableHeadCell className="text-gray-600">Country</TableHeadCell>
-                      <TableHeadCell className="text-gray-600">Active Menu</TableHeadCell>
-                      <TableHeadCell className="text-gray-600">Created</TableHeadCell>
-                      <TableHeadCell className="text-gray-600">Opening Hours</TableHeadCell>
-                      <TableHeadCell className="text-gray-600">Deleted By</TableHeadCell>
-                      <TableHeadCell className="text-gray-600">Actions</TableHeadCell>
+                    <tr className="bg-gray-100 dark:bg-slate-900">
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Name</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Address</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">City</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Province</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Zip</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Country</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Active Menu</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Created</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Opening Hours</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Deleted By</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Actions</TableHeadCell>
                     </tr>
                   </TableHead>
                   <TableBody>
@@ -415,8 +415,8 @@ export default function Restaurant() {
                       const anyRestaurant = r as unknown as Record<string, unknown>
                       const allMenus = Array.isArray(anyRestaurant.menus) ? anyRestaurant.menus : []
                       const activeMenus = allMenus.filter((menu: any) => menu?.isActive === true)
-                      return (
-                        <TableRow key={r.id || r.name} className="bg-gray-50 opacity-75">
+                    return (
+                      <TableRow key={r.id || r.name} className="bg-gray-50 opacity-75 dark:bg-slate-800">
                           <TableCell className="text-gray-600">{r.name ?? ''}</TableCell>
                           <TableCell className="text-gray-600">{r.address ?? ''}</TableCell>
                           <TableCell className="text-gray-600">{r.city ?? ''}</TableCell>

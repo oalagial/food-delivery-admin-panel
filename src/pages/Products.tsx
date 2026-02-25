@@ -25,52 +25,66 @@ function productRowDetails(product: Product) {
   return (
     <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {/* Ingredients */}
-      <Card className='shadow-md'>
-        <CardTitle className='m-2'>Ingredients</CardTitle>
-        <CardDescription>List of ingredients for this product</CardDescription>
-        <CardContent>
-          { product.ingredients && product.ingredients.length > 0 ? (
-              product.ingredients.map((ingredient, index) => (
-                <ul>
-                  <li key={index} className="px-2 py-1 rounded bg-gray-50 border text-sm">{ingredient}</li>
-                </ul>
-              ))
-            ) : (<h3>No ingredients listed.</h3>)  
-          }
+      <Card className="shadow-md">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold">Ingredients</CardTitle>
+          <CardDescription>List of ingredients for this product</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-1">
+          {product.ingredients && product.ingredients.length > 0 ? (
+            product.ingredients.map((ingredient, index) => (
+              <ul key={index}>
+                <li className="px-2 py-1 rounded bg-gray-50 border text-sm text-gray-800 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">
+                  {ingredient}
+                </li>
+              </ul>
+            ))
+          ) : (
+            <h3 className="text-sm text-gray-500 dark:text-slate-400">No ingredients listed.</h3>
+          )}
         </CardContent>
       </Card>
       {/* Allergies */}
-      <Card className='shadow-md'>
-        <CardTitle className='m-2'>Allergies</CardTitle>
-        <CardDescription>Allergens present in this product</CardDescription>
-        <CardContent>
-          { product.allergies && product.allergies.length > 0 ? (
-              product.allergies.map((allergy, index) => (
-                <ul>
-                  <li key={index} className="px-2 py-1 rounded bg-red-50 border border-red-200 text-sm text-red-800">
-                    {String(allergy).replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                  </li>
-                </ul>
-              ))
-            ) : (<h3>No allergens listed.</h3>)  
-          }
+      <Card className="shadow-md">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold">Allergies</CardTitle>
+          <CardDescription>Allergens present in this product</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-1">
+          {product.allergies && product.allergies.length > 0 ? (
+            product.allergies.map((allergy, index) => (
+              <ul key={index}>
+                <li className="px-2 py-1 rounded bg-red-50 border border-red-200 text-sm text-red-800 dark:bg-red-900/40 dark:border-red-600/70 dark:text-red-300">
+                  {String(allergy).replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                </li>
+              </ul>
+            ))
+          ) : (
+            <h3 className="text-sm text-gray-500 dark:text-slate-400">No allergens listed.</h3>
+          )}
         </CardContent>
       </Card>
       {/* Extras */}
-      <Card>
-        <CardTitle className='m-2'>Extras</CardTitle>
-        <CardDescription>Available extras for this product</CardDescription>
-        <CardContent>
-          { product.extras && product.extras.length > 0 ? (
+      <Card className="shadow-md">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold">Extras</CardTitle>
+          <CardDescription>Available extras for this product</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-1">
+          {product.extras && product.extras.length > 0 ? (
             <ul>
               {product.extras.map((extra, index) => (
-                <li key={index} className="px-2 py-1 rounded bg-gray-50 border text-sm">
+                <li
+                  key={index}
+                  className="px-2 py-1 rounded bg-gray-50 border text-sm text-gray-800 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
+                >
                   {extra.name} {extra.price != null ? `(+${extra.price} €)` : ''}
                 </li>
               ))}
             </ul>
-            ) : (<h3>No extras available.</h3>)
-          }
+          ) : (
+            <h3 className="text-sm text-gray-500 dark:text-slate-400">No extras available.</h3>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -79,11 +93,11 @@ function productRowDetails(product: Product) {
 
 function ProductRow({ product, isOpen, onToggle, isDeleted = false, onRestore, onDelete, onToggleAvailability }: ProductRowProps) {
   const anyProduct = product as unknown as Record<string, unknown>
-  
+
   return (
     <>
       {/* MAIN ROW */}
-      <TableRow className={isDeleted ? "bg-gray-50 opacity-75" : ""}>
+      <TableRow className={isDeleted ? "bg-gray-50 opacity-75 dark:bg-slate-800" : ""}>
         <TableCell className={isDeleted ? "text-gray-600" : ""}>{product.name ?? ''}</TableCell>
         <TableCell className={isDeleted ? "text-gray-600" : ""}>
           {product.image ? (
@@ -100,9 +114,9 @@ function ProductRow({ product, isOpen, onToggle, isDeleted = false, onRestore, o
         <TableCell className={isDeleted ? "text-gray-600" : ""}>
           {product.vatRate ? (
             product.vatRate === 'FOUR' ? '4%' :
-            product.vatRate === 'FIVE' ? '5%' :
-            product.vatRate === 'TEN' ? '10%' :
-            product.vatRate === 'TWENTY_TWO' ? '22%' : product.vatRate
+              product.vatRate === 'FIVE' ? '5%' :
+                product.vatRate === 'TEN' ? '10%' :
+                  product.vatRate === 'TWENTY_TWO' ? '22%' : product.vatRate
           ) : '-'}
         </TableCell>
         <TableCell className={`text-center ${isDeleted ? "text-gray-600" : ""}`}>
@@ -153,7 +167,7 @@ function ProductRow({ product, isOpen, onToggle, isDeleted = false, onRestore, o
       </TableRow>
       {/* DETAILS ROW */}
       {isOpen && !isDeleted && (
-        <TableRow className="bg-gray-50">
+        <TableRow className="bg-gray-50 dark:bg-slate-900">
           <TableCell colSpan={8}>
             {productRowDetails(product)}
           </TableCell>
@@ -296,7 +310,7 @@ export default function Products() {
                   {confirmDialog.type === 'delete' ? 'Delete Product' : 'Restore Product'}
                 </AlertTitle>
                 <AlertDescription>
-                  {confirmDialog.type === 'delete' 
+                  {confirmDialog.type === 'delete'
                     ? `Are you sure you want to delete "${confirmDialog.name}"?.`
                     : `Are you sure you want to restore "${confirmDialog.name}"?`}
                 </AlertDescription>
@@ -305,8 +319,8 @@ export default function Products() {
                 <Button variant="ghost" onClick={closeConfirmDialog}>
                   Cancel
                 </Button>
-                <Button 
-                  variant={confirmDialog.type === 'delete' ? 'danger' : 'primary'} 
+                <Button
+                  variant={confirmDialog.type === 'delete' ? 'danger' : 'primary'}
                   onClick={handleConfirm}
                 >
                   {confirmDialog.type === 'delete' ? 'Delete' : 'Restore'}
@@ -318,258 +332,257 @@ export default function Products() {
       )}
 
       <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Products</h1>
-          <p className="text-gray-600 mt-1">Manage your restaurant products</p>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-          <div className="w-full sm:w-48">
-            <Input
-              placeholder="Search product..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          <Link to="/products/creation" className="w-full sm:w-auto">
-            <Button
-              variant="primary"
-              icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
-              className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
-            >
-              <span className="sm:inline">Create Product</span>
-            </Button>
-          </Link>
-        </div>
-      </div>
-
-      {loading && (
-        <Table>
-          <TableHead>
-            <tr>
-              <TableHeadCell>Name</TableHeadCell>
-              <TableHeadCell>Image</TableHeadCell>
-              <TableHeadCell>Type</TableHeadCell>
-              {/* <TableHeadCell>Ingredients</TableHeadCell> */}
-              <TableHeadCell>Price</TableHeadCell>
-              <TableHeadCell>Stock</TableHeadCell>
-              <TableHeadCell>VAT</TableHeadCell>
-              <TableHeadCell>Available</TableHeadCell>
-              {/* <TableHeadCell>Created</TableHeadCell> */}
-              {/* <TableHeadCell>Updated</TableHeadCell> */}
-              <TableHeadCell>Actions</TableHeadCell>
-            </tr>
-          </TableHead>
-          <TableBody>
-            {Array.from({ length: 6 }).map((_, r) => (
-              <TableRow key={r} className="animate-pulse">
-                {Array.from({ length: 8 }).map((__, c) => (
-                  <TableCell key={c}><Skeleton className="h-4 w-full bg-gray-200" /></TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
-      {error && <p className="text-red-600">{error}</p>}
-
-      {!loading && (
-        <>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">Active Products</h2>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Products</h1>
+            <p className="text-gray-600 mt-1 dark:text-slate-400">Manage your restaurant products</p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+            <div className="w-full sm:w-48">
+              <Input
+                placeholder="Search product..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <Link to="/products/creation" className="w-full sm:w-auto">
+              <Button
+                variant="primary"
+                icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
+                className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
+              >
+                <span className="sm:inline">Create Product</span>
+              </Button>
+            </Link>
+          </div>
+        </div>
 
-            {/* Mobile: cards */}
-            <div className="space-y-3 md:hidden">
-              {filteredItems.length === 0 ? (
-                <p className="text-sm text-gray-500">No active products found.</p>
-              ) : (
-                filteredItems.map((p) => {
-                  const anyProduct = p as unknown as Record<string, unknown>
-                  const vatLabel = p.vatRate
-                    ? p.vatRate === 'FOUR'
-                      ? '4%'
-                      : p.vatRate === 'FIVE'
-                      ? '5%'
-                      : p.vatRate === 'TEN'
-                      ? '10%'
-                      : p.vatRate === 'TWENTY_TWO'
-                      ? '22%'
-                      : String(p.vatRate)
-                    : '-'
+        {loading && (
+          <Table>
+            <TableHead>
+              <tr>
+                <TableHeadCell>Name</TableHeadCell>
+                <TableHeadCell>Image</TableHeadCell>
+                <TableHeadCell>Type</TableHeadCell>
+                {/* <TableHeadCell>Ingredients</TableHeadCell> */}
+                <TableHeadCell>Price</TableHeadCell>
+                <TableHeadCell>Stock</TableHeadCell>
+                <TableHeadCell>VAT</TableHeadCell>
+                <TableHeadCell>Available</TableHeadCell>
+                {/* <TableHeadCell>Created</TableHeadCell> */}
+                {/* <TableHeadCell>Updated</TableHeadCell> */}
+                <TableHeadCell>Actions</TableHeadCell>
+              </tr>
+            </TableHead>
+            <TableBody>
+              {Array.from({ length: 6 }).map((_, r) => (
+                <TableRow key={r} className="animate-pulse">
+                  {Array.from({ length: 8 }).map((__, c) => (
+                    <TableCell key={c}><Skeleton className="h-4 w-full bg-gray-200" /></TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+        {error && <p className="text-red-600">{error}</p>}
 
-                  return (
-                    <Card key={String(p.id)} className="shadow-sm">
-                      <CardHeader className="flex flex-row items-center gap-3 p-4 pb-2">
-                        {p.image ? (
-                          <img
-                            src={API_BASE + '/images/' + p.image}
-                            alt={p.name ?? 'product'}
-                            className="h-12 w-12 flex-shrink-0 rounded object-cover"
-                          />
-                        ) : (
-                          <div className="h-12 w-12 flex-shrink-0 rounded bg-gray-100" />
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <CardTitle className="truncate text-base font-semibold">
-                            {p.name ?? ''}
-                          </CardTitle>
-                          <p className="text-xs text-gray-600 truncate">
-                            {p.type?.name ?? ''}
-                          </p>
-                        </div>
-                        <span
-                          className={`inline-flex flex-shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                            p.isAvailable
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-red-100 text-red-700'
-                          }`}
-                        >
-                          {p.isAvailable ? 'Available' : 'Unavailable'}
-                        </span>
-                      </CardHeader>
+        {!loading && (
+          <>
+            <div>
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4">Active Products</h2>
 
-                      <CardContent className="px-4 pb-2 pt-0 space-y-1 text-xs text-gray-700">
-                        <p>
-                          Price:{' '}
-                          <span className="font-semibold">
-                            {p.price != null ? `${p.price} €` : '-'}
-                          </span>
-                          {p.stockQuantity != null && (
-                            <span className="ml-2 text-gray-500">
-                              • Stock: {p.stockQuantity}
-                            </span>
+              {/* Mobile: cards */}
+              <div className="space-y-3 md:hidden">
+                {filteredItems.length === 0 ? (
+                  <p className="text-sm text-gray-500">No active products found.</p>
+                ) : (
+                  filteredItems.map((p) => {
+                    const anyProduct = p as unknown as Record<string, unknown>
+                    const vatLabel = p.vatRate
+                      ? p.vatRate === 'FOUR'
+                        ? '4%'
+                        : p.vatRate === 'FIVE'
+                          ? '5%'
+                          : p.vatRate === 'TEN'
+                            ? '10%'
+                            : p.vatRate === 'TWENTY_TWO'
+                              ? '22%'
+                              : String(p.vatRate)
+                      : '-'
+
+                    return (
+                      <Card key={String(p.id)} className="shadow-sm">
+                        <CardHeader className="flex flex-row items-center gap-3 p-4 pb-2">
+                          {p.image ? (
+                            <img
+                              src={API_BASE + '/images/' + p.image}
+                              alt={p.name ?? 'product'}
+                              className="h-12 w-12 flex-shrink-0 rounded object-cover"
+                            />
+                          ) : (
+                            <div className="h-12 w-12 flex-shrink-0 rounded bg-gray-100" />
                           )}
-                        </p>
-                        <p>
-                          VAT:{' '}
-                          <span className="font-medium">{vatLabel}</span>
-                        </p>
-                      </CardContent>
+                          <div className="min-w-0 flex-1">
+                            <CardTitle className="truncate text-base font-semibold">
+                              {p.name ?? ''}
+                            </CardTitle>
+                            <p className="text-xs text-gray-600 truncate">
+                              {p.type?.name ?? ''}
+                            </p>
+                          </div>
+                          <span
+                            className={`inline-flex flex-shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${p.isAvailable
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-red-100 text-red-700'
+                              }`}
+                          >
+                            {p.isAvailable ? 'Available' : 'Unavailable'}
+                          </span>
+                        </CardHeader>
 
-                      <CardFooter className="flex justify-between items-center px-4 pb-4 pt-0 gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="px-2 text-xs"
-                          onClick={() => toggleRow(String(p.id))}
-                        >
-                          {openRowId === String(p.id) ? 'Hide details' : 'Details'}
-                        </Button>
-                        <div className="flex gap-1">
+                        <CardContent className="px-4 pb-2 pt-0 space-y-1 text-xs text-gray-700">
+                          <p>
+                            Price:{' '}
+                            <span className="font-semibold">
+                              {p.price != null ? `${p.price} €` : '-'}
+                            </span>
+                            {p.stockQuantity != null && (
+                              <span className="ml-2 text-gray-500">
+                                • Stock: {p.stockQuantity}
+                              </span>
+                            )}
+                          </p>
+                          <p>
+                            VAT:{' '}
+                            <span className="font-medium">{vatLabel}</span>
+                          </p>
+                        </CardContent>
+
+                        <CardFooter className="flex justify-between items-center px-4 pb-4 pt-0 gap-2">
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="p-2 text-xs"
-                            icon={
-                              p.isAvailable ? (
-                                <FiCheckCircle className="w-4 h-4 text-green-600" />
-                              ) : (
-                                <FiXCircle className="w-4 h-4 text-red-600" />
-                              )
-                            }
-                            onClick={() => handleToggleAvailability(p)}
-                          />
-                          <Link to={`/products/creation/${encodeURIComponent(String(p.id ?? ''))}`}>
+                            className="px-2 text-xs"
+                            onClick={() => toggleRow(String(p.id))}
+                          >
+                            {openRowId === String(p.id) ? 'Hide details' : 'Details'}
+                          </Button>
+                          <div className="flex gap-1">
                             <Button
                               variant="ghost"
                               size="sm"
                               className="p-2 text-xs"
-                              icon={<FiEdit className="w-4 h-4" />}
+                              icon={
+                                p.isAvailable ? (
+                                  <FiCheckCircle className="w-4 h-4 text-green-600" />
+                                ) : (
+                                  <FiXCircle className="w-4 h-4 text-red-600" />
+                                )
+                              }
+                              onClick={() => handleToggleAvailability(p)}
                             />
-                          </Link>
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            className="p-2 text-xs"
-                            icon={<FiTrash className="w-4 h-4" />}
-                            onClick={() => handleDelete(p.id ?? '', p.name ?? '')}
-                          />
-                        </div>
-                      </CardFooter>
+                            <Link to={`/products/creation/${encodeURIComponent(String(p.id ?? ''))}`}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="p-2 text-xs"
+                                icon={<FiEdit className="w-4 h-4" />}
+                              />
+                            </Link>
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              className="p-2 text-xs"
+                              icon={<FiTrash className="w-4 h-4" />}
+                              onClick={() => handleDelete(p.id ?? '', p.name ?? '')}
+                            />
+                          </div>
+                        </CardFooter>
 
-                      {openRowId === String(p.id) && (
-                        <div className="border-t border-gray-100">
-                          {productRowDetails(p)}
-                        </div>
-                      )}
-                    </Card>
-                  )
-                })
-              )}
+                        {openRowId === String(p.id) && (
+                          <div className="border-t border-gray-100">
+                            {productRowDetails(p)}
+                          </div>
+                        )}
+                      </Card>
+                    )
+                  })
+                )}
+              </div>
+
+              {/* Desktop: table */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHead>
+                    <tr>
+                      <TableHeadCell>Name</TableHeadCell>
+                      <TableHeadCell>Image</TableHeadCell>
+                      <TableHeadCell>Type</TableHeadCell>
+                      <TableHeadCell>Price</TableHeadCell>
+                      <TableHeadCell>Stock</TableHeadCell>
+                      <TableHeadCell>VAT</TableHeadCell>
+                      <TableHeadCell>Available</TableHeadCell>
+                      <TableHeadCell>Actions</TableHeadCell>
+                    </tr>
+                  </TableHead>
+                  <TableBody>
+                    {filteredItems.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={8}>No active products found.</TableCell>
+                      </TableRow>
+                    )}
+
+                    {filteredItems.map((p) => (
+                      <ProductRow
+                        key={String(p.id)}
+                        product={p}
+                        isOpen={openRowId === String(p.id)}
+                        onToggle={() => toggleRow(String(p.id))}
+                        onDelete={() => handleDelete(p.id ?? '', p.name ?? '')}
+                        onToggleAvailability={handleToggleAvailability}
+                      />
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
 
-            {/* Desktop: table */}
-            <div className="hidden md:block">
-              <Table>
-                <TableHead>
-                  <tr>
-                    <TableHeadCell>Name</TableHeadCell>
-                    <TableHeadCell>Image</TableHeadCell>
-                    <TableHeadCell>Type</TableHeadCell>
-                    <TableHeadCell>Price</TableHeadCell>
-                    <TableHeadCell>Stock</TableHeadCell>
-                    <TableHeadCell>VAT</TableHeadCell>
-                    <TableHeadCell>Available</TableHeadCell>
-                    <TableHeadCell>Actions</TableHeadCell>
-                  </tr>
-                </TableHead>
-                <TableBody>
-                  {filteredItems.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={8}>No active products found.</TableCell>
-                    </TableRow>
-                  )}
-
-                  {filteredItems.map((p) => (
-                    <ProductRow
-                      key={String(p.id)}
-                      product={p}
-                      isOpen={openRowId === String(p.id)}
-                      onToggle={() => toggleRow(String(p.id))}
-                      onDelete={() => handleDelete(p.id ?? '', p.name ?? '')}
-                      onToggleAvailability={handleToggleAvailability}
-                    />
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-
-          {deletedProducts.length > 0 && (
-            <div className="mt-8">
-              <h2 className="text-2xl font-semibold text-gray-600 mb-4">Deleted Products</h2>
-              <Table>
-                <TableHead>
-                  <tr className="bg-gray-100">
-                    <TableHeadCell className="text-gray-600">Name</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">Image</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">Type</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">Price</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">Stock</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">VAT</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">Available</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">Deleted By</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">Actions</TableHeadCell>
-                  </tr>
-                </TableHead>
-                <TableBody>
-                  {deletedProducts.map((p) => (
-                    <ProductRow
-                      key={String(p.id)}
-                      product={p}
-                      isOpen={false}
-                      onToggle={() => {}}
-                      isDeleted={true}
-                      onRestore={() => handleRestore(p.id ?? '', p.name ?? '')}
-                    />
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </>
-      )}
-    </div>
+            {deletedProducts.length > 0 && (
+              <div className="mt-8">
+                <h2 className="text-2xl font-semibold text-gray-600 mb-4">Deleted Products</h2>
+                <Table>
+                  <TableHead>
+                    <tr className="bg-gray-100 dark:bg-slate-900">
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Name</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Image</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Type</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Price</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Stock</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">VAT</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Available</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Deleted By</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Actions</TableHeadCell>
+                    </tr>
+                  </TableHead>
+                  <TableBody>
+                    {deletedProducts.map((p) => (
+                      <ProductRow
+                        key={String(p.id)}
+                        product={p}
+                        isOpen={false}
+                        onToggle={() => { }}
+                        isDeleted={true}
+                        onRestore={() => handleRestore(p.id ?? '', p.name ?? '')}
+                      />
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </>
   )
 }

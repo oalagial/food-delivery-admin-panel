@@ -139,8 +139,8 @@ export default function DeliveryLocations() {
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Delivery Locations</h1>
-          <p className="text-gray-600 mt-1">Manage delivery zones and locations</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Delivery Locations</h1>
+          <p className="text-gray-600 mt-1 dark:text-slate-400">Manage delivery zones and locations</p>
         </div>
         <Link to="/delivery-locations/creation" className="w-full sm:w-auto">
           <Button
@@ -380,25 +380,25 @@ export default function DeliveryLocations() {
 
               {/* Desktop: table for deleted */}
               <div className="hidden md:block">
-                <Table>
-                  <TableHead>
-                    <tr className="bg-gray-100">
-                      <TableHeadCell className="text-gray-600">Name</TableHeadCell>
-                      <TableHeadCell className="text-gray-600">Address</TableHeadCell>
-                      <TableHeadCell className="text-gray-600">City</TableHeadCell>
-                      <TableHeadCell className="text-gray-600">Province</TableHeadCell>
-                      <TableHeadCell className="text-gray-600">Zip</TableHeadCell>
-                      <TableHeadCell className="text-gray-600">Country</TableHeadCell>
-                      <TableHeadCell className="text-gray-600">Active</TableHeadCell>
-                      <TableHeadCell className="text-gray-600">Restaurants</TableHeadCell>
-                      <TableHeadCell className="text-gray-600">Deleted By</TableHeadCell>
-                    </tr>
-                  </TableHead>
+              <Table>
+                <TableHead>
+                  <tr className="bg-gray-100 dark:bg-slate-900">
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">Name</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">Address</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">City</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">Province</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">Zip</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">Country</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">Active</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">Restaurants</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">Deleted By</TableHeadCell>
+                  </tr>
+                </TableHead>
                   <TableBody>
                     {deletedLocations.map((loc) => {
                       const anyLoc = loc as unknown as Record<string, unknown>
-                      return (
-                        <TableRow key={String(loc.id ?? '') + String(loc.name ?? '')} className="bg-gray-50 opacity-75">
+                    return (
+                      <TableRow key={String(loc.id ?? '') + String(loc.name ?? '')} className="bg-gray-50 opacity-75 dark:bg-slate-800">
                           <TableCell className="text-gray-600">{loc.name ?? ''}</TableCell>
                           <TableCell className="text-gray-600">{loc.address ?? ''}</TableCell>
                           <TableCell className="text-gray-600">{loc.city ?? ''}</TableCell>
