@@ -539,12 +539,14 @@ export default function Stats() {
                         nameKey="name"
                         label={false}
                       >
-                      {pieData.map((item, index) => {
-                        const color = PAYMENT_COLORS[item.name as keyof typeof PAYMENT_COLORS] || CHART_COLORS[index % CHART_COLORS.length]
-                        return (
-                          <Cell key={`cell-${index}`} fill={`url(#pieGradient-${index})`} stroke="#fff" strokeWidth={2} />
-                        )
-                      })}
+                      {pieData.map((item, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={`url(#pieGradient-${index})`}
+                          stroke="#fff"
+                          strokeWidth={2}
+                        />
+                      ))}
                     </Pie>
                       <Tooltip
                         contentStyle={{

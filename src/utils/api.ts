@@ -450,22 +450,24 @@ export async function deleteType(id: string | number) {
 }
 
 // Product types + APIs
-export enum ProductAllergy {
-  GLUTEN = 'GLUTEN',
-  DAIRY = 'DAIRY',
-  EGGS = 'EGGS',
-  FISH = 'FISH',
-  SHELLFISH = 'SHELLFISH',
-  TREE_NUTS = 'TREE_NUTS',
-  PEANUTS = 'PEANUTS',
-  SOY = 'SOY',
-  SESAME = 'SESAME',
-  SULPHITES = 'SULPHITES',
-  LUPIN = 'LUPIN',
-  MOLLUSCS = 'MOLLUSCS',
-  MUSTARD = 'MUSTARD',
-  CELERY = 'CELERY',
-}
+export const ProductAllergy = {
+  GLUTEN: 'GLUTEN',
+  DAIRY: 'DAIRY',
+  EGGS: 'EGGS',
+  FISH: 'FISH',
+  SHELLFISH: 'SHELLFISH',
+  TREE_NUTS: 'TREE_NUTS',
+  PEANUTS: 'PEANUTS',
+  SOY: 'SOY',
+  SESAME: 'SESAME',
+  SULPHITES: 'SULPHITES',
+  LUPIN: 'LUPIN',
+  MOLLUSCS: 'MOLLUSCS',
+  MUSTARD: 'MUSTARD',
+  CELERY: 'CELERY',
+} as const
+
+export type ProductAllergy = (typeof ProductAllergy)[keyof typeof ProductAllergy]
 
 export type Product = {
   id?: string | number

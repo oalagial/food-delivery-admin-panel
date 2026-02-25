@@ -77,9 +77,11 @@ export default function SetPassword() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center">
-            <Button asChild variant="primary" className="rounded-lg">
-              <a href="/login">Go to login</a>
-            </Button>
+            <a href="/login">
+              <Button variant="primary" className="rounded-lg">
+                Go to login
+              </Button>
+            </a>
           </CardContent>
         </Card>
         </div>

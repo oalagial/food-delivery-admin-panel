@@ -398,7 +398,6 @@ export default function Products() {
                   <p className="text-sm text-gray-500">No active products found.</p>
                 ) : (
                   filteredItems.map((p) => {
-                    const anyProduct = p as unknown as Record<string, unknown>
                     const vatLabel = p.vatRate
                       ? p.vatRate === 'FOUR'
                         ? '4%'
@@ -447,7 +446,7 @@ export default function Products() {
                             <span className="font-semibold">
                               {p.price != null ? `${p.price} €` : '-'}
                             </span>
-                            {p.stockQuantity != null && (
+                            {typeof p.stockQuantity === 'number' && (
                               <span className="ml-2 text-gray-500">
                                 • Stock: {p.stockQuantity}
                               </span>

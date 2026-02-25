@@ -220,7 +220,10 @@ export default function ProductCreate() {
           allergies: p.allergies ?? [],
           price: p.price,
           isAvailable: p.isAvailable,
-          stockQuantity: p.stockQuantity ?? undefined,
+          stockQuantity:
+            typeof p.stockQuantity === 'number'
+              ? p.stockQuantity
+              : undefined,
           vatRate: p.vatRate,
           labels: (Array.isArray(p.labels) ? p.labels : []) as ProductLabel[],
         })
