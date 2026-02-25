@@ -541,7 +541,7 @@ export default function Stats() {
                       >
                       {pieData.map((item, index) => (
                         <Cell
-                          key={`cell-${index}`}
+                          key={item.name ?? `cell-${index}`}
                           fill={`url(#pieGradient-${index})`}
                           stroke="#fff"
                           strokeWidth={2}
