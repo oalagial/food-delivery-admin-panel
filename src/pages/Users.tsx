@@ -152,12 +152,20 @@ export default function Users() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Users</h1>
           <p className="text-gray-600 mt-1">Manage system users and accounts</p>
         </div>
-        <Link to="/users/creation"><Button variant="primary" icon={<FiPlus className="w-5 h-5" />} className="px-6 py-3 text-base">Create User</Button></Link>
+        <Link to="/users/creation" className="w-full sm:w-auto">
+          <Button
+            variant="primary"
+            icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
+            className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
+          >
+            <span className="sm:inline">Create User</span>
+          </Button>
+        </Link>
       </div>
 
       {error && (
@@ -195,8 +203,104 @@ export default function Users() {
         </div>
       )}
 
-      <div>
-          <Table>
+      {/* Mobile: cards */}
+      <div className="space-y-3 md:hidden">
+        {users.length === 0 ? (
+          <p className="text-sm text-gray-500">No users found.</p>
+        ) : (
+          users.map((u) => {
+            const active = isUserActive(u)
+            const roleLabel = (() => {
+              const rec = u as unknown as Record<string, unknown>
+              if (Array.isArray(rec.roles) && rec.roles.length > 0) {
+                return rec.roles
+                  .map((role: any) => role?.name || rolesMap[String(role?.id)] || String(role?.id || ''))
+                  .filter(Boolean)
+                  .join(', ')
+              }
+              const roleObj = rec.role
+              if (roleObj && typeof roleObj === 'object' && (roleObj as Record<string, unknown>).name)
+                return String((roleObj as Record<string, unknown>).name)
+              const rId = rec.roleId ?? rec.role_id ?? rec.roleId
+              if (rId !== undefined && rId !== null && String(rId) !== '')
+                return rolesMap[String(rId)] ?? String(rId)
+              return ''
+            })()
+
+            const isCurrent = currentUserId != null && String(u.id) === String(currentUserId)
+
+            return (
+              <Card key={u.id} className="shadow-sm">
+                <CardHeader className="p-4 pb-2">
+                  <CardTitle className="text-base font-semibold flex items-center justify-between gap-2">
+                    <span className="truncate">{u.email ?? u.username ?? u.id}</span>
+                    <span
+                      className={`inline-flex flex-shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                        active ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-700'
+                      }`}
+                    >
+                      {active ? 'Active' : 'Inactive'}
+                    </span>
+                  </CardTitle>
+                  <p className="text-xs text-gray-600">
+                    {u.username && u.username !== u.email ? u.username : roleLabel || '—'}
+                  </p>
+                </CardHeader>
+                <CardFooter className="flex justify-between items-center px-4 pb-4 pt-0 gap-2">
+                  <div className="text-[11px] text-gray-500">
+                    {u.createdAt && (
+                      <span>Created: {new Date(String(u.createdAt)).toLocaleDateString()}</span>
+                    )}
+                  </div>
+                  <div className="flex gap-1">
+                    <Link to={`/users/creation/${encodeURIComponent(String(u.id ?? ''))}`}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="p-2 text-xs"
+                        icon={<FiEdit className="w-4 h-4" />}
+                        title="Edit"
+                      >
+                        Edit
+                      </Button>
+                    </Link>
+                    {isCurrent ? null : active ? (
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        className="p-2 text-xs"
+                        icon={<FiUserMinus className="w-4 h-4" />}
+                        onClick={() => askDeactivate(u)}
+                        type="button"
+                        title="Deactivate user"
+                      >
+                        Deactivate
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        className="p-2 text-xs"
+                        icon={<FiUserPlus className="w-4 h-4" />}
+                        onClick={() => handleActivate(u)}
+                        type="button"
+                        disabled={activatingId === u.id}
+                        title="Activate user"
+                      >
+                        {activatingId === u.id ? 'Activating...' : 'Activate'}
+                      </Button>
+                    )}
+                  </div>
+                </CardFooter>
+              </Card>
+            )
+          })
+        )}
+      </div>
+
+      {/* Desktop: table */}
+      <div className="hidden md:block">
+        <Table>
           <TableHead>
             <tr>
               <TableHeadCell>Email</TableHeadCell>

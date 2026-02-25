@@ -7,6 +7,7 @@ import { getTypesList, deleteType } from '../utils/api'
 import type { TypeItem } from '../utils/api'
 import { Skeleton } from '../components/ui/skeleton'
 import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert'
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/card'
 
 export default function Types() {
   const [types, setTypes] = useState<TypeItem[]>([])
@@ -104,12 +105,20 @@ export default function Types() {
           </div>
         </div>
       )}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Product Types</h1>
           <p className="text-gray-600 mt-1">Manage product categories and types</p>
         </div>
-        <Link to="/types/creation"><Button variant="primary" icon={<FiPlus className="w-5 h-5" />} className="px-6 py-3 text-base">Create Type</Button></Link>
+        <Link to="/types/creation" className="w-full sm:w-auto">
+          <Button
+            variant="primary"
+            icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
+            className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
+          >
+            <span className="sm:inline">Create Type</span>
+          </Button>
+        </Link>
       </div>
 
       {loading && (
@@ -137,54 +146,119 @@ export default function Types() {
       {error && <p className="text-red-600">{error}</p>}
 
       {!loading && (
-        <Table>
-          <TableHead>
-            <tr>
-              <TableHeadCell>Name</TableHeadCell>
-              <TableHeadCell>Tag</TableHeadCell>
-              <TableHeadCell>Description</TableHeadCell>
-              <TableHeadCell>Created</TableHeadCell>
-              <TableHeadCell>Actions</TableHeadCell>
-            </tr>
-          </TableHead>
-          <TableBody>
-            {(!loading && types.length === 0) && (
-              <TableRow>
-                <TableCell colSpan={6}>No types found.</TableCell>
-              </TableRow>
-            )}
-
-            {types.map((t) => (
-              <TableRow key={t.id ?? t.name}>
-                <TableCell>{t.name ?? ''}</TableCell>
-                <TableCell>{t.tag ?? ''}</TableCell>
-                <TableCell>{t.description ?? ''}</TableCell>
-                <TableCell>{t.createdAt ? new Date(String(t.createdAt)).toLocaleString() : ''}</TableCell>
-                <TableCell>
-                  <Link
-                    to={`/types/creation/${encodeURIComponent(String(t.id ?? ''))}`}
-                    className='mr-2'
-                  >
+        <>
+          {/* Mobile: cards */}
+          <div className="space-y-3 md:hidden">
+            {types.length === 0 ? (
+              <p className="text-sm text-gray-500">No types found.</p>
+            ) : (
+              types.map((t) => (
+                <Card key={t.id ?? t.name} className="shadow-sm">
+                  <CardHeader className="p-4 pb-2">
+                    <CardTitle className="text-base font-semibold">
+                      {t.name ?? ''}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-4 pb-2 pt-0 space-y-1">
+                    {t.tag && (
+                      <p className="text-xs text-gray-600">
+                        Tag:{' '}
+                        <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded">
+                          {t.tag}
+                        </span>
+                      </p>
+                    )}
+                    <p className="text-xs text-gray-700">
+                      {t.description || 'No description'}
+                    </p>
+                    {t.createdAt && (
+                      <p className="text-[11px] text-gray-500">
+                        Created: {new Date(String(t.createdAt)).toLocaleDateString()}
+                      </p>
+                    )}
+                  </CardContent>
+                  <CardFooter className="flex justify-end gap-2 px-4 pb-4 pt-0">
+                    <Link
+                      to={`/types/creation/${encodeURIComponent(String(t.id ?? ''))}`}
+                      className="mr-1"
+                    >
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="p-2 text-xs"
+                        icon={<FiEdit className="w-4 h-4" />}
+                      >
+                        Edit
+                      </Button>
+                    </Link>
                     <Button
-                      variant="ghost"
-                      className='p-2'
+                      variant="danger"
                       size="sm"
-                      icon={<FiEdit className="w-4 h-4" />}
-                    />
-                  </Link>
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    className='p-2'
-                    icon={<FiTrash className="w-4 h-4" />}
-                    onClick={() => handleDelete(t.id, t.name)}
-                    disabled={deletingId === t.id}
-                  />
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                      className="p-2 text-xs"
+                      icon={<FiTrash className="w-4 h-4" />}
+                      onClick={() => handleDelete(t.id, t.name)}
+                      disabled={deletingId === t.id}
+                    >
+                      Delete
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))
+            )}
+          </div>
+
+          {/* Desktop: table */}
+          <div className="hidden md:block">
+            <Table>
+              <TableHead>
+                <tr>
+                  <TableHeadCell>Name</TableHeadCell>
+                  <TableHeadCell>Tag</TableHeadCell>
+                  <TableHeadCell>Description</TableHeadCell>
+                  <TableHeadCell>Created</TableHeadCell>
+                  <TableHeadCell>Actions</TableHeadCell>
+                </tr>
+              </TableHead>
+              <TableBody>
+                {types.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6}>No types found.</TableCell>
+                  </TableRow>
+                )}
+
+                {types.map((t) => (
+                  <TableRow key={t.id ?? t.name}>
+                    <TableCell>{t.name ?? ''}</TableCell>
+                    <TableCell>{t.tag ?? ''}</TableCell>
+                    <TableCell>{t.description ?? ''}</TableCell>
+                    <TableCell>{t.createdAt ? new Date(String(t.createdAt)).toLocaleString() : ''}</TableCell>
+                    <TableCell>
+                      <Link
+                        to={`/types/creation/${encodeURIComponent(String(t.id ?? ''))}`}
+                        className='mr-2'
+                      >
+                        <Button
+                          variant="ghost"
+                          className='p-2'
+                          size="sm"
+                          icon={<FiEdit className="w-4 h-4" />}
+                        />
+                      </Link>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        className='p-2'
+                        icon={<FiTrash className="w-4 h-4" />}
+                        onClick={() => handleDelete(t.id, t.name)}
+                        disabled={deletingId === t.id}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </>
       )}
     </div>
   )

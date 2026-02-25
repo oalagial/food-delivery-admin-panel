@@ -4,7 +4,7 @@ import { FiCheckCircle, FiSlash } from 'react-icons/fi'
 import { getOrdersList } from '../utils/api'
 import type { OrderItem } from '../utils/api'
 import { Skeleton } from '../components/ui/skeleton'
-import { Card, CardContent } from '../components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../components/ui/card'
 import { Table, TableBody, TableHead, TableRow, TableCell, TableHeadCell } from '../components/ui/table'
 
 type OrderRowProps = {
@@ -14,6 +14,147 @@ type OrderRowProps = {
   onAccept: (id: string) => void;
   onReject: (id: string) => void;
 };
+
+type OrderCardProps = OrderRowProps;
+
+type OrderDetailsProps = {
+  order: OrderItem;
+};
+
+function OrderDetails({ order }: OrderDetailsProps) {
+  return (
+    <div className="p-4 space-y-3">
+      {/* Quick Info Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-6 gap-3 pb-3 border-b">
+        <div className="text-center">
+          <p className="text-xs text-gray-600 uppercase">Payment</p>
+          <p className="text-sm font-semibold">{order.paymentMethod}</p>
+        </div>
+        <div className="text-center">
+          <p className="text-xs text-gray-600 uppercase">Payment Status</p>
+          <span className="text-xs font-semibold px-2 py-1 rounded bg-yellow-100 text-yellow-800 inline-block">
+            {order.paymentStatus}
+          </span>
+        </div>
+        <div className="text-center">
+          <p className="text-xs text-gray-600 uppercase">Fee</p>
+          <p className="text-sm font-semibold">€{order.deliveryFee}</p>
+        </div>
+        <div className="text-center">
+          <p className="text-xs text-gray-600 uppercase">Discount</p>
+          <p className="text-sm font-semibold text-red-600">€{order.discount}</p>
+        </div>
+        <div>
+          <p className="text-xs text-gray-600 uppercase font-semibold mb-1">Customer</p>
+          <p className="font-semibold">{order.customer?.name}</p>
+          <p className="text-xs text-gray-600">{order.customer?.email}</p>
+          <p className="text-xs text-gray-600">{order.customer?.phone}</p>
+        </div>
+        <div>
+          <p className="text-xs text-gray-600 uppercase font-semibold mb-1">Delivery</p>
+          <p className="font-semibold">
+            {order.deliveryTime ? new Date(order.deliveryTime).toLocaleString() : '-'}
+          </p>
+          {order.notes && (
+            <p className="text-xs italic text-gray-600 mt-1">Note: {order.notes}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Items & Offers Combined */}
+      <div className="space-y-2 pb-3 border-b">
+        {order.products && order.products.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold text-gray-600 uppercase mb-1">
+              Products ({order.products.length})
+            </p>
+            <div className="space-y-1">
+              {order.products.map(p => (
+                <div key={p.id} className="text-xs p-2 bg-gray-50 rounded">
+                  <div className="flex justify-between">
+                    <span>
+                      <strong>{p.name}</strong> ×{p.quantity}
+                    </span>
+                    <span className="font-semibold">€{p.total}</span>
+                  </div>
+                  {p.extras && p.extras.length > 0 && (
+                    <div className="mt-1 ml-2 space-y-0.5">
+                      {p.extras.map((extra: any) => (
+                        <div key={extra.id} className="text-gray-600">
+                          • {extra.name} ×{extra.quantity}{' '}
+                          <span className="text-gray-500">(€{extra.price})</span>
+                        </div>
+                      ))}
+                      {p.extrasPrice && Number(p.extrasPrice) > 0 && (
+                        <div className="text-gray-700 font-semibold mt-0.5">
+                          Extras Total: €{p.extrasPrice}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {order.offers && order.offers.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold text-gray-600 uppercase mb-1">
+              Offers ({order.offers.length})
+            </p>
+            <div className="space-y-1">
+              {order.offers.map(o => (
+                <div
+                  key={o.id}
+                  className="text-xs p-2 bg-purple-50 rounded border border-purple-200"
+                >
+                  <div className="flex justify-between">
+                    <span>
+                      <strong>{o.name}</strong> ×{o.quantity}
+                    </span>
+                    <span className="font-semibold">€{o.total}</span>
+                  </div>
+                  {o.groups && o.groups.length > 0 && (
+                    <div className="mt-1 ml-2 text-gray-600">
+                      {o.groups.map((g: any) => (
+                        <div key={g.groupId}>
+                          {g.groupName}: <strong>{g.selectedItem?.name}</strong>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Price Summary */}
+      <div className="flex justify-end gap-8 text-sm">
+        <div>
+          <p className="text-xs text-gray-600">Subtotal</p>
+          <p className="font-semibold">€{order.subtotal}</p>
+        </div>
+        <div>
+          <p className="text-xs text-gray-600">Fee</p>
+          <p className="font-semibold">€{order.deliveryFee}</p>
+        </div>
+        {Number(order.discount) > 0 && (
+          <div>
+            <p className="text-xs text-gray-600">Discount</p>
+            <p className="font-semibold text-red-600">-€{order.discount}</p>
+          </div>
+        )}
+        <div className="text-right border-l pl-8">
+          <p className="text-xs text-gray-600">Total</p>
+          <p className="text-lg font-bold text-green-600">€{order.total}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function OrderRow({ order, isOpen, onToggle, onAccept, onReject }: OrderRowProps) {
   return (
@@ -81,121 +222,90 @@ function OrderRow({ order, isOpen, onToggle, onAccept, onReject }: OrderRowProps
       {isOpen && (
         <TableRow className="bg-gray-50">
           <TableCell colSpan={7}>
-            <div className="p-4 space-y-3">
-              {/* Quick Info Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-6 gap-3 pb-3 border-b">
-                <div className="text-center">
-                  <p className="text-xs text-gray-600 uppercase">Payment</p>
-                  <p className="text-sm font-semibold">{order.paymentMethod}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs text-gray-600 uppercase">Payment Status</p>
-                  <span className="text-xs font-semibold px-2 py-1 rounded bg-yellow-100 text-yellow-800 inline-block">{order.paymentStatus}</span>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs text-gray-600 uppercase">Fee</p>
-                  <p className="text-sm font-semibold">€{order.deliveryFee}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs text-gray-600 uppercase">Discount</p>
-                  <p className="text-sm font-semibold text-red-600">€{order.discount}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-600 uppercase font-semibold mb-1">Customer</p>
-                  <p className="font-semibold">{order.customer?.name}</p>
-                  <p className="text-xs text-gray-600">{order.customer?.email}</p>
-                  <p className="text-xs text-gray-600">{order.customer?.phone}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-600 uppercase font-semibold mb-1">Delivery</p>
-                  <p className="font-semibold">{new Date(order.deliveryTime).toLocaleString()}</p>
-                  {order.notes && <p className="text-xs italic text-gray-600 mt-1">Note: {order.notes}</p>}
-                </div>
-                
-              </div>
-
-              {/* Items & Offers Combined */}
-              <div className="space-y-2 pb-3 border-b">
-                {order.products && order.products.length > 0 && (
-                  <div>
-                    <p className="text-xs font-semibold text-gray-600 uppercase mb-1">Products ({order.products.length})</p>
-                    <div className="space-y-1">
-                      {order.products.map(p => (
-                        <div key={p.id} className="text-xs p-2 bg-gray-50 rounded">
-                          <div className="flex justify-between">
-                            <span><strong>{p.name}</strong> ×{p.quantity}</span>
-                            <span className="font-semibold">€{p.total}</span>
-                          </div>
-                          {p.extras && p.extras.length > 0 && (
-                            <div className="mt-1 ml-2 space-y-0.5">
-                              {p.extras.map((extra: any) => (
-                                <div key={extra.id} className="text-gray-600">
-                                  • {extra.name} ×{extra.quantity} <span className="text-gray-500">(€{extra.price})</span>
-                                </div>
-                              ))}
-                              {p.extrasPrice && Number(p.extrasPrice) > 0 && (
-                                <div className="text-gray-700 font-semibold mt-0.5">
-                                  Extras Total: €{p.extrasPrice}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {order.offers && order.offers.length > 0 && (
-                  <div>
-                    <p className="text-xs font-semibold text-gray-600 uppercase mb-1">Offers ({order.offers.length})</p>
-                    <div className="space-y-1">
-                      {order.offers.map(o => (
-                        <div key={o.id} className="text-xs p-2 bg-purple-50 rounded border border-purple-200">
-                          <div className="flex justify-between">
-                            <span><strong>{o.name}</strong> ×{o.quantity}</span>
-                            <span className="font-semibold">€{o.total}</span>
-                          </div>
-                          {o.groups && o.groups.length > 0 && (
-                            <div className="mt-1 ml-2 text-gray-600">
-                              {o.groups.map((g: any) => (
-                                <div key={g.groupId}>{g.groupName}: <strong>{g.selectedItem?.name}</strong></div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Price Summary */}
-              <div className="flex justify-end gap-8 text-sm">
-                <div>
-                  <p className="text-xs text-gray-600">Subtotal</p>
-                  <p className="font-semibold">€{order.subtotal}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-600">Fee</p>
-                  <p className="font-semibold">€{order.deliveryFee}</p>
-                </div>
-                {Number(order.discount) > 0 && (
-                  <div>
-                    <p className="text-xs text-gray-600">Discount</p>
-                    <p className="font-semibold text-red-600">-€{order.discount}</p>
-                  </div>
-                )}
-                <div className="text-right border-l pl-8">
-                  <p className="text-xs text-gray-600">Total</p>
-                  <p className="text-lg font-bold text-green-600">€{order.total}</p>
-                </div>
-              </div>
-            </div>
+            <OrderDetails order={order} />
           </TableCell>
         </TableRow>
       )}
     </>
+  );
+}
+
+function OrderCard({ order, isOpen, onToggle, onAccept, onReject }: OrderCardProps) {
+  return (
+    <Card className="shadow-sm">
+      <CardHeader
+        className="flex flex-row items-center justify-between space-y-0 p-4 pb-2"
+        onClick={onToggle}
+      >
+        <div>
+          <CardTitle className="text-base font-semibold">
+            #{order.id}{' '}
+            <span className="text-xs font-normal text-gray-500">
+              {order.createdAt
+                ? new Date(order.createdAt).toLocaleDateString()
+                : ''}
+            </span>
+          </CardTitle>
+          <p className="text-xs text-gray-600">
+            {order.restaurant?.name ?? ''} • {order.deliveryLocation?.name ?? ''}
+          </p>
+        </div>
+        <span
+          className={`px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
+            order.status === 'DELIVERED'
+              ? 'bg-green-100 text-green-800'
+              : order.status === 'PENDING'
+              ? 'bg-yellow-100 text-yellow-800'
+              : order.status === 'CANCELLED'
+              ? 'bg-red-100 text-red-800'
+              : 'bg-blue-100 text-blue-800'
+          }`}
+        >
+          {order.status}
+        </span>
+      </CardHeader>
+
+      <CardContent className="px-4 pb-2 pt-0 space-y-1" onClick={onToggle}>
+        <p className="text-sm">
+          <span className="font-semibold">{order.customer?.name}</span>
+        </p>
+        <p className="text-xs text-gray-600">
+          Total:{' '}
+          <span className="font-semibold text-green-600">€{order.total}</span>{' '}
+          <span className="text-gray-500">(Subtotal €{order.subtotal})</span>
+        </p>
+      </CardContent>
+
+      <CardFooter className="flex justify-between items-center px-4 pb-4 pt-0 gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onToggle}
+        >
+          {isOpen ? 'Hide details' : 'Details'}
+        </Button>
+        <div className="flex gap-1">
+          <Button
+            variant="primary"
+            size="sm"
+            icon={<FiCheckCircle className="w-4 h-4" />}
+            onClick={() => onAccept(String(order.id))}
+          />
+          <Button
+            variant="danger"
+            size="sm"
+            icon={<FiSlash className="w-4 h-4" />}
+            onClick={() => onReject(String(order.id))}
+          />
+        </div>
+      </CardFooter>
+
+      {isOpen && (
+        <div className="border-t border-gray-100">
+          <OrderDetails order={order} />
+        </div>
+      )}
+    </Card>
   );
 }
 
@@ -292,31 +402,48 @@ export default function Orders() {
         </Card>
       ) : (
         <>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableHeadCell>Order</TableHeadCell>
-                <TableHeadCell>Restaurant</TableHeadCell>
-                <TableHeadCell>Delivery Location</TableHeadCell>
-                <TableHeadCell>Customer</TableHeadCell>
-                <TableHeadCell>Price</TableHeadCell>
-                <TableHeadCell>Status</TableHeadCell>
-                <TableHeadCell>Actions</TableHeadCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {items.map(it => (
-                <OrderRow
-                  key={String(it.id)}
-                  order={it}
-                  isOpen={openRowId === String(it.id)}
-                  onToggle={() => toggleRow(it.id ?? '')}
-                  onAccept={acceptOrder}
-                  onReject={rejectOrder}
-                />
-              ))}
-            </TableBody>
-          </Table>
+          {/* Mobile: card layout */}
+          <div className="space-y-3 md:hidden">
+            {items.map(it => (
+              <OrderCard
+                key={String(it.id)}
+                order={it}
+                isOpen={openRowId === String(it.id)}
+                onToggle={() => toggleRow(it.id ?? '')}
+                onAccept={acceptOrder}
+                onReject={rejectOrder}
+              />
+            ))}
+          </div>
+
+          {/* Desktop: table layout */}
+          <div className="hidden md:block">
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableHeadCell>Order</TableHeadCell>
+                  <TableHeadCell>Restaurant</TableHeadCell>
+                  <TableHeadCell>Delivery Location</TableHeadCell>
+                  <TableHeadCell>Customer</TableHeadCell>
+                  <TableHeadCell>Price</TableHeadCell>
+                  <TableHeadCell>Status</TableHeadCell>
+                  <TableHeadCell>Actions</TableHeadCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {items.map(it => (
+                  <OrderRow
+                    key={String(it.id)}
+                    order={it}
+                    isOpen={openRowId === String(it.id)}
+                    onToggle={() => toggleRow(it.id ?? '')}
+                    onAccept={acceptOrder}
+                    onReject={rejectOrder}
+                  />
+                ))}
+              </TableBody>
+            </Table>
+          </div>
 
           {/* Enhanced Pagination Controls */}
           <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-2">

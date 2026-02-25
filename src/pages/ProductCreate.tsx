@@ -8,6 +8,16 @@ import { Alert, AlertDescription } from '../components/ui/alert'
 import { AlertCircle } from 'lucide-react'
 import { createProduct, getProductById, updateProduct, updateProductImage, getTypesList, getExtrasByProduct, getProductDiscount, ProductAllergy } from '../utils/api'
 import type { CreateProductPayload, ProductDiscount, ProductExtra } from '../utils/api'
+
+const ProductLabel = {
+  GLUTEN_FREE: 'GLUTEN_FREE',
+  LACTOSE_FREE: 'LACTOSE_FREE',
+  VEGAN: 'VEGAN',
+  VEGETARIAN: 'VEGETARIAN',
+} as const;
+
+type ProductLabel = typeof ProductLabel[keyof typeof ProductLabel];
+
 import { Select } from '../components/ui/select';
 import { API_BASE } from '../config';
 
@@ -31,70 +41,70 @@ type ProductDiscountRowProps = {
 
 function ProductDiscountRow({ discount, index, onChange, onRemove }: ProductDiscountRowProps) {
   return (
-      <div className="rounded-lg border bg-gray-300 p-4">
-          <div className="flex justify-end">
-            <Button
-              type="button"
-              className="text-red-600 text-xs font-bold"
-              variant="default"
-              onClick={() => onRemove(index)}
-            >
-              Remove Discount
-            </Button>
-          </div>
-        <div className="grid grid-cols-[1fr_1fr_2fr_2fr_auto] gap-2 items-end">
-          <div className="flex flex-col">
-            <Label className="mb-3">Type *</Label>
-            <select
-              value={discount.type}
-              onChange={(e) => onChange(index, 'type', e.target.value)}
-              className="border rounded px-2 py-1 h-9"
-            >
-              <option value="FIXED">Fixed</option>
-              <option value="PERCENTAGE">Percentage</option>
-            </select>
-          </div>
-
-          <div className="flex flex-col">
-            <Label className="mb-2">{ discount.type === 'FIXED' ? 'Fixed Discount (€)' : 'Discount (%)' }</Label>
-            <Input
-              type="number"
-              step="0.01"
-              value={discount.value}
-              onChange={(e) => onChange(index, 'value', Number(e.target.value))}
-            />
-          </div>
-
-          <div className="flex flex-col">
-            <Label className="mb-2">Starts At *</Label>
-            <Input
-              type="datetime-local"
-              value={utcToLocalDateTimeInput(discount.startsAt)}
-              onChange={(e) => onChange(index, 'startsAt', e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="flex flex-col">
-            <Label className="mb-2">Ends At</Label>
-            <Input
-              type="datetime-local"
-              value={utcToLocalDateTimeInput(discount.endsAt)}
-              onChange={(e) => onChange(index, 'endsAt', e.target.value)}
-            />
-          </div>
-
-          <div className="flex flex-col w-xs">
-            <Label className="mb-5 mt-2">Active</Label>
-            <input
-              type="checkbox"
-              className="h-4 w-4 rounded border-gray-300 mt-1"
-              checked={!!discount.isActive}
-              onChange={(e) => onChange(index, 'isActive', e.target.checked)}
-            />
-          </div>
+    <div className="rounded-lg border bg-gray-300 p-4">
+      <div className="flex justify-end">
+        <Button
+          type="button"
+          className="text-red-600 text-xs font-bold"
+          variant="default"
+          onClick={() => onRemove(index)}
+        >
+          Remove Discount
+        </Button>
+      </div>
+      <div className="grid grid-cols-[1fr_1fr_2fr_2fr_auto] gap-2 items-end">
+        <div className="flex flex-col">
+          <Label className="mb-3">Type *</Label>
+          <select
+            value={discount.type}
+            onChange={(e) => onChange(index, 'type', e.target.value)}
+            className="border rounded px-2 py-1 h-9"
+          >
+            <option value="FIXED">Fixed</option>
+            <option value="PERCENTAGE">Percentage</option>
+          </select>
         </div>
-      </div>)
+
+        <div className="flex flex-col">
+          <Label className="mb-2">{discount.type === 'FIXED' ? 'Fixed Discount (€)' : 'Discount (%)'}</Label>
+          <Input
+            type="number"
+            step="0.01"
+            value={discount.value}
+            onChange={(e) => onChange(index, 'value', Number(e.target.value))}
+          />
+        </div>
+
+        <div className="flex flex-col">
+          <Label className="mb-2">Starts At *</Label>
+          <Input
+            type="datetime-local"
+            value={utcToLocalDateTimeInput(discount.startsAt)}
+            onChange={(e) => onChange(index, 'startsAt', e.target.value)}
+            required
+          />
+        </div>
+
+        <div className="flex flex-col">
+          <Label className="mb-2">Ends At</Label>
+          <Input
+            type="datetime-local"
+            value={utcToLocalDateTimeInput(discount.endsAt)}
+            onChange={(e) => onChange(index, 'endsAt', e.target.value)}
+          />
+        </div>
+
+        <div className="flex flex-col w-xs">
+          <Label className="mb-5 mt-2">Active</Label>
+          <input
+            type="checkbox"
+            className="h-4 w-4 rounded border-gray-300 mt-1"
+            checked={!!discount.isActive}
+            onChange={(e) => onChange(index, 'isActive', e.target.checked)}
+          />
+        </div>
+      </div>
+    </div>)
 }
 
 type ProductDiscountsProps = {
@@ -141,9 +151,9 @@ function ProductDiscounts({ discounts, setDiscounts, productId }: ProductDiscoun
         />
       ))}
 
-      <Button 
+      <Button
         className='mt-2'
-        type="button" 
+        type="button"
         onClick={addDiscount}>
         Add Discount
       </Button>
@@ -164,12 +174,12 @@ export default function ProductCreate() {
   const [loading, setLoading] = useState(true)
   const [productExtras, setProductExtras] = useState<ProductExtra[]>([])
   const [productDiscount, setProductDiscount] = useState<ProductDiscount[]>([]);
-  
+
   // Keep a raw ingredients text input so typing a trailing comma doesn't get trimmed away
   const [ingredientsInput, setIngredientsInput] = useState('')
   const [selectedAllergies, setSelectedAllergies] = useState<ProductAllergy[]>([])
 
-  const [form, setForm] = useState<Partial<CreateProductPayload>>({
+  const [form, setForm] = useState<Partial<CreateProductPayload> & { labels: ProductLabel[] }>({
     name: '',
     description: '',
     image: '',
@@ -180,6 +190,7 @@ export default function ProductCreate() {
     isAvailable: true,
     stockQuantity: undefined,
     vatRate: undefined,
+    labels: [] as ProductLabel[],
   })
 
   useEffect(() => {
@@ -211,6 +222,7 @@ export default function ProductCreate() {
           isAvailable: p.isAvailable,
           stockQuantity: p.stockQuantity ?? undefined,
           vatRate: p.vatRate,
+          labels: (Array.isArray(p.labels) ? p.labels : []) as ProductLabel[],
         })
         setIngredientsInput(Array.isArray(p.ingredients) ? p.ingredients.join(', ') : '')
         setSelectedAllergies(Array.isArray(p.allergies) ? p.allergies : [])
@@ -237,8 +249,8 @@ export default function ProductCreate() {
         })));
       }
     })
-    .catch((e) => { if (mounted) setError(String(e)) })
-    .finally(() => { if (mounted) setLoading(false) } )
+      .catch((e) => { if (mounted) setError(String(e)) })
+      .finally(() => { if (mounted) setLoading(false) })
     return () => { mounted = false }
   }, [id])
 
@@ -299,6 +311,7 @@ export default function ProductCreate() {
       isAvailable: !!form.isAvailable,
       stockQuantity: form.stockQuantity != null ? Number(form.stockQuantity) : null,
       vatRate: form.vatRate,
+      labels: form.labels || [],
     }
 
     try {
@@ -311,7 +324,7 @@ export default function ProductCreate() {
             name: extra.name,
             price: Number(extra.price)
           }))
-        
+
         payload.discounts = productDiscount
           .map(discount => ({
             id: discount.id ? Number(discount.id) : undefined,
@@ -321,13 +334,13 @@ export default function ProductCreate() {
             endsAt: discount.endsAt ? new Date(discount.endsAt).toISOString() : undefined,
             isActive: discount.isActive
           }))
-        
+
         // Remove image from payload - it will be sent separately if needed
         delete payload.image
-        
+
         // First, update product data without image (classic JSON request)
         await updateProduct(id, payload)
-        
+
         // Then, if there's an image, upload it separately using FormData
         if (selectedFile) {
           await updateProductImage(id, selectedFile)
@@ -340,7 +353,7 @@ export default function ProductCreate() {
             name: extra.name,
             price: Number(extra.price)
           }))
-        
+
         payload.discounts = productDiscount
           .map(discount => ({
             type: discount.type,
@@ -349,16 +362,16 @@ export default function ProductCreate() {
             endsAt: discount.endsAt ? new Date(discount.endsAt).toISOString() : undefined,
             isActive: discount.isActive
           }))
-        
+
         // Remove image from payload - it will be sent separately if needed
         delete payload.image
-        
+
         // First, create product without image (JSON request)
         const createdProduct = await createProduct(payload, undefined)
-        
+
         // Extract the product ID from the response
         const createdProductId = (createdProduct as any)?.id || (createdProduct as any)?.data?.id
-        
+
         // Then, if there's an image, upload it separately using FormData
         if (selectedFile && createdProductId) {
           await updateProductImage(createdProductId, selectedFile)
@@ -383,7 +396,7 @@ export default function ProductCreate() {
           <CardContent className="pt-6">Loading...</CardContent>
         </Card>
       ) : (
-        <Card className="shadow-md">  
+        <Card className="shadow-md">
           <CardHeader>
             <CardTitle>{id ? 'Update Product' : 'New Product'}</CardTitle>
             <CardDescription>Fill in the product details below</CardDescription>
@@ -392,13 +405,13 @@ export default function ProductCreate() {
             <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="name">Product Name *</Label>
-                <Input 
+                <Input
                   id="name"
                   className="mt-2 w-full"
-                  value={form.name as string} 
-                  onChange={(e) => setForm(s => ({...s, name: e.target.value}))} 
-                  placeholder="Product name" 
-                  required 
+                  value={form.name as string}
+                  onChange={(e) => setForm(s => ({ ...s, name: e.target.value }))}
+                  placeholder="Product name"
+                  required
                 />
               </div>
 
@@ -408,7 +421,7 @@ export default function ProductCreate() {
                   id="description"
                   className="mt-2 w-full border rounded px-3 py-2 min-h-[100px] resize-y"
                   value={form.description as string}
-                  onChange={(e) => setForm(s => ({...s, description: e.target.value}))}
+                  onChange={(e) => setForm(s => ({ ...s, description: e.target.value }))}
                   placeholder="Product description"
                 />
               </div>
@@ -485,7 +498,7 @@ export default function ProductCreate() {
                   id="ingredients"
                   className="mt-2 w-full"
                   value={ingredientsInput}
-                  onChange={(e)=> setIngredientsInput(e.target.value)}
+                  onChange={(e) => setIngredientsInput(e.target.value)}
                   placeholder="Tomato, Cheese, Basil"
                 />
               </div>
@@ -517,20 +530,45 @@ export default function ProductCreate() {
               </div>
 
               <div>
+                <Label>Product Labels</Label>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {Object.values(ProductLabel).map(label => (
+                    <label key={label} className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={form.labels?.includes(label)}
+                        onChange={e => {
+                          setForm(s => {
+                            const labels = s.labels || [];
+                            if (e.target.checked) {
+                              return { ...s, labels: [...labels, label] };
+                            } else {
+                              return { ...s, labels: labels.filter(l => l !== label) };
+                            }
+                          });
+                        }}
+                      />
+                      <span className="text-xs">{label.replace('_', ' ').replace(/_/g, ' ')}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
                 <Label htmlFor="image">Image</Label>
                 <div className="mt-2 space-y-4">
                   <div className="flex items-center gap-4">
-                    <input 
+                    <input
                       ref={fileInputRef}
-                      id="image-input" 
-                      type="file" 
-                      accept="image/*" 
-                      className="hidden" 
-                      onChange={handleFileSelect} 
+                      id="image-input"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleFileSelect}
                     />
-                    <Button 
-                      variant="primary" 
-                      type="button" 
+                    <Button
+                      variant="primary"
+                      type="button"
                       onClick={handleChooseImageClick}
                     >
                       Choose Image
@@ -544,39 +582,39 @@ export default function ProductCreate() {
                   </div>
                   {imagePreview && (
                     <div className="mt-2">
-                      <img 
-                        src={imagePreview} 
-                        alt="Preview" 
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
                         className="w-32 h-32 object-cover rounded border"
                       />
                     </div>
                   )}
                   {!imagePreview && form.image && (
                     <div className="mt-2">
-                      <img 
-                        src={`${API_BASE}/images/${form.image}`} 
-                        alt="Current" 
+                      <img
+                        src={`${API_BASE}/images/${form.image}`}
+                        alt="Current"
                         className="w-32 h-32 object-cover rounded border"
                       />
                     </div>
                   )}
                 </div>
               </div>
-              
+
               <div className="flex items-end gap-3">
-                <input 
+                <input
                   id="available"
-                  type="checkbox" 
-                  checked={!!form.isAvailable} 
-                  onChange={(e)=> setForm(s=>({...s, isAvailable: e.target.checked}))}
+                  type="checkbox"
+                  checked={!!form.isAvailable}
+                  onChange={(e) => setForm(s => ({ ...s, isAvailable: e.target.checked }))}
                   className="h-4 w-4 rounded border-gray-300"
                 />
                 <Label htmlFor="available" className="mb-0 cursor-pointer">Available for order</Label>
               </div>
-              
+
               <div className="col-span-2">
                 <Label className="block mb-2">Product Extras</Label>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   {productExtras.map((extra, index) => (
                     <div
@@ -626,7 +664,7 @@ export default function ProductCreate() {
                 <div>
                   <Button
                     className='mt-2'
-                    type="button" 
+                    type="button"
                     onClick={addExtra}
                   > Add Extra
                   </Button>
@@ -640,8 +678,8 @@ export default function ProductCreate() {
                   setDiscounts={setProductDiscount}
                   productId={id}
                 />
-              
-              </div>  
+
+              </div>
 
 
 
@@ -658,12 +696,12 @@ export default function ProductCreate() {
               </div>
             </form>
           </CardContent>
-        </Card> 
+        </Card>
       )
       }
 
-     
-      
+
+
     </div>
   )
 }

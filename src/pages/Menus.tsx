@@ -7,6 +7,7 @@ import { getMenusList, restoreMenu, deleteMenu } from '../utils/api'
 import type { MenuItem } from '../utils/api'
 import { Skeleton } from '../components/ui/skeleton'
 import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert'
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/card'
 
 export default function Menus() {
   const [menus, setMenus] = useState<MenuItem[]>([])
@@ -131,12 +132,20 @@ export default function Menus() {
       )}
 
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Menus</h1>
             <p className="text-gray-600 mt-1">Organize products into menus</p>
           </div>
-          <Link to="/menus/creation"><Button variant="primary" icon={<FiPlus className="w-5 h-5" />} className="px-6 py-3 text-base">Create Menu</Button></Link>
+          <Link to="/menus/creation" className="w-full sm:w-auto">
+            <Button
+              variant="primary"
+              icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
+              className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
+            >
+              <span className="sm:inline">Create Menu</span>
+            </Button>
+          </Link>
         </div>
 
         {loading ? (
@@ -165,55 +174,129 @@ export default function Menus() {
           <>
             <div>
               <h2 className="text-2xl font-semibold text-gray-800 mb-4">Active Menus</h2>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableHeadCell>Name</TableHeadCell>
-                    <TableHeadCell>Description</TableHeadCell>
-                    <TableHeadCell>Restaurant</TableHeadCell>
-                    <TableHeadCell>Sections</TableHeadCell>
-                    <TableHeadCell>Created</TableHeadCell>
-                    <TableHeadCell>Actions</TableHeadCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {activeMenus.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={6}>No active menus found.</TableCell>
-                    </TableRow>
-                  )}
-                  {activeMenus.map((m) => {
+
+              {/* Mobile: cards */}
+              <div className="space-y-3 md:hidden">
+                {activeMenus.length === 0 ? (
+                  <p className="text-sm text-gray-500">No active menus found.</p>
+                ) : (
+                  activeMenus.map((m) => {
                     const anyMenu = m as unknown as Record<string, unknown>
                     const restaurant = (anyMenu.restaurant as any) || null
+                    const sectionsLabel =
+                      Array.isArray((m as any).sections) && (m as any).sections.length > 0
+                        ? (m as any).sections.map((s: any) => s?.name ?? s?.id).join(', ')
+                        : (m.sectionIds || []).length
+
                     return (
-                      <TableRow key={String(m.id)}>
-                        <TableCell>{m.name}</TableCell>
-                        <TableCell>{m.description}</TableCell>
-                        <TableCell>{restaurant?.name || ''}</TableCell>
-                        <TableCell>
-                          {Array.isArray((m as any).sections) && (m as any).sections.length > 0
-                            ? (m as any).sections.map((s: any) => s?.name ?? s?.id).join(', ')
-                            : (m.sectionIds || []).length}
-                        </TableCell>
-                        <TableCell>{m.createdAt ? new Date(String(m.createdAt)).toLocaleString() : ''}</TableCell>
-                        <TableCell>
-                          <div className="flex justify-center gap-2">
-                            <Link to={`/menus/creation/${m.id}`}>
-                              <Button size="sm" variant="ghost" icon={<FiEdit className="w-4 h-4" />}></Button>
-                            </Link>
-                            <Button 
-                              variant="danger" 
-                              size="sm" 
-                              icon={<FiTrash className="w-4 h-4" />} 
-                              onClick={() => handleDelete(m.id ?? '', m.name ?? '')}
-                            ></Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
+                      <Card key={String(m.id)} className="shadow-sm">
+                        <CardHeader className="p-4 pb-2">
+                          <CardTitle className="text-base font-semibold">
+                            {m.name}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="px-4 pb-2 pt-0 space-y-1 text-xs text-gray-700">
+                          <p className="text-gray-700">
+                            {m.description || 'No description'}
+                          </p>
+                          <p className="text-gray-600">
+                            Restaurant:{' '}
+                            <span className="font-medium">
+                              {restaurant?.name || '—'}
+                            </span>
+                          </p>
+                          <p className="text-gray-600">
+                            Sections:{' '}
+                            <span className="font-medium">
+                              {sectionsLabel || '—'}
+                            </span>
+                          </p>
+                          {m.createdAt && (
+                            <p className="text-[11px] text-gray-500">
+                              Created:{' '}
+                              {new Date(String(m.createdAt)).toLocaleDateString()}
+                            </p>
+                          )}
+                        </CardContent>
+                        <CardFooter className="flex justify-end gap-2 px-4 pb-4 pt-0">
+                          <Link to={`/menus/creation/${m.id}`}>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="p-2 text-xs"
+                              icon={<FiEdit className="w-4 h-4" />}
+                            >
+                              Edit
+                            </Button>
+                          </Link>
+                          <Button 
+                            variant="danger" 
+                            size="sm" 
+                            className="p-2 text-xs"
+                            icon={<FiTrash className="w-4 h-4" />} 
+                            onClick={() => handleDelete(m.id ?? '', m.name ?? '')}
+                          >
+                            Delete
+                          </Button>
+                        </CardFooter>
+                      </Card>
                     )
-                  })}
-                </TableBody>
-              </Table>
+                  })
+                )}
+              </div>
+
+              {/* Desktop: table */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableHeadCell>Name</TableHeadCell>
+                      <TableHeadCell>Description</TableHeadCell>
+                      <TableHeadCell>Restaurant</TableHeadCell>
+                      <TableHeadCell>Sections</TableHeadCell>
+                      <TableHeadCell>Created</TableHeadCell>
+                      <TableHeadCell>Actions</TableHeadCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {activeMenus.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6}>No active menus found.</TableCell>
+                      </TableRow>
+                    )}
+                    {activeMenus.map((m) => {
+                      const anyMenu = m as unknown as Record<string, unknown>
+                      const restaurant = (anyMenu.restaurant as any) || null
+                      return (
+                        <TableRow key={String(m.id)}>
+                          <TableCell>{m.name}</TableCell>
+                          <TableCell>{m.description}</TableCell>
+                          <TableCell>{restaurant?.name || ''}</TableCell>
+                          <TableCell>
+                            {Array.isArray((m as any).sections) && (m as any).sections.length > 0
+                              ? (m as any).sections.map((s: any) => s?.name ?? s?.id).join(', ')
+                              : (m.sectionIds || []).length}
+                          </TableCell>
+                          <TableCell>{m.createdAt ? new Date(String(m.createdAt)).toLocaleString() : ''}</TableCell>
+                          <TableCell>
+                            <div className="flex justify-center gap-2">
+                              <Link to={`/menus/creation/${m.id}`}>
+                                <Button size="sm" variant="ghost" icon={<FiEdit className="w-4 h-4" />}></Button>
+                              </Link>
+                              <Button 
+                                variant="danger" 
+                                size="sm" 
+                                icon={<FiTrash className="w-4 h-4" />} 
+                                onClick={() => handleDelete(m.id ?? '', m.name ?? '')}
+                              ></Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
 
             {deletedMenus.length > 0 && (

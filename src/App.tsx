@@ -1,6 +1,12 @@
 import './App.css'
-import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { useEffect, useState } from 'react'
+import Header from './components/Header'
+import Login from './pages/Login'
+import SetPassword from './pages/SetPassword'
+import RequireAuth from './components/RequireAuth'
+import { getToken } from './utils/api'
+import { Sidebar } from './components/Sidebar'
 import Dashboard from './pages/Dashboard'
 import Stats from './pages/Stats'
 import Orders from './pages/Orders'
@@ -20,28 +26,57 @@ import Menus from './pages/Menus'
 import MenuCreate from './pages/MenuCreate'
 import Sections from './pages/Sections'
 import SectionCreate from './pages/SectionCreate'
-import Header from './components/Header'
-import Login from './pages/Login'
-import SetPassword from './pages/SetPassword'
-import RequireAuth from './components/RequireAuth'
-import { getToken } from './utils/api'
-import { FiHome, FiShoppingCart, FiCoffee, FiMapPin, FiUsers, FiShield, FiTag, FiBox, FiList, FiLayers, FiBarChart2 } from 'react-icons/fi'
 import Offers from './pages/Offers'
 import OfferCreate from './pages/OfferCreate'
 import CustomerCollection from './pages/CustomerCollection'
 import Coupons from './pages/Coupons'
 
-function NavSection({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="mt-8 first:mt-0">
-      <div className="text-xs font-bold text-blue-800 uppercase tracking-wider mb-4 px-4">{title}</div>
-      <div className="space-y-1">{children}</div>
-    </div>
-  )
+type RouteConfig = {
+  path: string
+  element: React.ReactElement
+  protected?: boolean
 }
+
+const routes: RouteConfig[] = [
+  { path: '/login', element: <Login /> },
+  { path: '/dashboard', element: <Dashboard />, protected: true },
+  { path: '/orders', element: <Orders />, protected: true },
+  { path: '/stats', element: <Stats />, protected: true },
+  { path: '/restaurant', element: <Restaurant />, protected: true },
+  { path: '/restaurant/creation', element: <RestaurantCreate />, protected: true },
+  { path: '/restaurant/creation/:id', element: <RestaurantCreate />, protected: true },
+  { path: '/delivery-locations', element: <DeliveryLocations />, protected: true },
+  { path: '/delivery-locations/creation', element: <DeliveryLocationCreate />, protected: true },
+  { path: '/delivery-locations/creation/:id', element: <DeliveryLocationCreate />, protected: true },
+  { path: '/types', element: <Types />, protected: true },
+  { path: '/types/creation', element: <TypeCreate />, protected: true },
+  { path: '/types/creation/:id', element: <TypeCreate />, protected: true },
+  { path: '/products', element: <Products />, protected: true },
+  { path: '/products/creation', element: <ProductCreate />, protected: true },
+  { path: '/products/creation/:id', element: <ProductCreate />, protected: true },
+  { path: '/menus', element: <Menus />, protected: true },
+  { path: '/menus/creation', element: <MenuCreate />, protected: true },
+  { path: '/menus/creation/:id', element: <MenuCreate />, protected: true },
+  { path: '/sections', element: <Sections />, protected: true },
+  { path: '/sections/creation', element: <SectionCreate />, protected: true },
+  { path: '/sections/creation/:id', element: <SectionCreate />, protected: true },
+  { path: '/users', element: <Users />, protected: true },
+  { path: '/users/creation', element: <UserCreate />, protected: true },
+  { path: '/users/creation/:id', element: <UserCreate />, protected: true },
+  { path: '/roles', element: <Roles />, protected: true },
+  { path: '/roles/creation', element: <RoleCreate />, protected: true },
+  { path: '/roles/creation/:id', element: <RoleCreate />, protected: true },
+  { path: '/offers', element: <Offers />, protected: true },
+  { path: '/offers/creation', element: <OfferCreate />, protected: true },
+  { path: '/offers/creation/:id', element: <OfferCreate />, protected: true },
+  { path: '/customers', element: <CustomerCollection />, protected: true },
+  { path: '/coupons', element: <Coupons />, protected: true },
+  { path: '/', element: <Dashboard />, protected: true },
+]
 
 function App() {
   const [token, setToken] = useState<string | null>(getToken())
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
     const update = () => setToken(getToken())
@@ -69,224 +104,29 @@ function App() {
   return (
     <BrowserRouter>
       <div className="app-root">
-        <aside className="sidebar">
-          <div className="sidebar-header">
-            <div className="sidebar-logo">
-              {/* <FiMapPin className="w-6 h-6 text-white" /> */}
-              <img src="/logo.png" alt="Image"  style={{ width: "100px", height: "auto" }}/>
-            </div>
-          </div>
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 z-30 bg-black/40 md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
 
-          <nav className="sidebar-nav">
-            <NavSection title="MANAGEMENT">
-              <ul className="space-y-1">
-                <li>
-                  <NavLink
-                    to="/dashboard"
-                    className={({ isActive }) =>
-                      `nav-link ${isActive ? 'active' : ''}`
-                    }
-                  >
-                    <FiHome className="w-5 h-5" />
-                    <span>Dashboard</span>
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink
-                    to="/orders"
-                    className={({ isActive }) =>
-                      `nav-link ${isActive ? 'active' : ''}`
-                    }
-                  >
-                    <FiShoppingCart className="w-5 h-5" />
-                    <span>Orders</span>
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink
-                    to="/stats"
-                    className={({ isActive }) =>
-                      `nav-link ${isActive ? 'active' : ''}`
-                    }
-                  >
-                    <FiBarChart2 className="w-5 h-5" />
-                    <span>Statistics</span>
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink
-                    to="/restaurant"
-                    className={({ isActive }) =>
-                      `nav-link ${isActive ? 'active' : ''}`
-                    }
-                  >
-                    <FiCoffee className="w-5 h-5" />
-                    <span>Restaurant</span>
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink
-                    to="/delivery-locations"
-                    className={({ isActive }) =>
-                      `nav-link ${isActive ? 'active' : ''}`
-                    }
-                  >
-                    <FiMapPin className="w-5 h-5" />
-                    <span>Delivery Locations</span>
-                  </NavLink>
-                </li>
-              </ul>
-            </NavSection>
-
-            <NavSection title="USER MANAGEMENT">
-              <ul className="space-y-1">
-                <li>
-                  <NavLink
-                    to="/users"
-                    className={({ isActive }) =>
-                      `nav-link ${isActive ? 'active' : ''}`
-                    }
-                  >
-                    <FiUsers className="w-5 h-5" />
-                    <span>Users</span>
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink
-                    to="/roles"
-                    className={({ isActive }) =>
-                      `nav-link ${isActive ? 'active' : ''}`
-                    }
-                  >
-                    <FiShield className="w-5 h-5" />
-                    <span>Roles</span>
-                  </NavLink>
-                </li>
-              </ul>
-            </NavSection>
-
-            <NavSection title="CONTENT">
-              <ul className="space-y-1">
-                <li>
-                  <NavLink
-                    to="/types"
-                    className={({ isActive }) =>
-                      `nav-link ${isActive ? 'active' : ''}`
-                    }
-                  >
-                    <FiTag className="w-5 h-5" />
-                    <span>Types</span>
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink
-                    to="/products"
-                    className={({ isActive }) =>
-                      `nav-link ${isActive ? 'active' : ''}`
-                    }
-                  >
-                    <FiBox className="w-5 h-5" />
-                    <span>Products</span>
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink
-                    to="/menus"
-                    className={({ isActive }) =>
-                      `nav-link ${isActive ? 'active' : ''}`
-                    }
-                  >
-                    <FiList className="w-5 h-5" />
-                    <span>Menus</span>
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink
-                    to="/sections"
-                    className={({ isActive }) =>
-                      `nav-link ${isActive ? 'active' : ''}`
-                    }
-                  >
-                    <FiLayers className="w-5 h-5" />
-                    <span>Sections</span>
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink
-                    to="/offers"
-                    className={({ isActive }) =>
-                      `nav-link ${isActive ? 'active' : ''}`
-                    }
-                  >
-                    <FiHome className="w-5 h-5" />
-                    <span>Offers</span>
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink
-                    to="/coupons"
-                    className={({ isActive }) =>
-                      `nav-link ${isActive ? 'active' : ''}`
-                    }
-                  >
-                    <FiTag className="w-5 h-5" />
-                    <span>Coupons</span>
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink
-                    to="/customers"
-                    className={({ isActive }) =>
-                      `nav-link ${isActive ? 'active' : ''}`
-                    }
-                  >
-                    <FiUsers className="w-5 h-5" />
-                    <span>Customers</span>
-                  </NavLink>
-                </li>
-              </ul>
-            </NavSection>
-          </nav>
-        </aside>
+        <Sidebar
+          isOpen={sidebarOpen}
+          onNavigate={() => setSidebarOpen(false)}
+        />
 
         <main className="main">
-          <Header />
+          <Header onToggleSidebar={() => setSidebarOpen((prev) => !prev)} />
           <div className="panel">
             <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
-              <Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} />
-              <Route path="/stats" element={<RequireAuth><Stats /></RequireAuth>} />
-              <Route path="/restaurant" element={<RequireAuth><Restaurant /></RequireAuth>} />
-              <Route path="/restaurant/creation" element={<RequireAuth><RestaurantCreate /></RequireAuth>} />
-              <Route path="/restaurant/creation/:id" element={<RequireAuth><RestaurantCreate /></RequireAuth>} />
-              <Route path="/delivery-locations" element={<RequireAuth><DeliveryLocations /></RequireAuth>} />
-              <Route path="/delivery-locations/creation" element={<RequireAuth><DeliveryLocationCreate /></RequireAuth>} />
-              <Route path="/delivery-locations/creation/:id" element={<RequireAuth><DeliveryLocationCreate /></RequireAuth>} />
-              <Route path="/types" element={<RequireAuth><Types /></RequireAuth>} />
-              <Route path="/types/creation" element={<RequireAuth><TypeCreate /></RequireAuth>} />
-              <Route path="/types/creation/:id" element={<RequireAuth><TypeCreate /></RequireAuth>} />
-              <Route path="/products" element={<RequireAuth><Products /></RequireAuth>} />
-              <Route path="/products/creation" element={<RequireAuth><ProductCreate /></RequireAuth>} />
-              <Route path="/products/creation/:id" element={<RequireAuth><ProductCreate /></RequireAuth>} />
-              <Route path="/menus" element={<RequireAuth><Menus /></RequireAuth>} />
-              <Route path="/menus/creation" element={<RequireAuth><MenuCreate /></RequireAuth>} />
-              <Route path="/menus/creation/:id" element={<RequireAuth><MenuCreate /></RequireAuth>} />
-              <Route path="/sections" element={<RequireAuth><Sections /></RequireAuth>} />
-              <Route path="/sections/creation" element={<RequireAuth><SectionCreate /></RequireAuth>} />
-              <Route path="/sections/creation/:id" element={<RequireAuth><SectionCreate /></RequireAuth>} />
-              <Route path="/users" element={<RequireAuth><Users /></RequireAuth>} />
-              <Route path="/users/creation" element={<RequireAuth><UserCreate /></RequireAuth>} />
-              <Route path="/users/creation/:id" element={<RequireAuth><UserCreate /></RequireAuth>} />
-              <Route path="/roles" element={<RequireAuth><Roles /></RequireAuth>} />
-              <Route path="/roles/creation" element={<RequireAuth><RoleCreate /></RequireAuth>} />
-              <Route path="/roles/creation/:id" element={<RequireAuth><RoleCreate /></RequireAuth>} />
-              <Route path="/offers" element={<RequireAuth><Offers /></RequireAuth>} />
-              <Route path="/coupons" element={<RequireAuth><Coupons /></RequireAuth>} />
-              <Route path="/offers/creation" element={<RequireAuth><OfferCreate /></RequireAuth>} />
-              <Route path="/offers/creation/:id" element={<RequireAuth><OfferCreate /></RequireAuth>} />
-              <Route path="/customers" element={<RequireAuth><CustomerCollection /></RequireAuth>} />
-              <Route path="/" element={<RequireAuth><Dashboard /></RequireAuth>} />
+              {routes.map(({ path, element, protected: isProtected }) => (
+                <Route
+                  key={path}
+                  path={path}
+                  element={isProtected ? <RequireAuth>{element}</RequireAuth> : element}
+                />
+              ))}
             </Routes>
           </div>
         </main>

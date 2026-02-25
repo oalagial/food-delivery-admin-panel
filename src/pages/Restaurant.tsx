@@ -7,6 +7,7 @@ import { getRestaurantsList, restoreRestaurant, deleteRestaurant } from '../util
 import type { Restaurant as RestaurantType } from '../utils/api'
 import { Skeleton } from '../components/ui/skeleton'
 import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert'
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/card'
 
 export default function Restaurant() {
   const [restaurants, setRestaurants] = useState<RestaurantType[]>([])
@@ -130,12 +131,20 @@ export default function Restaurant() {
       )}
 
       <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Restaurants</h1>
           <p className="text-gray-600 mt-1">Manage your restaurant locations</p>
         </div>
-        <Link to="/restaurant/creation"><Button variant="primary" icon={<FiPlus className="w-5 h-5" />} className="px-6 py-3 text-base">Create Restaurant</Button></Link>
+        <Link to="/restaurant/creation" className="w-full sm:w-auto">
+          <Button
+            variant="primary"
+            icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
+            className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
+          >
+            <span className="sm:inline">Create Restaurant</span>
+          </Button>
+        </Link>
       </div>
       {loading && (
         <Table>
@@ -164,144 +173,297 @@ export default function Restaurant() {
           </TableBody>
         </Table>
       )}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {error && <p className="text-red-600">{error}</p>}
       {!loading && (
         <>
           <div>
             <h2 className="text-2xl font-semibold text-gray-800 mb-4">Active Restaurants</h2>
-            <Table>
-              <TableHead>
-                <tr>
-              <TableHeadCell>Name</TableHeadCell>
-              <TableHeadCell>Address</TableHeadCell>
-              <TableHeadCell>City</TableHeadCell>
-              <TableHeadCell>Province</TableHeadCell>
-              <TableHeadCell>Zip</TableHeadCell>
-              <TableHeadCell>Country</TableHeadCell>
-              <TableHeadCell>Active Menu</TableHeadCell>
-              <TableHeadCell>Created</TableHeadCell>
-              <TableHeadCell>Opening Hours</TableHeadCell>
-              <TableHeadCell>Actions</TableHeadCell>
-                </tr>
-              </TableHead>
-              <TableBody>
-                {activeRestaurants.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={10}>No active restaurants found.</TableCell>
-                  </TableRow>
-                )}
-                {activeRestaurants.map((r) => {
+            {/* Mobile: cards */}
+            <div className="space-y-3 md:hidden">
+              {activeRestaurants.length === 0 ? (
+                <p className="text-sm text-gray-500">No active restaurants found.</p>
+              ) : (
+                activeRestaurants.map((r) => {
                   const anyRestaurant = r as unknown as Record<string, unknown>
                   const menu = anyRestaurant.menu as any
+                  const primaryHours =
+                    Array.isArray(r.openingHours) && r.openingHours.length > 0
+                      ? `${r.openingHours[0].day}: ${r.openingHours[0].open}-${r.openingHours[0].close}`
+                      : null
+
                   return (
-                    <TableRow key={r.id || r.name}>
-                      <TableCell>{r.name ?? ''}</TableCell>
-                      <TableCell>{r.address ?? ''}</TableCell>
-                      <TableCell>{r.city ?? ''}</TableCell>
-                      <TableCell>{r.province ?? ''}</TableCell>
-                      <TableCell>{r.zipCode ?? ''}</TableCell>
-                      <TableCell>{r.country ?? ''}</TableCell>
-                      <TableCell>
-                        {menu?.name ?? ''}
-                      </TableCell>
-                      <TableCell>{r.createdAt ? new Date(String(r.createdAt)).toLocaleString() : ''}</TableCell>
-                      <TableCell>
-                        {Array.isArray(r.openingHours) && r.openingHours.length > 0 ? (
-                          <>
-                            {`${r.openingHours[0].day}: ${r.openingHours[0].open}-${r.openingHours[0].close}`}
-                            {r.openingHours.length > 1 && (
-                              <span className="text-xs text-gray-500 ml-2">+{r.openingHours.length - 1} more</span>
-                            )}
-                          </>
-                        ) : (
-                          <span className="text-xs text-gray-400">No hours</span>
+                    <Card key={r.id || r.name} className="shadow-sm">
+                      <CardHeader className="p-4 pb-2">
+                        <CardTitle className="text-base font-semibold">
+                          {r.name ?? ''}
+                        </CardTitle>
+                        <p className="text-xs text-gray-600">
+                          {[r.city, r.province, r.country].filter(Boolean).join(', ')}
+                        </p>
+                      </CardHeader>
+                      <CardContent className="px-4 pb-2 pt-0 space-y-1">
+                        <p className="text-xs text-gray-700">
+                          {r.address ?? ''}{r.zipCode ? `, ${r.zipCode}` : ''}
+                        </p>
+                        {menu?.name && (
+                          <p className="text-xs text-gray-600">
+                            Active menu:{' '}
+                            <span className="font-medium text-gray-800">{menu.name}</span>
+                          </p>
                         )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <Link to={`/restaurant/creation/${encodeURIComponent(String(r.id ?? ''))}`} className='mr-2' ><Button variant="ghost" className='p-2' size="sm" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
-                          <Button variant="danger" size="sm" className='p-2' icon={<FiTrash className="w-4 h-4" />} onClick={() => handleDelete(r.id ?? '', r.name ?? '')}></Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                        {primaryHours ? (
+                          <p className="text-xs text-gray-600">
+                            Hours: <span className="font-medium">{primaryHours}</span>
+                            {Array.isArray(r.openingHours) && r.openingHours.length > 1 && (
+                              <span className="ml-1 text-gray-400">
+                                (+{r.openingHours.length - 1} more)
+                              </span>
+                            )}
+                          </p>
+                        ) : (
+                          <p className="text-xs text-gray-400">No opening hours</p>
+                        )}
+                        {r.createdAt && (
+                          <p className="text-[11px] text-gray-400">
+                            Created:{' '}
+                            {new Date(String(r.createdAt)).toLocaleDateString()}
+                          </p>
+                        )}
+                      </CardContent>
+                      <CardFooter className="flex justify-end gap-2 px-4 pb-4 pt-0">
+                        <Link
+                          to={`/restaurant/creation/${encodeURIComponent(String(r.id ?? ''))}`}
+                        >
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="p-2 text-xs"
+                            icon={<FiEdit className="w-4 h-4" />}
+                          >
+                            Edit
+                          </Button>
+                        </Link>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          className="p-2 text-xs"
+                          icon={<FiTrash className="w-4 h-4" />}
+                          onClick={() => handleDelete(r.id ?? '', r.name ?? '')}
+                        >
+                          Delete
+                        </Button>
+                      </CardFooter>
+                    </Card>
                   )
-                })}
-              </TableBody>
-            </Table>
-          </div>
-          
-          {deletedRestaurants.length > 0 && (
-            <div className="mt-8">
-              <h2 className="text-2xl font-semibold text-gray-600 mb-4">Deleted Restaurants</h2>
+                })
+              )}
+            </div>
+
+            {/* Desktop: table */}
+            <div className="hidden md:block">
               <Table>
                 <TableHead>
-                  <tr className="bg-gray-100">
-                    <TableHeadCell className="text-gray-600">Name</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">Address</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">City</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">Province</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">Zip</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">Country</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">Active Menu</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">Created</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">Opening Hours</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">Deleted By</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">Actions</TableHeadCell>
+                  <tr>
+                    <TableHeadCell>Name</TableHeadCell>
+                    <TableHeadCell>Address</TableHeadCell>
+                    <TableHeadCell>City</TableHeadCell>
+                    <TableHeadCell>Province</TableHeadCell>
+                    <TableHeadCell>Zip</TableHeadCell>
+                    <TableHeadCell>Country</TableHeadCell>
+                    <TableHeadCell>Active Menu</TableHeadCell>
+                    <TableHeadCell>Created</TableHeadCell>
+                    <TableHeadCell>Opening Hours</TableHeadCell>
+                    <TableHeadCell>Actions</TableHeadCell>
                   </tr>
                 </TableHead>
                 <TableBody>
-                  {deletedRestaurants.map((r) => {
+                  {activeRestaurants.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={10}>No active restaurants found.</TableCell>
+                    </TableRow>
+                  )}
+                  {activeRestaurants.map((r) => {
                     const anyRestaurant = r as unknown as Record<string, unknown>
-                    const allMenus = Array.isArray(anyRestaurant.menus) ? anyRestaurant.menus : []
-                    const activeMenus = allMenus.filter((menu: any) => menu?.isActive === true)
+                    const menu = anyRestaurant.menu as any
                     return (
-                      <TableRow key={r.id || r.name} className="bg-gray-50 opacity-75">
-                        <TableCell className="text-gray-600">{r.name ?? ''}</TableCell>
-                        <TableCell className="text-gray-600">{r.address ?? ''}</TableCell>
-                        <TableCell className="text-gray-600">{r.city ?? ''}</TableCell>
-                        <TableCell className="text-gray-600">{r.province ?? ''}</TableCell>
-                        <TableCell className="text-gray-600">{r.zipCode ?? ''}</TableCell>
-                        <TableCell className="text-gray-600">{r.country ?? ''}</TableCell>
-                        <TableCell className="text-gray-600">
-                          {activeMenus.length > 0 ? (
-                            activeMenus.map((menu: any, index: number) => (
-                              <span key={menu?.id || index}>
-                                {menu?.name || ''}
-                                {index < activeMenus.length - 1 && ', '}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="text-xs text-gray-400">No active menu</span>
-                          )}
+                      <TableRow key={r.id || r.name}>
+                        <TableCell>{r.name ?? ''}</TableCell>
+                        <TableCell>{r.address ?? ''}</TableCell>
+                        <TableCell>{r.city ?? ''}</TableCell>
+                        <TableCell>{r.province ?? ''}</TableCell>
+                        <TableCell>{r.zipCode ?? ''}</TableCell>
+                        <TableCell>{r.country ?? ''}</TableCell>
+                        <TableCell>
+                          {menu?.name ?? ''}
                         </TableCell>
-                        <TableCell className="text-gray-600">{r.createdAt ? new Date(String(r.createdAt)).toLocaleString() : ''}</TableCell>
-                        <TableCell className="text-gray-600">
+                        <TableCell>{r.createdAt ? new Date(String(r.createdAt)).toLocaleString() : ''}</TableCell>
+                        <TableCell>
                           {Array.isArray(r.openingHours) && r.openingHours.length > 0 ? (
                             <>
                               {`${r.openingHours[0].day}: ${r.openingHours[0].open}-${r.openingHours[0].close}`}
                               {r.openingHours.length > 1 && (
-                                <span className="text-xs text-gray-400 ml-2">+{r.openingHours.length - 1} more</span>
+                                <span className="text-xs text-gray-500 ml-2">+{r.openingHours.length - 1} more</span>
                               )}
                             </>
                           ) : (
                             <span className="text-xs text-gray-400">No hours</span>
                           )}
                         </TableCell>
-                        <TableCell className="text-gray-500 text-sm">{String(r.deletedBy ?? '')}</TableCell>
                         <TableCell>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className='p-2' 
-                            icon={<FiRotateCw className="w-4 h-4" />}
-                            onClick={() => handleRestore(r.id ?? '', r.name ?? '')}
-                          ></Button>
+                          <div className="flex gap-1">
+                            <Link to={`/restaurant/creation/${encodeURIComponent(String(r.id ?? ''))}`} className='mr-2' ><Button variant="ghost" className='p-2' size="sm" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
+                            <Button variant="danger" size="sm" className='p-2' icon={<FiTrash className="w-4 h-4" />} onClick={() => handleDelete(r.id ?? '', r.name ?? '')}></Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     )
                   })}
                 </TableBody>
               </Table>
+            </div>
+          </div>
+          
+          {deletedRestaurants.length > 0 && (
+            <div className="mt-8">
+              <h2 className="text-2xl font-semibold text-gray-600 mb-4">Deleted Restaurants</h2>
+
+              {/* Mobile: cards for deleted */}
+              <div className="space-y-3 md:hidden">
+                {deletedRestaurants.map((r) => {
+                  const anyRestaurant = r as unknown as Record<string, unknown>
+                  const allMenus = Array.isArray(anyRestaurant.menus) ? anyRestaurant.menus : []
+                  const activeMenus = allMenus.filter((menu: any) => menu?.isActive === true)
+                  const primaryHours =
+                    Array.isArray(r.openingHours) && r.openingHours.length > 0
+                      ? `${r.openingHours[0].day}: ${r.openingHours[0].open}-${r.openingHours[0].close}`
+                      : null
+
+                  return (
+                    <Card key={r.id || r.name} className="shadow-sm bg-gray-50">
+                      <CardHeader className="p-4 pb-2">
+                        <CardTitle className="text-base font-semibold text-gray-700">
+                          {r.name ?? ''}
+                        </CardTitle>
+                        <p className="text-xs text-gray-500">
+                          {[r.city, r.province, r.country].filter(Boolean).join(', ')}
+                        </p>
+                      </CardHeader>
+                      <CardContent className="px-4 pb-2 pt-0 space-y-1">
+                        <p className="text-xs text-gray-600">
+                          {r.address ?? ''}{r.zipCode ? `, ${r.zipCode}` : ''}
+                        </p>
+                        {activeMenus.length > 0 ? (
+                          <p className="text-xs text-gray-600">
+                            Active menus:{' '}
+                            {activeMenus.map((menu: any, index: number) => (
+                              <span key={menu?.id || index}>
+                                {menu?.name || ''}
+                                {index < activeMenus.length - 1 && ', '}
+                              </span>
+                            ))}
+                          </p>
+                        ) : (
+                          <p className="text-xs text-gray-400">No active menu</p>
+                        )}
+                        {primaryHours ? (
+                          <p className="text-xs text-gray-500">
+                            Hours: <span className="font-medium">{primaryHours}</span>
+                          </p>
+                        ) : (
+                          <p className="text-xs text-gray-400">No hours</p>
+                        )}
+                        <p className="text-[11px] text-gray-400">
+                          Deleted by: <span className="font-medium">{String(r.deletedBy ?? '')}</span>
+                        </p>
+                      </CardContent>
+                      <CardFooter className="flex justify-end gap-2 px-4 pb-4 pt-0">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="p-2 text-xs"
+                          icon={<FiRotateCw className="w-4 h-4" />}
+                          onClick={() => handleRestore(r.id ?? '', r.name ?? '')}
+                        >
+                          Restore
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                  )
+                })}
+              </div>
+
+              {/* Desktop: table for deleted */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHead>
+                    <tr className="bg-gray-100">
+                      <TableHeadCell className="text-gray-600">Name</TableHeadCell>
+                      <TableHeadCell className="text-gray-600">Address</TableHeadCell>
+                      <TableHeadCell className="text-gray-600">City</TableHeadCell>
+                      <TableHeadCell className="text-gray-600">Province</TableHeadCell>
+                      <TableHeadCell className="text-gray-600">Zip</TableHeadCell>
+                      <TableHeadCell className="text-gray-600">Country</TableHeadCell>
+                      <TableHeadCell className="text-gray-600">Active Menu</TableHeadCell>
+                      <TableHeadCell className="text-gray-600">Created</TableHeadCell>
+                      <TableHeadCell className="text-gray-600">Opening Hours</TableHeadCell>
+                      <TableHeadCell className="text-gray-600">Deleted By</TableHeadCell>
+                      <TableHeadCell className="text-gray-600">Actions</TableHeadCell>
+                    </tr>
+                  </TableHead>
+                  <TableBody>
+                    {deletedRestaurants.map((r) => {
+                      const anyRestaurant = r as unknown as Record<string, unknown>
+                      const allMenus = Array.isArray(anyRestaurant.menus) ? anyRestaurant.menus : []
+                      const activeMenus = allMenus.filter((menu: any) => menu?.isActive === true)
+                      return (
+                        <TableRow key={r.id || r.name} className="bg-gray-50 opacity-75">
+                          <TableCell className="text-gray-600">{r.name ?? ''}</TableCell>
+                          <TableCell className="text-gray-600">{r.address ?? ''}</TableCell>
+                          <TableCell className="text-gray-600">{r.city ?? ''}</TableCell>
+                          <TableCell className="text-gray-600">{r.province ?? ''}</TableCell>
+                          <TableCell className="text-gray-600">{r.zipCode ?? ''}</TableCell>
+                          <TableCell className="text-gray-600">{r.country ?? ''}</TableCell>
+                          <TableCell className="text-gray-600">
+                            {activeMenus.length > 0 ? (
+                              activeMenus.map((menu: any, index: number) => (
+                                <span key={menu?.id || index}>
+                                  {menu?.name || ''}
+                                  {index < activeMenus.length - 1 && ', '}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-xs text-gray-400">No active menu</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-gray-600">{r.createdAt ? new Date(String(r.createdAt)).toLocaleString() : ''}</TableCell>
+                          <TableCell className="text-gray-600">
+                            {Array.isArray(r.openingHours) && r.openingHours.length > 0 ? (
+                              <>
+                                {`${r.openingHours[0].day}: ${r.openingHours[0].open}-${r.openingHours[0].close}`}
+                                {r.openingHours.length > 1 && (
+                                  <span className="text-xs text-gray-400 ml-2">+{r.openingHours.length - 1} more</span>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-xs text-gray-400">No hours</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-gray-500 text-sm">{String(r.deletedBy ?? '')}</TableCell>
+                          <TableCell>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className='p-2' 
+                              icon={<FiRotateCw className="w-4 h-4" />}
+                              onClick={() => handleRestore(r.id ?? '', r.name ?? '')}
+                            ></Button>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
           )}
         </>

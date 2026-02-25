@@ -8,7 +8,7 @@ import type { Product } from '../utils/api'
 import { Skeleton } from '../components/ui/skeleton'
 import { API_BASE } from '../config'
 import { Input } from '../components/ui/input'
-import { Card, CardContent, CardDescription, CardTitle } from '../components/ui/card'
+import { Card, CardContent, CardDescription, CardTitle, CardHeader, CardFooter } from '../components/ui/card'
 import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert'
 
 type ProductRowProps = {
@@ -318,20 +318,28 @@ export default function Products() {
       )}
 
       <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Products</h1>
           <p className="text-gray-600 mt-1">Manage your restaurant products</p>
         </div>
-        <div className="flex flex-row items-center gap-4">
-          <div className="w-36">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+          <div className="w-full sm:w-48">
             <Input
               placeholder="Search product..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <Link to="/products/creation"><Button variant="primary" icon={<FiPlus className="w-5 h-5" />} className="px-6 py-3 text-base">Create Product</Button></Link>
+          <Link to="/products/creation" className="w-full sm:w-auto">
+            <Button
+              variant="primary"
+              icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
+              className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
+            >
+              <span className="sm:inline">Create Product</span>
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -369,41 +377,162 @@ export default function Products() {
         <>
           <div>
             <h2 className="text-2xl font-semibold text-gray-800 mb-4">Active Products</h2>
-            <Table>
-              <TableHead>
-                <tr>
-                  <TableHeadCell>Name</TableHeadCell>
-                  <TableHeadCell>Image</TableHeadCell>
-                  <TableHeadCell>Type</TableHeadCell>
-                  {/* <TableHeadCell>Ingredients</TableHeadCell> */}
-                  <TableHeadCell>Price</TableHeadCell>
-                  <TableHeadCell>Stock</TableHeadCell>
-                  <TableHeadCell>VAT</TableHeadCell>
-                  <TableHeadCell>Available</TableHeadCell>
-                  {/* <TableHeadCell>Created</TableHeadCell> */}
-                  {/* <TableHeadCell>Updated</TableHeadCell> */}
-                  <TableHeadCell>Actions</TableHeadCell>
-                </tr>
-              </TableHead>
-              <TableBody>
-                {filteredItems.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={8}>No active products found.</TableCell>
-                  </TableRow>
-                )}
 
-                {filteredItems.map((p) => (
-                  <ProductRow
-                    key={String(p.id)}
-                    product={p}
-                    isOpen={openRowId === String(p.id)}
-                    onToggle={() => toggleRow(String(p.id))}
-                    onDelete={() => handleDelete(p.id ?? '', p.name ?? '')}
-                    onToggleAvailability={handleToggleAvailability}
-                  />
-                ))}
-              </TableBody>
-            </Table>
+            {/* Mobile: cards */}
+            <div className="space-y-3 md:hidden">
+              {filteredItems.length === 0 ? (
+                <p className="text-sm text-gray-500">No active products found.</p>
+              ) : (
+                filteredItems.map((p) => {
+                  const anyProduct = p as unknown as Record<string, unknown>
+                  const vatLabel = p.vatRate
+                    ? p.vatRate === 'FOUR'
+                      ? '4%'
+                      : p.vatRate === 'FIVE'
+                      ? '5%'
+                      : p.vatRate === 'TEN'
+                      ? '10%'
+                      : p.vatRate === 'TWENTY_TWO'
+                      ? '22%'
+                      : String(p.vatRate)
+                    : '-'
+
+                  return (
+                    <Card key={String(p.id)} className="shadow-sm">
+                      <CardHeader className="flex flex-row items-center gap-3 p-4 pb-2">
+                        {p.image ? (
+                          <img
+                            src={API_BASE + '/images/' + p.image}
+                            alt={p.name ?? 'product'}
+                            className="h-12 w-12 flex-shrink-0 rounded object-cover"
+                          />
+                        ) : (
+                          <div className="h-12 w-12 flex-shrink-0 rounded bg-gray-100" />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <CardTitle className="truncate text-base font-semibold">
+                            {p.name ?? ''}
+                          </CardTitle>
+                          <p className="text-xs text-gray-600 truncate">
+                            {p.type?.name ?? ''}
+                          </p>
+                        </div>
+                        <span
+                          className={`inline-flex flex-shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                            p.isAvailable
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-red-100 text-red-700'
+                          }`}
+                        >
+                          {p.isAvailable ? 'Available' : 'Unavailable'}
+                        </span>
+                      </CardHeader>
+
+                      <CardContent className="px-4 pb-2 pt-0 space-y-1 text-xs text-gray-700">
+                        <p>
+                          Price:{' '}
+                          <span className="font-semibold">
+                            {p.price != null ? `${p.price} €` : '-'}
+                          </span>
+                          {p.stockQuantity != null && (
+                            <span className="ml-2 text-gray-500">
+                              • Stock: {p.stockQuantity}
+                            </span>
+                          )}
+                        </p>
+                        <p>
+                          VAT:{' '}
+                          <span className="font-medium">{vatLabel}</span>
+                        </p>
+                      </CardContent>
+
+                      <CardFooter className="flex justify-between items-center px-4 pb-4 pt-0 gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="px-2 text-xs"
+                          onClick={() => toggleRow(String(p.id))}
+                        >
+                          {openRowId === String(p.id) ? 'Hide details' : 'Details'}
+                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="p-2 text-xs"
+                            icon={
+                              p.isAvailable ? (
+                                <FiCheckCircle className="w-4 h-4 text-green-600" />
+                              ) : (
+                                <FiXCircle className="w-4 h-4 text-red-600" />
+                              )
+                            }
+                            onClick={() => handleToggleAvailability(p)}
+                          />
+                          <Link to={`/products/creation/${encodeURIComponent(String(p.id ?? ''))}`}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="p-2 text-xs"
+                              icon={<FiEdit className="w-4 h-4" />}
+                            />
+                          </Link>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            className="p-2 text-xs"
+                            icon={<FiTrash className="w-4 h-4" />}
+                            onClick={() => handleDelete(p.id ?? '', p.name ?? '')}
+                          />
+                        </div>
+                      </CardFooter>
+
+                      {openRowId === String(p.id) && (
+                        <div className="border-t border-gray-100">
+                          {productRowDetails(p)}
+                        </div>
+                      )}
+                    </Card>
+                  )
+                })
+              )}
+            </div>
+
+            {/* Desktop: table */}
+            <div className="hidden md:block">
+              <Table>
+                <TableHead>
+                  <tr>
+                    <TableHeadCell>Name</TableHeadCell>
+                    <TableHeadCell>Image</TableHeadCell>
+                    <TableHeadCell>Type</TableHeadCell>
+                    <TableHeadCell>Price</TableHeadCell>
+                    <TableHeadCell>Stock</TableHeadCell>
+                    <TableHeadCell>VAT</TableHeadCell>
+                    <TableHeadCell>Available</TableHeadCell>
+                    <TableHeadCell>Actions</TableHeadCell>
+                  </tr>
+                </TableHead>
+                <TableBody>
+                  {filteredItems.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={8}>No active products found.</TableCell>
+                    </TableRow>
+                  )}
+
+                  {filteredItems.map((p) => (
+                    <ProductRow
+                      key={String(p.id)}
+                      product={p}
+                      isOpen={openRowId === String(p.id)}
+                      onToggle={() => toggleRow(String(p.id))}
+                      onDelete={() => handleDelete(p.id ?? '', p.name ?? '')}
+                      onToggleAvailability={handleToggleAvailability}
+                    />
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
 
           {deletedProducts.length > 0 && (
