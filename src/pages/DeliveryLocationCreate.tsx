@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Label } from '../components/ui/label'
 import { Textarea } from '../components/ui/textarea'
 import { Alert, AlertDescription } from '../components/ui/alert'
+import { Checkbox } from '../components/ui/checkbox'
 import { AlertCircle } from 'lucide-react'
 import { createDeliveryLocation, getDeliveryLocationById, updateDeliveryLocation, getRestaurantsList } from '../utils/api'
 import type { CreateDeliveryLocationPayload, Restaurant as RestaurantType } from '../utils/api'
@@ -309,12 +310,10 @@ export default function DeliveryLocationCreate() {
             </div>
 
             <div className="flex items-center gap-3">
-              <input 
+              <Checkbox 
                 id="isActive"
-                type="checkbox" 
-                checked={!!form.isActive} 
-                onChange={(e) => setForm((s) => ({ ...s, isActive: e.target.checked }))}
-                className="h-4 w-4 rounded border-gray-300"
+                checked={!!form.isActive}
+                onCheckedChange={(checked) => setForm((s) => ({ ...s, isActive: checked }))}
               />
               <Label htmlFor="isActive" className="mb-0 cursor-pointer">Active location</Label>
             </div>
@@ -340,7 +339,20 @@ export default function DeliveryLocationCreate() {
                       {restaurants.filter(r => !selectedDeliveredBy.some(e => e.restaurantId === Number(r.id))).map(r => (
                         <div key={r.id} className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 rounded cursor-pointer group">
                           <span>{r.name ?? String(r.id)}</span>
-                          <button type="button" className="ml-2 text-green-600 hover:text-green-800 text-xs font-bold opacity-80 group-hover:opacity-100" onClick={() => setSelectedDeliveredBy(list => [...list, { restaurantId: Number(r.id), deliveryFee: 0, minOrder: 0, isActive: true }])}>Add</button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="ml-2 text-green-600 hover:text-green-800 text-xs font-bold opacity-80 group-hover:opacity-100"
+                            onClick={() =>
+                              setSelectedDeliveredBy(list => [
+                                ...list,
+                                { restaurantId: Number(r.id), deliveryFee: 0, minOrder: 0, isActive: true },
+                              ])
+                            }
+                          >
+                            Add
+                          </Button>
                         </div>
                       ))}
                     </div>
@@ -357,7 +369,19 @@ export default function DeliveryLocationCreate() {
                         return (
                           <div key={entry.restaurantId} className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 rounded cursor-pointer group">
                             <span>{rest?.name ?? entry.restaurantId}</span>
-                            <button type="button" className="ml-2 text-red-600 hover:text-red-800 text-xs font-bold opacity-80 group-hover:opacity-100" onClick={() => setSelectedDeliveredBy(list => list.filter(e => e.restaurantId !== entry.restaurantId))}>Remove</button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="ml-2 text-red-600 hover:text-red-800 text-xs font-bold opacity-80 group-hover:opacity-100"
+                              onClick={() =>
+                                setSelectedDeliveredBy(list =>
+                                  list.filter(e => e.restaurantId !== entry.restaurantId),
+                                )
+                              }
+                            >
+                              Remove
+                            </Button>
                           </div>
                         )
                       })}
@@ -405,22 +429,31 @@ export default function DeliveryLocationCreate() {
                         />
                       </div>
                       <div className="flex items-center gap-2">
-                        <input 
-                          type="checkbox" 
-                          checked={!!entry.isActive} 
-                          onChange={(e) => setSelectedDeliveredBy((s) => s.map((it, i) => i === idx ? { ...it, isActive: e.target.checked } : it))}
+                        <Checkbox 
+                          checked={!!entry.isActive}
+                          onCheckedChange={(checked) =>
+                            setSelectedDeliveredBy((s) =>
+                              s.map((it, i) => (i === idx ? { ...it, isActive: checked } : it)),
+                            )
+                          }
                           className="h-4 w-4 rounded"
                         />
                         <span className="text-xs">Active</span>
                       </div>
                       <div>
-                        <button 
-                          type="button" 
-                          className="text-xs text-red-600 hover:text-red-700 font-medium" 
-                          onClick={() => setSelectedDeliveredBy((s) => s.filter((it) => it.restaurantId !== entry.restaurantId))}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs text-red-600 hover:text-red-700 font-medium"
+                          onClick={() =>
+                            setSelectedDeliveredBy((s) =>
+                              s.filter((it) => it.restaurantId !== entry.restaurantId),
+                            )
+                          }
                         >
                           Remove
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   )

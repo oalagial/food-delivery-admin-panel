@@ -9,6 +9,7 @@ import { Label } from '../components/ui/label'
 import { Textarea } from '../components/ui/textarea'
 import { Alert, AlertDescription } from '../components/ui/alert'
 import { AlertCircle, CheckCircle } from 'lucide-react'
+import { Select } from '../components/ui/select';
 
 const DAYS = [
   'Monday',
@@ -70,7 +71,7 @@ export default function RestaurantCreate() {
     if (timeslotDurationRaw !== '') {
       const timeslotDurationNum = Number(timeslotDurationRaw)
       if (!Number.isNaN(timeslotDurationNum) && timeslotDurationNum > 0) {
-        ;(payload as unknown as { timeslotDurationMinutes?: number }).timeslotDurationMinutes = timeslotDurationNum
+        ; (payload as unknown as { timeslotDurationMinutes?: number }).timeslotDurationMinutes = timeslotDurationNum
       }
     }
 
@@ -79,7 +80,7 @@ export default function RestaurantCreate() {
     if (ordersPerTimeslotRaw !== '') {
       const ordersPerTimeslotNum = Number(ordersPerTimeslotRaw)
       if (!Number.isNaN(ordersPerTimeslotNum) && ordersPerTimeslotNum > 0) {
-        ;(payload as unknown as { ordersPerTimeslot?: number }).ordersPerTimeslot = ordersPerTimeslotNum
+        ; (payload as unknown as { ordersPerTimeslot?: number }).ordersPerTimeslot = ordersPerTimeslotNum
       }
     }
     if (openingHours.length > 0) {
@@ -100,7 +101,7 @@ export default function RestaurantCreate() {
         setCreating(false)
         return
       }
-      ;(payload as unknown as { latitude?: number }).latitude = latNum
+      ; (payload as unknown as { latitude?: number }).latitude = latNum
     }
     if (lonRaw !== '') {
       const lonNum = Number(lonRaw)
@@ -114,7 +115,7 @@ export default function RestaurantCreate() {
         setCreating(false)
         return
       }
-      ;(payload as unknown as { longitude?: number }).longitude = lonNum
+      ; (payload as unknown as { longitude?: number }).longitude = lonNum
     }
 
     try {
@@ -209,7 +210,7 @@ export default function RestaurantCreate() {
       }
 
       await updateMenu(menuId, payload)
-      
+
       // Reload menus to reflect the change
       if (id) {
         const updatedMenus = await getMenusList(id)
@@ -396,19 +397,31 @@ export default function RestaurantCreate() {
               <div className="space-y-2 mt-2">
                 {openingHours.map((oh, idx) => (
                   <div key={idx} className="flex items-center gap-2">
-                    <select
-                      className="border rounded px-2 py-1"
+                    <Select
+                      className="border rounded px-2 py-1 w-36"
                       value={oh.day}
-                      onChange={e => setOpeningHours(hrs => hrs.map((h, i) => i === idx ? { ...h, day: e.target.value } : h))}
+                      onChange={e =>
+                        setOpeningHours(hrs =>
+                          hrs.map((h, i) => (i === idx ? { ...h, day: e.target.value } : h)),
+                        )
+                      }
                     >
                       <option value="">Day</option>
-                      {DAYS.map(day => <option key={day} value={day}>{day}</option>)}
-                    </select>
+                      {DAYS.map(day => (
+                        <option key={day} value={day}>
+                          {day}
+                        </option>
+                      ))}
+                    </Select>
                     <Input
                       type="time"
                       className="w-28"
                       value={oh.open}
-                      onChange={e => setOpeningHours(hrs => hrs.map((h, i) => i === idx ? { ...h, open: e.target.value } : h))}
+                      onChange={e =>
+                        setOpeningHours(hrs =>
+                          hrs.map((h, i) => (i === idx ? { ...h, open: e.target.value } : h)),
+                        )
+                      }
                       placeholder="Open"
                     />
                     <span>-</span>
@@ -416,13 +429,36 @@ export default function RestaurantCreate() {
                       type="time"
                       className="w-28"
                       value={oh.close}
-                      onChange={e => setOpeningHours(hrs => hrs.map((h, i) => i === idx ? { ...h, close: e.target.value } : h))}
+                      onChange={e =>
+                        setOpeningHours(hrs =>
+                          hrs.map((h, i) => (i === idx ? { ...h, close: e.target.value } : h)),
+                        )
+                      }
                       placeholder="Close"
                     />
-                    <Button type="button" variant="danger" size="sm" className="ml-2" onClick={() => setOpeningHours(hrs => hrs.filter((_, i) => i !== idx))}>Remove</Button>
+                    <Button
+                      type="button"
+                      variant="danger"
+                      size="sm"
+                      className="ml-2"
+                      onClick={() =>
+                        setOpeningHours(hrs => hrs.filter((_, i) => i !== idx))
+                      }
+                    >
+                      Remove
+                    </Button>
                   </div>
                 ))}
-                <Button type="button" variant="default" size="sm" onClick={() => setOpeningHours(hrs => [...hrs, { day: '', open: '', close: '' }])}>Add Opening Hour</Button>
+                <Button
+                  type="button"
+                  variant="default"
+                  size="sm"
+                  onClick={() =>
+                    setOpeningHours(hrs => [...hrs, { day: '', open: '', close: '' }])
+                  }
+                >
+                  Add Opening Hour
+                </Button>
               </div>
             </div>
 

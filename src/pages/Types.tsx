@@ -93,7 +93,7 @@ export default function Types() {
                 <Button variant="ghost" onClick={closeConfirmDialog}>
                   Cancel
                 </Button>
-                <Button 
+                <Button
                   variant="danger"
                   onClick={handleConfirm}
                   disabled={deletingId === confirmDialog.id}
@@ -160,36 +160,24 @@ export default function Types() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="px-4 pb-2 pt-0 space-y-1">
-                    {t.tag && (
-                      <p className="text-xs text-gray-600">
-                        Tag:{' '}
-                        <span className="font-mono bg-gray-100 px-1.5 py-0.5 rounded">
-                          {t.tag}
-                        </span>
-                      </p>
-                    )}
-                    <p className="text-xs text-gray-700">
+
+                    <p className="text-xs">
                       {t.description || 'No description'}
                     </p>
                     {t.createdAt && (
-                      <p className="text-[11px] text-gray-500">
+                      <p className="text-[11px]">
                         Created: {new Date(String(t.createdAt)).toLocaleDateString()}
                       </p>
                     )}
                   </CardContent>
-                  <CardFooter className="flex justify-end gap-2 px-4 pb-4 pt-0">
-                    <Link
-                      to={`/types/creation/${encodeURIComponent(String(t.id ?? ''))}`}
-                      className="mr-1"
-                    >
+                  <CardFooter className="flex justify-end gap-1 px-4 pb-4 pt-0">
+                    <Link to={`/types/creation/${encodeURIComponent(String(t.id ?? ''))}`}>
                       <Button
                         variant="ghost"
                         size="sm"
                         className="p-2 text-xs"
                         icon={<FiEdit className="w-4 h-4" />}
-                      >
-                        Edit
-                      </Button>
+                      />
                     </Link>
                     <Button
                       variant="danger"
@@ -198,9 +186,7 @@ export default function Types() {
                       icon={<FiTrash className="w-4 h-4" />}
                       onClick={() => handleDelete(t.id, t.name)}
                       disabled={deletingId === t.id}
-                    >
-                      Delete
-                    </Button>
+                    />
                   </CardFooter>
                 </Card>
               ))

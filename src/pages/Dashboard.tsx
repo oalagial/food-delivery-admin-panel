@@ -209,8 +209,8 @@ export default function Dashboard() {
                       o.total != null
                         ? `$${Number(o.total).toFixed(2)}`
                         : o.amount
-                        ? `$${Number(o.amount).toFixed(2)}`
-                        : '—'
+                          ? `$${Number(o.amount).toFixed(2)}`
+                          : '—'
                     const created = o.createdAt
                       ? new Date(String(o.createdAt)).toLocaleString()
                       : ''
@@ -274,8 +274,8 @@ export default function Dashboard() {
                           {o.total != null
                             ? `$${Number(o.total).toFixed(2)}`
                             : o.amount
-                            ? `$${Number(o.amount).toFixed(2)}`
-                            : '—'}
+                              ? `$${Number(o.amount).toFixed(2)}`
+                              : '—'}
                         </TableCell>
                         <TableCell>{o.status ?? ''}</TableCell>
                         <TableCell>

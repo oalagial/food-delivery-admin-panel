@@ -4,6 +4,7 @@ import { Skeleton } from '../components/ui/skeleton'
 import { authFetch } from '../utils/api'
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
 import { Input } from '../components/ui/input'
+import { Button } from '../components/ui/button'
 
 type Customer = {
   id?: number | string
@@ -126,7 +127,7 @@ export default function CustomerCollection() {
           {/* Mobile: cards */}
           <div className="space-y-3 md:hidden">
             {filteredCustomers.length === 0 ? (
-              <p className="text-sm text-gray-500">No customers found.</p>
+              <p className="text-sm text-gray-500 dark:text-slate-50">No customers found.</p>
             ) : (
               filteredCustomers.map((customer) => (
                 <Card key={customer.id ?? `${customer.name}-${customer.email}`} className="shadow-sm">
@@ -135,7 +136,7 @@ export default function CustomerCollection() {
                       {customer.name || 'Unnamed customer'}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="px-4 pb-4 pt-0 space-y-1 text-xs text-gray-700">
+                  <CardContent className="px-4 pb-4 pt-0 space-y-1 text-xs">
                     <p>
                       Email:{' '}
                       <span className="font-medium">
@@ -148,7 +149,7 @@ export default function CustomerCollection() {
                         {customer.phone || '—'}
                       </span>
                     </p>
-                    <p className="text-[11px] text-gray-500">
+                    <p className="text-[11px]">
                       Created:{' '}
                       {customer.createdAt
                         ? new Date(String(customer.createdAt)).toLocaleDateString()
@@ -201,22 +202,24 @@ export default function CustomerCollection() {
           Page {page} of {totalPages} | Total: {total}
         </div>
         <div className="flex items-center gap-1 flex-wrap">
-          <button
-            className="px-3 py-1 rounded border bg-white disabled:opacity-50 hover:bg-gray-100 transition"
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setPage(1)}
             disabled={page === 1}
             aria-label="First page"
           >
             «
-          </button>
-          <button
-            className="px-3 py-1 rounded border bg-white disabled:opacity-50 hover:bg-gray-100 transition"
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setPage(p => Math.max(1, p - 1))}
             disabled={page === 1}
             aria-label="Previous page"
           >
             ‹
-          </button>
+          </Button>
           {/* Numbered page buttons, show up to 5 around current */}
           {Array.from({ length: totalPages }, (_, i) => i + 1)
             .filter(pn =>
@@ -233,33 +236,36 @@ export default function CustomerCollection() {
               pn === 'ellipsis' ? (
                 <span key={"ellipsis-" + idx} className="px-2 text-gray-400">…</span>
               ) : (
-                <button
+                <Button
                   key={pn}
-                  className={`px-3 py-1 rounded border ${pn === page ? 'bg-blue-600 text-white border-blue-600' : 'bg-white hover:bg-gray-100'} transition`}
+                  variant={pn === page ? 'primary' : 'default'}
+                  size="sm"
                   onClick={() => setPage(pn as number)}
                   disabled={pn === page}
                   aria-current={pn === page ? 'page' : undefined}
                 >
                   {pn}
-                </button>
+                </Button>
               )
             )}
-          <button
-            className="px-3 py-1 rounded border bg-white disabled:opacity-50 hover:bg-gray-100 transition"
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setPage(p => Math.min(totalPages, p + 1))}
             disabled={page === totalPages}
             aria-label="Next page"
           >
             ›
-          </button>
-          <button
-            className="px-3 py-1 rounded border bg-white disabled:opacity-50 hover:bg-gray-100 transition"
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setPage(totalPages)}
             disabled={page === totalPages}
             aria-label="Last page"
           >
             »
-          </button>
+          </Button>
         </div>
       </div>
     </div>

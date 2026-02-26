@@ -126,9 +126,20 @@ export default function SectionCreate(){
                       <div className="text-xs text-gray-400">No more products</div>
                     )}
                     {products.filter(p => !productsIds.includes(p.id)).map(p => (
-                      <div key={p.id} className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 rounded cursor-pointer group">
+                      <div
+                        key={p.id}
+                        className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 rounded cursor-pointer group"
+                      >
                         <span>{p.name ?? String(p.id)}</span>
-                        <button type="button" className="ml-2 text-green-600 hover:text-green-800 text-xs font-bold opacity-80 group-hover:opacity-100" onClick={() => setProductsIds(ids => [...ids, p.id])}>Add</button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="ml-2 text-green-600 hover:text-green-800 text-xs font-bold opacity-80 group-hover:opacity-100"
+                          onClick={() => setProductsIds(ids => [...ids, p.id])}
+                        >
+                          Add
+                        </Button>
                       </div>
                     ))}
                   </div>
@@ -141,9 +152,22 @@ export default function SectionCreate(){
                       <div className="text-xs text-gray-400">No products selected</div>
                     )}
                     {products.filter(p => productsIds.includes(p.id)).map(p => (
-                      <div key={p.id} className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 rounded cursor-pointer group">
+                      <div
+                        key={p.id}
+                        className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 rounded cursor-pointer group"
+                      >
                         <span>{p.name ?? String(p.id)}</span>
-                        <button type="button" className="ml-2 text-red-600 hover:text-red-800 text-xs font-bold opacity-80 group-hover:opacity-100" onClick={() => setProductsIds(ids => ids.filter(id => id !== p.id))}>Remove</button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="ml-2 text-red-600 hover:text-red-800 text-xs font-bold opacity-80 group-hover:opacity-100"
+                          onClick={() =>
+                            setProductsIds(ids => ids.filter(id => id !== p.id))
+                          }
+                        >
+                          Remove
+                        </Button>
                       </div>
                     ))}
                   </div>

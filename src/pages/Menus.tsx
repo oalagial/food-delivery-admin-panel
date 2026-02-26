@@ -104,13 +104,13 @@ export default function Menus() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" onClick={closeConfirmDialog}>
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
             <div className="p-6">
-              <Alert variant="default">
+              <Alert variant="destructive">
                 <FiAlertCircle className="h-4 w-4" />
                 <AlertTitle>
                   {confirmDialog.type === 'delete' ? 'Delete Menu' : 'Restore Menu'}
                 </AlertTitle>
                 <AlertDescription>
-                  {confirmDialog.type === 'delete' 
+                  {confirmDialog.type === 'delete'
                     ? `Are you sure you want to delete "${confirmDialog.name}"?`
                     : `Are you sure you want to restore "${confirmDialog.name}"?`}
                 </AlertDescription>
@@ -119,8 +119,8 @@ export default function Menus() {
                 <Button variant="ghost" onClick={closeConfirmDialog}>
                   Cancel
                 </Button>
-                <Button 
-                  variant={confirmDialog.type === 'delete' ? 'danger' : 'primary'} 
+                <Button
+                  variant={confirmDialog.type === 'delete' ? 'danger' : 'primary'}
                   onClick={handleConfirm}
                 >
                   {confirmDialog.type === 'delete' ? 'Delete' : 'Restore'}
@@ -178,7 +178,7 @@ export default function Menus() {
               {/* Mobile: cards */}
               <div className="space-y-3 md:hidden">
                 {activeMenus.length === 0 ? (
-                  <p className="text-sm text-gray-500">No active menus found.</p>
+                  <p className="text-sm text-gray-500 dark:text-slate-50">No active menus found.</p>
                 ) : (
                   activeMenus.map((m) => {
                     const anyMenu = m as unknown as Record<string, unknown>
@@ -195,49 +195,45 @@ export default function Menus() {
                             {m.name}
                           </CardTitle>
                         </CardHeader>
-                        <CardContent className="px-4 pb-2 pt-0 space-y-1 text-xs text-gray-700">
-                          <p className="text-gray-700">
+                        <CardContent className="px-4 pb-2 pt-0 space-y-1 text-xs text-gray-700 dark:text-slate-50">
+                          <p>
                             {m.description || 'No description'}
                           </p>
-                          <p className="text-gray-600">
+                          <p>
                             Restaurant:{' '}
                             <span className="font-medium">
                               {restaurant?.name || '—'}
                             </span>
                           </p>
-                          <p className="text-gray-600">
+                          <p>
                             Sections:{' '}
                             <span className="font-medium">
                               {sectionsLabel || '—'}
                             </span>
                           </p>
                           {m.createdAt && (
-                            <p className="text-[11px] text-gray-500">
+                            <p className="text-[11px]">
                               Created:{' '}
                               {new Date(String(m.createdAt)).toLocaleDateString()}
                             </p>
                           )}
                         </CardContent>
-                        <CardFooter className="flex justify-end gap-2 px-4 pb-4 pt-0">
+                        <CardFooter className="flex justify-end gap-1 px-4 pb-4 pt-0">
                           <Link to={`/menus/creation/${m.id}`}>
                             <Button
-                              size="sm"
                               variant="ghost"
+                              size="sm"
                               className="p-2 text-xs"
                               icon={<FiEdit className="w-4 h-4" />}
-                            >
-                              Edit
-                            </Button>
+                            />
                           </Link>
-                          <Button 
-                            variant="danger" 
-                            size="sm" 
+                          <Button
+                            variant="danger"
+                            size="sm"
                             className="p-2 text-xs"
-                            icon={<FiTrash className="w-4 h-4" />} 
+                            icon={<FiTrash className="w-4 h-4" />}
                             onClick={() => handleDelete(m.id ?? '', m.name ?? '')}
-                          >
-                            Delete
-                          </Button>
+                          />
                         </CardFooter>
                       </Card>
                     )
@@ -283,10 +279,10 @@ export default function Menus() {
                               <Link to={`/menus/creation/${m.id}`}>
                                 <Button size="sm" variant="ghost" icon={<FiEdit className="w-4 h-4" />}></Button>
                               </Link>
-                              <Button 
-                                variant="danger" 
-                                size="sm" 
-                                icon={<FiTrash className="w-4 h-4" />} 
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                icon={<FiTrash className="w-4 h-4" />}
                                 onClick={() => handleDelete(m.id ?? '', m.name ?? '')}
                               ></Button>
                             </div>

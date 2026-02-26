@@ -120,17 +120,20 @@ function ProductRow({ product, isOpen, onToggle, isDeleted = false, onRestore, o
           ) : '-'}
         </TableCell>
         <TableCell className={`text-center ${isDeleted ? "text-gray-600" : ""}`}>
-          <button
+          <Button
             type="button"
-            className="inline-flex items-center justify-center focus:outline-none"
+            variant="ghost"
+            size="sm"
+            className="inline-flex items-center justify-center"
             disabled={isDeleted}
             onClick={() => !isDeleted && onToggleAvailability && onToggleAvailability(product)}
             aria-label={product.isAvailable ? 'Set unavailable' : 'Set available'}
-          >
-            {product.isAvailable
-              ? <FiCheckCircle className="w-5 h-5 text-green-500" aria-label="Available" />
-              : <FiXCircle className="w-5 h-5 text-red-500" aria-label="Not available" />}
-          </button>
+            icon={
+              product.isAvailable
+                ? <FiCheckCircle className="w-5 h-5 text-green-500" aria-label="Available" />
+                : <FiXCircle className="w-5 h-5 text-red-500" aria-label="Not available" />
+            }
+          />
         </TableCell>
         {isDeleted ? (
           <>
@@ -301,10 +304,16 @@ export default function Products() {
     <>
       {/* Confirmation Dialog Modal */}
       {confirmDialog.show && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" onClick={closeConfirmDialog}>
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70"
+          onClick={closeConfirmDialog}
+        >
+          <div
+            className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full mx-4 border border-slate-200 dark:border-slate-700"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="p-6">
-              <Alert variant="default">
+              <Alert variant="destructive">
                 <FiAlertCircle className="h-4 w-4" />
                 <AlertTitle>
                   {confirmDialog.type === 'delete' ? 'Delete Product' : 'Restore Product'}
@@ -378,24 +387,26 @@ export default function Products() {
               {Array.from({ length: 6 }).map((_, r) => (
                 <TableRow key={r} className="animate-pulse">
                   {Array.from({ length: 8 }).map((__, c) => (
-                    <TableCell key={c}><Skeleton className="h-4 w-full bg-gray-200" /></TableCell>
+                    <TableCell key={c}>
+                      <Skeleton className="h-4 w-full bg-gray-200 dark:bg-slate-700" />
+                    </TableCell>
                   ))}
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         )}
-        {error && <p className="text-red-600">{error}</p>}
+        {error && <p className="text-red-600 dark:text-red-400">{error}</p>}
 
         {!loading && (
           <>
             <div>
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">Active Products</h2>
+              <h2 className="text-2xl font-semibold text-gray-800 dark:text-slate-100 mb-4">Active Products</h2>
 
               {/* Mobile: cards */}
               <div className="space-y-3 md:hidden">
                 {filteredItems.length === 0 ? (
-                  <p className="text-sm text-gray-500">No active products found.</p>
+                  <p className="text-sm text-gray-500 dark:text-slate-400">No active products found.</p>
                 ) : (
                   filteredItems.map((p) => {
                     const vatLabel = p.vatRate
@@ -426,21 +437,21 @@ export default function Products() {
                             <CardTitle className="truncate text-base font-semibold">
                               {p.name ?? ''}
                             </CardTitle>
-                            <p className="text-xs text-gray-600 truncate">
+                            <p className="text-xs text-gray-600 dark:text-slate-400 truncate">
                               {p.type?.name ?? ''}
                             </p>
                           </div>
                           <span
                             className={`inline-flex flex-shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${p.isAvailable
-                                ? 'bg-green-100 text-green-700'
-                                : 'bg-red-100 text-red-700'
+                                ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'
+                                : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
                               }`}
                           >
                             {p.isAvailable ? 'Available' : 'Unavailable'}
                           </span>
                         </CardHeader>
 
-                        <CardContent className="px-4 pb-2 pt-0 space-y-1 text-xs text-gray-700">
+                        <CardContent className="px-4 pb-2 pt-0 space-y-1 text-xs text-gray-700 dark:text-slate-300">
                           <p>
                             Price:{' '}
                             <span className="font-semibold">
@@ -500,7 +511,7 @@ export default function Products() {
                         </CardFooter>
 
                         {openRowId === String(p.id) && (
-                          <div className="border-t border-gray-100">
+                          <div className="border-t border-gray-100 dark:border-slate-700">
                             {productRowDetails(p)}
                           </div>
                         )}
@@ -528,7 +539,9 @@ export default function Products() {
                   <TableBody>
                     {filteredItems.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={8}>No active products found.</TableCell>
+                        <TableCell colSpan={8} className="text-gray-500 dark:text-slate-400">
+                          No active products found.
+                        </TableCell>
                       </TableRow>
                     )}
 
@@ -549,7 +562,9 @@ export default function Products() {
 
             {deletedProducts.length > 0 && (
               <div className="mt-8">
-                <h2 className="text-2xl font-semibold text-gray-600 mb-4">Deleted Products</h2>
+                <h2 className="text-2xl font-semibold text-gray-600 dark:text-slate-400 mb-4">
+                  Deleted Products
+                </h2>
                 <Table>
                   <TableHead>
                     <tr className="bg-gray-100 dark:bg-slate-900">

@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../co
 import { Label } from "../components/ui/label"
 import { Input } from "../components/ui/input"
 import { Select } from "../components/ui/select"
+import { Checkbox } from "../components/ui/checkbox"
 
 export default function OfferCreate () {
   const { id } = useParams<{ id?: string }>()
@@ -271,13 +272,14 @@ export default function OfferCreate () {
                     </Select>
                   </div>
 
-                   <div className="flex items-end gap-3">
+                  <div className="flex items-end gap-3">
                     <Label htmlFor="available" className="mb-0 cursor-pointer">Active</Label>
-                    <input 
+                    <Checkbox
                       id="available"
-                      type="checkbox" 
-                      checked={!!form.isActive} 
-                      onChange={(e)=> setForm(s=>({...s, isActive: e.target.checked}))}
+                      checked={!!form.isActive}
+                      onCheckedChange={(checked) =>
+                        setForm(s => ({ ...s, isActive: checked }))
+                      }
                       className="h-4 w-4 rounded border-gray-300"
                     />
                   </div>
@@ -378,13 +380,15 @@ export default function OfferCreate () {
                                     className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 rounded group"
                                   >
                                     <span>{p.name ?? p.id}</span>
-                                    <button
+                                    <Button
                                       type="button"
+                                      variant="ghost"
+                                      size="sm"
                                       className="text-green-600 text-xs font-bold"
                                       onClick={() => addProductToGroup(index, p.id)}
                                     >
                                       Add
-                                    </button>
+                                    </Button>
                                   </div>
                                 ))}
                             </div>
@@ -406,13 +410,15 @@ export default function OfferCreate () {
                                     className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 rounded group"
                                   >
                                     <span>{p.name ?? p.id}</span>
-                                    <button
+                                    <Button
                                       type="button"
+                                      variant="ghost"
+                                      size="sm"
                                       className="text-red-600 text-xs font-bold"
                                       onClick={() => removeProductFromGroup(index, p.id)}
                                     >
                                       Remove
-                                    </button>
+                                    </Button>
                                   </div>
                                 ))}
                             </div>

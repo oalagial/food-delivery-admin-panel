@@ -60,7 +60,7 @@ export default function Roles() {
 
   // Editing handled by `/roles/creation/:id`
 
-  
+
 
   return (
     <div className="space-y-6">
@@ -114,7 +114,7 @@ export default function Roles() {
             {/* Mobile: cards */}
             <div className="space-y-3 md:hidden">
               {roles.length === 0 ? (
-                <p className="text-sm text-gray-500">No roles found.</p>
+                <p className="text-sm">No roles found.</p>
               ) : (
                 roles.map((r) => (
                   <Card key={r.id} className="shadow-sm">
@@ -124,37 +124,30 @@ export default function Roles() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="px-4 pb-2 pt-0 space-y-1">
-                      <p className="text-xs text-gray-700">
+                      <p className="text-xs">
                         {r.description || 'No description'}
                       </p>
                       {r.createdAt && (
-                        <p className="text-[11px] text-gray-500">
+                        <p className="text-[11px]">
                           Created: {new Date(String(r.createdAt)).toLocaleDateString()}
                         </p>
                       )}
                     </CardContent>
-                    <CardFooter className="flex justify-end gap-2 px-4 pb-4 pt-0">
-                      <Link
-                        to={`/roles/creation/${encodeURIComponent(String(r.id ?? ''))}`}
-                        className="mr-1"
-                      >
+                    <CardFooter className="flex justify-end gap-1 px-4 pb-4 pt-0">
+                      <Link to={`/roles/creation/${encodeURIComponent(String(r.id ?? ''))}`}>
                         <Button
                           variant="ghost"
                           size="sm"
                           className="p-2 text-xs"
                           icon={<FiEdit className="w-4 h-4" />}
-                        >
-                          Edit
-                        </Button>
+                        />
                       </Link>
                       <Button
                         variant="danger"
                         size="sm"
                         className="p-2 text-xs"
                         icon={<FiTrash className="w-4 h-4" />}
-                      >
-                        Delete
-                      </Button>
+                      />
                     </CardFooter>
                   </Card>
                 ))

@@ -70,7 +70,7 @@ export default function Users() {
     return () => window.removeEventListener('keydown', onKey)
   }, [userToDeactivate])
 
-    if (loading && users.length === 0) {
+  if (loading && users.length === 0) {
     return (
       <div>
         <div className="flex items-center justify-between">
@@ -101,7 +101,7 @@ export default function Users() {
     )
   }
 
-  
+
 
   function askDeactivate(user: User) {
     setError(null)
@@ -148,7 +148,7 @@ export default function Users() {
     }
   }
 
-  
+
 
   return (
     <div className="space-y-6">
@@ -235,19 +235,18 @@ export default function Users() {
                   <CardTitle className="text-base font-semibold flex items-center justify-between gap-2">
                     <span className="truncate">{u.email ?? u.username ?? u.id}</span>
                     <span
-                      className={`inline-flex flex-shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                        active ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-700'
-                      }`}
+                      className={`inline-flex flex-shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${active ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-700'
+                        }`}
                     >
                       {active ? 'Active' : 'Inactive'}
                     </span>
                   </CardTitle>
-                  <p className="text-xs text-gray-600">
+                  <p className="text-xs">
                     {u.username && u.username !== u.email ? u.username : roleLabel || '—'}
                   </p>
                 </CardHeader>
                 <CardFooter className="flex justify-between items-center px-4 pb-4 pt-0 gap-2">
-                  <div className="text-[11px] text-gray-500">
+                  <div className="text-[11px]">
                     {u.createdAt && (
                       <span>Created: {new Date(String(u.createdAt)).toLocaleDateString()}</span>
                     )}
@@ -260,9 +259,7 @@ export default function Users() {
                         className="p-2 text-xs"
                         icon={<FiEdit className="w-4 h-4" />}
                         title="Edit"
-                      >
-                        Edit
-                      </Button>
+                      />
                     </Link>
                     {isCurrent ? null : active ? (
                       <Button
@@ -273,9 +270,7 @@ export default function Users() {
                         onClick={() => askDeactivate(u)}
                         type="button"
                         title="Deactivate user"
-                      >
-                        Deactivate
-                      </Button>
+                      />
                     ) : (
                       <Button
                         variant="primary"
@@ -286,9 +281,7 @@ export default function Users() {
                         type="button"
                         disabled={activatingId === u.id}
                         title="Activate user"
-                      >
-                        {activatingId === u.id ? 'Activating...' : 'Activate'}
-                      </Button>
+                      />
                     )}
                   </div>
                 </CardFooter>

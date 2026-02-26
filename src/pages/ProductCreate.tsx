@@ -2,12 +2,14 @@ import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button'
+import { Textarea } from '../components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 import { Label } from '../components/ui/label'
 import { Alert, AlertDescription } from '../components/ui/alert'
 import { AlertCircle } from 'lucide-react'
 import { createProduct, getProductById, updateProduct, updateProductImage, getTypesList, getExtrasByProduct, getProductDiscount, ProductAllergy } from '../utils/api'
 import type { CreateProductPayload, ProductDiscount, ProductExtra } from '../utils/api'
+import { Checkbox } from '../components/ui/checkbox'
 
 const ProductLabel = {
   GLUTEN_FREE: 'GLUTEN_FREE',
@@ -41,11 +43,11 @@ type ProductDiscountRowProps = {
 
 function ProductDiscountRow({ discount, index, onChange, onRemove }: ProductDiscountRowProps) {
   return (
-    <div className="rounded-lg border bg-gray-300 p-4">
+    <div className="rounded-lg border bg-zinc-100 text-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 p-4">
       <div className="flex justify-end">
         <Button
           type="button"
-          className="text-red-600 text-xs font-bold"
+          className="text-red-600 text-xs font-bold dark:text-red-400"
           variant="default"
           onClick={() => onRemove(index)}
         >
@@ -55,14 +57,14 @@ function ProductDiscountRow({ discount, index, onChange, onRemove }: ProductDisc
       <div className="grid grid-cols-[1fr_1fr_2fr_2fr_auto] gap-2 items-end">
         <div className="flex flex-col">
           <Label className="mb-3">Type *</Label>
-          <select
+          <Select
             value={discount.type}
             onChange={(e) => onChange(index, 'type', e.target.value)}
-            className="border rounded px-2 py-1 h-9"
+            className="border rounded px-2 py-1 h-9 bg-zinc-100 text-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700"
           >
             <option value="FIXED">Fixed</option>
             <option value="PERCENTAGE">Percentage</option>
-          </select>
+          </Select>
         </div>
 
         <div className="flex flex-col">
@@ -96,11 +98,10 @@ function ProductDiscountRow({ discount, index, onChange, onRemove }: ProductDisc
 
         <div className="flex flex-col w-xs">
           <Label className="mb-5 mt-2">Active</Label>
-          <input
-            type="checkbox"
+          <Checkbox
             className="h-4 w-4 rounded border-gray-300 mt-1"
             checked={!!discount.isActive}
-            onChange={(e) => onChange(index, 'isActive', e.target.checked)}
+            onCheckedChange={(checked) => onChange(index, 'isActive', checked)}
           />
         </div>
       </div>
@@ -420,12 +421,13 @@ export default function ProductCreate() {
 
               <div>
                 <Label htmlFor="description">Description</Label>
-                <textarea
+                <Textarea
                   id="description"
-                  className="mt-2 w-full border rounded px-3 py-2 min-h-[100px] resize-y"
+                  className="mt-2 w-full"
                   value={form.description as string}
-                  onChange={(e) => setForm(s => ({ ...s, description: e.target.value }))}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setForm(s => ({ ...s, description: e.target.value }))}
                   placeholder="Product description"
+                  rows={4}
                 />
               </div>
 
@@ -511,12 +513,11 @@ export default function ProductCreate() {
                 <div className="grid grid-cols-2 gap-2 mt-2">
                   {Object.values(ProductAllergy).map((allergy) => (
                     <div key={allergy} className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         id={`allergy-${allergy}`}
                         checked={selectedAllergies.includes(allergy)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
+                        onCheckedChange={(checked) => {
+                          if (checked) {
                             setSelectedAllergies([...selectedAllergies, allergy])
                           } else {
                             setSelectedAllergies(selectedAllergies.filter(a => a !== allergy))
@@ -536,14 +537,13 @@ export default function ProductCreate() {
                 <Label>Product Labels</Label>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {Object.values(ProductLabel).map(label => (
-                    <label key={label} className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded cursor-pointer">
-                      <input
-                        type="checkbox"
+                    <label key={label} className="flex items-center gap-1 px-2 py-1 rounded cursor-pointer">
+                      <Checkbox
                         checked={form.labels?.includes(label)}
-                        onChange={e => {
+                        onCheckedChange={(checked) => {
                           setForm(s => {
                             const labels = s.labels || [];
-                            if (e.target.checked) {
+                            if (checked) {
                               return { ...s, labels: [...labels, label] };
                             } else {
                               return { ...s, labels: labels.filter(l => l !== label) };
@@ -605,11 +605,10 @@ export default function ProductCreate() {
               </div>
 
               <div className="flex items-end gap-3">
-                <input
+                <Checkbox
                   id="available"
-                  type="checkbox"
                   checked={!!form.isAvailable}
-                  onChange={(e) => setForm(s => ({ ...s, isAvailable: e.target.checked }))}
+                  onCheckedChange={(checked) => setForm(s => ({ ...s, isAvailable: checked }))}
                   className="h-4 w-4 rounded border-gray-300"
                 />
                 <Label htmlFor="available" className="mb-0 cursor-pointer">Available for order</Label>
@@ -622,7 +621,7 @@ export default function ProductCreate() {
                   {productExtras.map((extra, index) => (
                     <div
                       key={index}
-                      className="rounded-lg border bg-gray-300 p-4"
+                      className="rounded-lg border bg-zinc-100 text-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 p-4"
                     >
                       <div className="flex justify-end">
                         <Button

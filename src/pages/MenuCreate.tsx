@@ -150,9 +150,22 @@ export default function MenuCreate() {
                           <div className="text-xs text-gray-400">No more sections</div>
                         )}
                         {sections.filter(s => !sectionIds.includes(Number(s.id))).map(s => (
-                          <div key={s.id} className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 rounded cursor-pointer group">
+                          <div
+                            key={s.id}
+                            className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 rounded cursor-pointer group"
+                          >
                             <span>{s.name || s.id}</span>
-                            <button type="button" className="ml-2 text-green-600 hover:text-green-800 text-xs font-bold opacity-80 group-hover:opacity-100" onClick={() => setSectionIds(ids => [...ids.map(Number), Number(s.id)])}>Add</button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="ml-2 text-green-600 hover:text-green-800 text-xs font-bold opacity-80 group-hover:opacity-100"
+                              onClick={() =>
+                                setSectionIds(ids => [...ids.map(Number), Number(s.id)])
+                              }
+                            >
+                              Add
+                            </Button>
                           </div>
                         ))}
                       </div>
@@ -165,9 +178,24 @@ export default function MenuCreate() {
                           <div className="text-xs text-gray-400">No sections selected</div>
                         )}
                         {sections.filter(s => sectionIds.includes(Number(s.id))).map(s => (
-                          <div key={s.id} className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 rounded cursor-pointer group">
+                          <div
+                            key={s.id}
+                            className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 rounded cursor-pointer group"
+                          >
                             <span>{s.name || s.id}</span>
-                            <button type="button" className="ml-2 text-red-600 hover:text-red-800 text-xs font-bold opacity-80 group-hover:opacity-100" onClick={() => setSectionIds(ids => ids.map(Number).filter(id => id !== Number(s.id)))}>Remove</button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="ml-2 text-red-600 hover:text-red-800 text-xs font-bold opacity-80 group-hover:opacity-100"
+                              onClick={() =>
+                                setSectionIds(ids =>
+                                  ids.map(Number).filter(id => id !== Number(s.id)),
+                                )
+                              }
+                            >
+                              Remove
+                            </Button>
                           </div>
                         ))}
                       </div>
