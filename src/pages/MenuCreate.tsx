@@ -87,7 +87,9 @@ export default function MenuCreate() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">{editing ? 'Edit Menu' : 'Create Menu'}</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">
+          {editing ? 'Edit Menu' : 'Create Menu'}
+        </h1>
       </div>
 
       {loading ? (
@@ -95,115 +97,135 @@ export default function MenuCreate() {
           <CardContent className="pt-6">Loading...</CardContent>
         </Card>
       ) : (
-        <Card className="shadow-md">
-          <CardHeader>
-            <CardTitle>{editing ? 'Update Menu Details' : 'New Menu'}</CardTitle>
-            <CardDescription>Fill in the menu information below</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+        <form
+          onSubmit={handleSubmit}
+          className="grid gap-6 max-w-5xl lg:grid-cols-2"
+        >
+          {/* Basic info */}
+          <Card className="shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">
+                {editing ? 'Update Menu Details' : 'New Menu'}
+              </CardTitle>
+              <CardDescription>Fill in the menu information</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="name">Menu Name *</Label>
-                <Input 
+                <Input
                   id="name"
-                  className="mt-2 w-full"
-                  value={name} 
-                  onChange={(e)=> setName(e.target.value)} 
-                  placeholder="Menu name" 
+                  className="mt-1.5 w-full"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Menu name"
                   required
                 />
               </div>
 
               <div>
                 <Label htmlFor="description">Description</Label>
-                <Input 
+                <Input
                   id="description"
-                  className="mt-2 w-full"
-                  value={description} 
-                  onChange={(e)=> setDescription(e.target.value)} 
+                  className="mt-1.5 w-full"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
                   placeholder="Brief description"
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="restaurant">Restaurant *</Label>
-                  <Select 
-                    id="restaurant"
-                    value={restaurantId} 
-                    onChange={(e) => setRestaurantId(e.currentTarget.value)} 
-                    className="mt-2 w-full"
-                  >
-                    <option value="">Select restaurant</option>
-                    {restaurants.map(r => <option key={r.id} value={String(r.id)}>{r.name || r.id}</option>)}
-                  </Select>
-                </div>
+              <div>
+                <Label htmlFor="restaurant">Restaurant *</Label>
+                <Select
+                  id="restaurant"
+                  value={restaurantId}
+                  onChange={(e) => setRestaurantId(e.currentTarget.value)}
+                  className="mt-1.5 w-full"
+                >
+                  <option value="">Select restaurant</option>
+                  {restaurants.map((r) => (
+                    <option key={r.id} value={String(r.id)}>
+                      {r.name || r.id}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
 
-                <div>
-                  <Label>Sections</Label>
-                  <div className="flex gap-4 mt-2">
-                    {/* Available Sections */}
-                    <div className="flex-1">
-                      <div className="font-semibold mb-1 text-sm">Available</div>
-                      <div className="border rounded p-2 h-40 overflow-y-auto bg-white">
-                        {sections.filter(s => !sectionIds.includes(Number(s.id))).length === 0 && (
-                          <div className="text-xs text-gray-400">No more sections</div>
-                        )}
-                        {sections.filter(s => !sectionIds.includes(Number(s.id))).map(s => (
-                          <div
-                            key={s.id}
-                            className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 rounded cursor-pointer group"
+          {/* Sections selector */}
+          <Card className="shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Sections</CardTitle>
+              <CardDescription>Select which sections belong to this menu</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-4">
+                {/* Available Sections */}
+                <div className="flex-1">
+                  <div className="font-semibold mb-1 text-sm">Available</div>
+                  <div className="border rounded p-2 h-40 overflow-y-auto bg-white dark:bg-slate-900">
+                    {sections.filter((s) => !sectionIds.includes(Number(s.id))).length === 0 && (
+                      <div className="text-xs text-gray-400">No more sections</div>
+                    )}
+                    {sections
+                      .filter((s) => !sectionIds.includes(Number(s.id)))
+                      .map((s) => (
+                        <div
+                          key={s.id}
+                          className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded cursor-pointer group"
+                        >
+                          <span>{s.name || s.id}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="ml-2 text-green-600 hover:text-green-800 text-xs font-bold opacity-80 group-hover:opacity-100"
+                            onClick={() =>
+                              setSectionIds((ids) => [...ids.map(Number), Number(s.id)])
+                            }
                           >
-                            <span>{s.name || s.id}</span>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="ml-2 text-green-600 hover:text-green-800 text-xs font-bold opacity-80 group-hover:opacity-100"
-                              onClick={() =>
-                                setSectionIds(ids => [...ids.map(Number), Number(s.id)])
-                              }
-                            >
-                              Add
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    {/* Selected Sections */}
-                    <div className="flex-1">
-                      <div className="font-semibold mb-1 text-sm">Selected</div>
-                      <div className="border rounded p-2 h-40 overflow-y-auto bg-white">
-                        {sectionIds.length === 0 && (
-                          <div className="text-xs text-gray-400">No sections selected</div>
-                        )}
-                        {sections.filter(s => sectionIds.includes(Number(s.id))).map(s => (
-                          <div
-                            key={s.id}
-                            className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 rounded cursor-pointer group"
-                          >
-                            <span>{s.name || s.id}</span>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="ml-2 text-red-600 hover:text-red-800 text-xs font-bold opacity-80 group-hover:opacity-100"
-                              onClick={() =>
-                                setSectionIds(ids =>
-                                  ids.map(Number).filter(id => id !== Number(s.id)),
-                                )
-                              }
-                            >
-                              Remove
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                            Add
+                          </Button>
+                        </div>
+                      ))}
                   </div>
-                  <p className="mt-1 text-xs text-gray-500">Click "Add" to select, "Remove" to unselect.</p>
+                </div>
+                {/* Selected Sections */}
+                <div className="flex-1">
+                  <div className="font-semibold mb-1 text-sm">Selected</div>
+                  <div className="border rounded p-2 h-40 overflow-y-auto bg-white dark:bg-slate-900">
+                    {sectionIds.length === 0 && (
+                      <div className="text-xs text-gray-400">No sections selected</div>
+                    )}
+                    {sections
+                      .filter((s) => sectionIds.includes(Number(s.id)))
+                      .map((s) => (
+                        <div
+                          key={s.id}
+                          className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded cursor-pointer group"
+                        >
+                          <span>{s.name || s.id}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="ml-2 text-red-600 hover:text-red-800 text-xs font-bold opacity-80 group-hover:opacity-100"
+                            onClick={() =>
+                              setSectionIds((ids) =>
+                                ids.map(Number).filter((id) => id !== Number(s.id)),
+                              )
+                            }
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      ))}
+                  </div>
                 </div>
               </div>
+              <p className="mt-1 text-xs text-gray-500">
+                Click &quot;Add&quot; to select, &quot;Remove&quot; to unselect.
+              </p>
 
               {error && (
                 <Alert variant="destructive">
@@ -212,13 +234,21 @@ export default function MenuCreate() {
                 </Alert>
               )}
 
-              <div className="flex justify-end gap-3 pt-4">
-                <Button variant="default" type="button" onClick={()=> navigate(-1)}>Cancel</Button>
-                <Button type="submit" variant="primary" disabled={saving}>{saving ? 'Saving...' : (editing ? 'Update' : 'Create')}</Button>
+              <div className="flex justify-end gap-3 pt-2">
+                <Button
+                  variant="default"
+                  type="button"
+                  onClick={() => navigate(-1)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" variant="primary" disabled={saving}>
+                  {saving ? 'Saving...' : editing ? 'Update' : 'Create'}
+                </Button>
               </div>
-            </form>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </form>
       )}
     </div>
   )

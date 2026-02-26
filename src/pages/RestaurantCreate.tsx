@@ -226,24 +226,36 @@ export default function RestaurantCreate() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">{id ? 'Edit Restaurant' : 'Create Restaurant'}</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">
+          {id ? 'Edit Restaurant' : 'Create Restaurant'}
+        </h1>
       </div>
 
-      <Card className="shadow-md">
-        <CardHeader>
-          <CardTitle>{id ? 'Update Details' : 'Enter Restaurant Details'}</CardTitle>
-          <CardDescription>Fill in all the required information below</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleCreate} className="space-y-6">
+      <form
+        onSubmit={handleCreate}
+        className="grid gap-6 max-w-5xl lg:grid-cols-2"
+      >
+        {/* Basic address info */}
+        <Card className="shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">
+              {id ? 'Update Details' : 'Restaurant details'}
+            </CardTitle>
+            <CardDescription>
+              Name, address and basic contact information
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <div>
               <Label htmlFor="name">Name *</Label>
               <Input
                 id="name"
-                className="mt-2 w-full"
+                className="mt-1.5 w-full"
                 name="name"
                 value={form.name}
-                onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
+                onChange={(e) =>
+                  setForm((s) => ({ ...s, name: e.target.value }))
+                }
                 placeholder="Restaurant name"
                 required
               />
@@ -254,10 +266,12 @@ export default function RestaurantCreate() {
                 <Label htmlFor="address">Address *</Label>
                 <Input
                   id="address"
-                  className="mt-2 w-full"
+                  className="mt-1.5 w-full"
                   name="address"
                   value={form.address}
-                  onChange={(e) => setForm((s) => ({ ...s, address: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((s) => ({ ...s, address: e.target.value }))
+                  }
                   placeholder="Street address"
                 />
               </div>
@@ -265,10 +279,12 @@ export default function RestaurantCreate() {
                 <Label htmlFor="streetNumber">House Number</Label>
                 <Input
                   id="streetNumber"
-                  className="mt-2 w-full"
+                  className="mt-1.5 w-full"
                   name="streetNumber"
                   value={form.streetNumber}
-                  onChange={(e) => setForm((s) => ({ ...s, streetNumber: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((s) => ({ ...s, streetNumber: e.target.value }))
+                  }
                   placeholder="Number"
                 />
               </div>
@@ -279,10 +295,12 @@ export default function RestaurantCreate() {
                 <Label htmlFor="city">City</Label>
                 <Input
                   id="city"
-                  className="mt-2 w-full"
+                  className="mt-1.5 w-full"
                   name="city"
                   value={form.city}
-                  onChange={(e) => setForm((s) => ({ ...s, city: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((s) => ({ ...s, city: e.target.value }))
+                  }
                   placeholder="City"
                 />
               </div>
@@ -290,10 +308,12 @@ export default function RestaurantCreate() {
                 <Label htmlFor="zipCode">ZIP Code</Label>
                 <Input
                   id="zipCode"
-                  className="mt-2 w-full"
+                  className="mt-1.5 w-full"
                   name="zipCode"
                   value={form.zipCode}
-                  onChange={(e) => setForm((s) => ({ ...s, zipCode: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((s) => ({ ...s, zipCode: e.target.value }))
+                  }
                   placeholder="ZIP"
                 />
               </div>
@@ -301,10 +321,12 @@ export default function RestaurantCreate() {
                 <Label htmlFor="province">Province</Label>
                 <Input
                   id="province"
-                  className="mt-2 w-full"
+                  className="mt-1.5 w-full"
                   name="province"
                   value={form.province}
-                  onChange={(e) => setForm((s) => ({ ...s, province: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((s) => ({ ...s, province: e.target.value }))
+                  }
                   placeholder="Province"
                 />
               </div>
@@ -312,10 +334,12 @@ export default function RestaurantCreate() {
                 <Label htmlFor="country">Country</Label>
                 <Input
                   id="country"
-                  className="mt-2 w-full"
+                  className="mt-1.5 w-full"
                   name="country"
                   value={form.country}
-                  onChange={(e) => setForm((s) => ({ ...s, country: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((s) => ({ ...s, country: e.target.value }))
+                  }
                   placeholder="Country"
                 />
               </div>
@@ -325,23 +349,36 @@ export default function RestaurantCreate() {
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
-                className="mt-2 w-full"
+                className="mt-1.5 w-full"
                 name="description"
                 value={form.description}
-                onChange={(e) => setForm((s) => ({ ...s, description: e.target.value }))}
+                onChange={(e) =>
+                  setForm((s) => ({ ...s, description: e.target.value }))
+                }
                 placeholder="Tell us about your restaurant..."
               />
             </div>
+          </CardContent>
+        </Card>
 
+        {/* Location & capacity */}
+        <Card className="shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Location & capacity</CardTitle>
+            <CardDescription>Coordinates and slot configuration</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="latitude">Latitude</Label>
                 <Input
                   id="latitude"
-                  className="mt-2 w-full"
+                  className="mt-1.5 w-full"
                   name="latitude"
                   value={form.latitude}
-                  onChange={(e) => setForm((s) => ({ ...s, latitude: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((s) => ({ ...s, latitude: e.target.value }))
+                  }
                   placeholder="e.g., 40.7128"
                   type="number"
                   step="any"
@@ -351,10 +388,12 @@ export default function RestaurantCreate() {
                 <Label htmlFor="longitude">Longitude</Label>
                 <Input
                   id="longitude"
-                  className="mt-2 w-full"
+                  className="mt-1.5 w-full"
                   name="longitude"
                   value={form.longitude}
-                  onChange={(e) => setForm((s) => ({ ...s, longitude: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((s) => ({ ...s, longitude: e.target.value }))
+                  }
                   placeholder="e.g., -74.0060"
                   type="number"
                   step="any"
@@ -364,13 +403,20 @@ export default function RestaurantCreate() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="timeslotDurationMinutes">Timeslot Duration (minutes)</Label>
+                <Label htmlFor="timeslotDurationMinutes">
+                  Timeslot Duration (minutes)
+                </Label>
                 <Input
                   id="timeslotDurationMinutes"
-                  className="mt-2 w-full"
+                  className="mt-1.5 w-full"
                   name="timeslotDurationMinutes"
                   value={form.timeslotDurationMinutes}
-                  onChange={(e) => setForm((s) => ({ ...s, timeslotDurationMinutes: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((s) => ({
+                      ...s,
+                      timeslotDurationMinutes: e.target.value,
+                    }))
+                  }
                   placeholder="e.g., 15"
                   type="number"
                   min="1"
@@ -380,94 +426,138 @@ export default function RestaurantCreate() {
                 <Label htmlFor="ordersPerTimeslot">Orders Per Timeslot</Label>
                 <Input
                   id="ordersPerTimeslot"
-                  className="mt-2 w-full"
+                  className="mt-1.5 w-full"
                   name="ordersPerTimeslot"
                   value={form.ordersPerTimeslot}
-                  onChange={(e) => setForm((s) => ({ ...s, ordersPerTimeslot: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((s) => ({
+                      ...s,
+                      ordersPerTimeslot: e.target.value,
+                    }))
+                  }
                   placeholder="e.g., 10"
                   type="number"
                   min="1"
                 />
               </div>
             </div>
+          </CardContent>
+        </Card>
 
-            {/* Opening Hours Section */}
-            <div>
-              <Label>Opening Hours</Label>
-              <div className="space-y-2 mt-2">
-                {openingHours.map((oh, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <Select
-                      className="border rounded px-2 py-1 w-36"
-                      value={oh.day}
-                      onChange={e =>
-                        setOpeningHours(hrs =>
-                          hrs.map((h, i) => (i === idx ? { ...h, day: e.target.value } : h)),
-                        )
-                      }
-                    >
-                      <option value="">Day</option>
-                      {DAYS.map(day => (
-                        <option key={day} value={day}>
-                          {day}
-                        </option>
-                      ))}
-                    </Select>
-                    <Input
-                      type="time"
-                      className="w-28"
-                      value={oh.open}
-                      onChange={e =>
-                        setOpeningHours(hrs =>
-                          hrs.map((h, i) => (i === idx ? { ...h, open: e.target.value } : h)),
-                        )
-                      }
-                      placeholder="Open"
-                    />
-                    <span>-</span>
-                    <Input
-                      type="time"
-                      className="w-28"
-                      value={oh.close}
-                      onChange={e =>
-                        setOpeningHours(hrs =>
-                          hrs.map((h, i) => (i === idx ? { ...h, close: e.target.value } : h)),
-                        )
-                      }
-                      placeholder="Close"
-                    />
-                    <Button
-                      type="button"
-                      variant="danger"
-                      size="sm"
-                      className="ml-2"
-                      onClick={() =>
-                        setOpeningHours(hrs => hrs.filter((_, i) => i !== idx))
-                      }
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="default"
-                  size="sm"
-                  onClick={() =>
-                    setOpeningHours(hrs => [...hrs, { day: '', open: '', close: '' }])
-                  }
-                >
-                  Add Opening Hour
-                </Button>
-              </div>
+        {/* Opening hours */}
+        <Card className="shadow-sm lg:col-span-2">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Opening hours</CardTitle>
+            <CardDescription>Set weekly schedule</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-2 mt-1">
+              {openingHours.map((oh, idx) => (
+                <div key={idx} className="flex flex-wrap items-center gap-2">
+                  <Select
+                    className="border rounded px-2 py-1 w-36"
+                    value={oh.day}
+                    onChange={(e) =>
+                      setOpeningHours((hrs) =>
+                        hrs.map((h, i) =>
+                          i === idx ? { ...h, day: e.target.value } : h,
+                        ),
+                      )
+                    }
+                  >
+                    <option value="">Day</option>
+                    {DAYS.map((day) => (
+                      <option key={day} value={day}>
+                        {day}
+                      </option>
+                    ))}
+                  </Select>
+                  <Input
+                    type="time"
+                    className="w-28"
+                    value={oh.open}
+                    onChange={(e) =>
+                      setOpeningHours((hrs) =>
+                        hrs.map((h, i) =>
+                          i === idx ? { ...h, open: e.target.value } : h,
+                        ),
+                      )
+                    }
+                    placeholder="Open"
+                  />
+                  <span>-</span>
+                  <Input
+                    type="time"
+                    className="w-28"
+                    value={oh.close}
+                    onChange={(e) =>
+                      setOpeningHours((hrs) =>
+                        hrs.map((h, i) =>
+                          i === idx ? { ...h, close: e.target.value } : h,
+                        ),
+                      )
+                    }
+                    placeholder="Close"
+                  />
+                  <Button
+                    type="button"
+                    variant="danger"
+                    size="sm"
+                    className="ml-2"
+                    onClick={() =>
+                      setOpeningHours((hrs) =>
+                        hrs.filter((_, i) => i !== idx),
+                      )
+                    }
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="default"
+                size="sm"
+                onClick={() =>
+                  setOpeningHours((hrs) => [
+                    ...hrs,
+                    { day: '', open: '', close: '' },
+                  ])
+                }
+              >
+                Add Opening Hour
+              </Button>
             </div>
+          </CardContent>
+        </Card>
 
+        {/* Images & menus */}
+        <Card className="shadow-sm lg:col-span-2">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Media & menus</CardTitle>
+            <CardDescription>Images and active menu selection</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <div>
               <Label htmlFor="images">Images</Label>
               <div className="mt-2 flex items-center gap-4">
-                <input id="images" type="file" multiple className="hidden" onChange={(e) => setFiles(e.target.files)} />
-                <label htmlFor="images"><Button variant="primary" type="button">Choose Images</Button></label>
-                <span className="text-sm text-gray-600">{files && files.length > 0 ? `${files.length} file(s) selected` : 'No files selected'}</span>
+                <input
+                  id="images"
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => setFiles(e.target.files)}
+                />
+                <label htmlFor="images">
+                  <Button variant="primary" type="button">
+                    Choose Images
+                  </Button>
+                </label>
+                <span className="text-sm text-gray-600 dark:text-slate-400">
+                  {files && files.length > 0
+                    ? `${files.length} file(s) selected`
+                    : 'No files selected'}
+                </span>
               </div>
             </div>
 
@@ -479,49 +569,73 @@ export default function RestaurantCreate() {
                   {loadingMenus ? (
                     <div className="text-sm text-gray-500">Loading menus...</div>
                   ) : menus.length === 0 ? (
-                    <div className="text-sm text-gray-500">No menus found for this restaurant</div>
+                    <div className="text-sm text-gray-500">
+                      No menus found for this restaurant
+                    </div>
                   ) : (
                     <>
                       {/* Active Menu */}
-                      {menus.filter((m: any) => m.isActive === true).map((menu) => (
-                        <div key={menu.id} className="border rounded p-3 bg-green-50 border-green-200">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <span className="font-semibold text-green-800">{menu.name}</span>
-                              {menu.description && (
-                                <p className="text-sm text-gray-600 mt-1">{menu.description}</p>
-                              )}
-                              <span className="inline-block mt-1 px-2 py-1 text-xs bg-green-200 text-green-800 rounded">Active</span>
+                      {menus
+                        .filter((m: any) => m.isActive === true)
+                        .map((menu) => (
+                          <div
+                            key={menu.id}
+                            className="border rounded p-3 bg-green-50 border-green-200"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <span className="font-semibold text-green-800">
+                                  {menu.name}
+                                </span>
+                                {menu.description && (
+                                  <p className="text-sm text-gray-600 mt-1">
+                                    {menu.description}
+                                  </p>
+                                )}
+                                <span className="inline-block mt-1 px-2 py-1 text-xs bg-green-200 text-green-800 rounded">
+                                  Active
+                                </span>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
 
                       {/* Inactive Menus */}
                       {menus.filter((m: any) => m.isActive !== true).length > 0 && (
                         <div className="space-y-2">
-                          <div className="text-sm font-medium text-gray-700 mt-3">Other Menus:</div>
-                          {menus.filter((m: any) => m.isActive !== true).map((menu) => (
-                            <div key={menu.id} className="border rounded p-3 bg-gray-50">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <span className="font-semibold">{menu.name}</span>
-                                  {menu.description && (
-                                    <p className="text-sm text-gray-600 mt-1">{menu.description}</p>
-                                  )}
+                          <div className="text-sm font-medium text-gray-700 mt-3">
+                            Other Menus:
+                          </div>
+                          {menus
+                            .filter((m: any) => m.isActive !== true)
+                            .map((menu) => (
+                              <div
+                                key={menu.id}
+                                className="border rounded p-3 bg-gray-50"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <span className="font-semibold">
+                                      {menu.name}
+                                    </span>
+                                    {menu.description && (
+                                      <p className="text-sm text-gray-600 mt-1">
+                                        {menu.description}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="primary"
+                                    size="sm"
+                                    onClick={() => handleSetActiveMenu(menu.id!)}
+                                    disabled={loadingMenus}
+                                  >
+                                    Set as Active
+                                  </Button>
                                 </div>
-                                <Button
-                                  type="button"
-                                  variant="primary"
-                                  size="sm"
-                                  onClick={() => handleSetActiveMenu(menu.id!)}
-                                  disabled={loadingMenus}
-                                >
-                                  Set as Active
-                                </Button>
                               </div>
-                            </div>
-                          ))}
+                            ))}
                         </div>
                       )}
                     </>
@@ -537,18 +651,26 @@ export default function RestaurantCreate() {
               </Alert>
             )}
 
-            <div className="flex justify-end gap-3 pt-4">
-              <Link to="/restaurant"><Button variant="default" type="button">Cancel</Button></Link>
-              <Button variant="primary" type="submit" disabled={creating}>{creating ? 'Saving...' : id ? 'Update' : 'Create'}</Button>
+            <div className="flex justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
+              <Link to="/restaurant">
+                <Button variant="default" type="button">
+                  Cancel
+                </Button>
+              </Link>
+              <Button variant="primary" type="submit" disabled={creating}>
+                {creating ? 'Saving...' : id ? 'Update' : 'Create'}
+              </Button>
             </div>
-          </form>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </form>
 
       {createResult && (
         <Alert variant="success">
           <CheckCircle className="h-4 w-4" />
-          <AlertDescription>{id ? 'Restaurant updated' : 'Restaurant created'} successfully!</AlertDescription>
+          <AlertDescription>
+            {id ? 'Restaurant updated' : 'Restaurant created'} successfully!
+          </AlertDescription>
         </Alert>
       )}
     </div>

@@ -66,23 +66,32 @@ export default function SectionCreate(){
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">{params.id ? 'Edit Section' : 'Create Section'}</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">
+          {params.id ? 'Edit Section' : 'Create Section'}
+        </h1>
       </div>
       
-      <Card className="shadow-md">
-        <CardHeader>
-          <CardTitle>{params.id ? 'Update Section' : 'New Section'}</CardTitle>
-          <CardDescription>Define section details and associated products</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={onSubmit} className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-
+      <form
+        onSubmit={onSubmit}
+        className="grid gap-6 max-w-5xl lg:grid-cols-2"
+      >
+        {/* Basic info */}
+        <Card className="shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">
+              {params.id ? 'Update Section' : 'New Section'}
+            </CardTitle>
+            <CardDescription>
+              Define the section name, type and description
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="name">Section Name *</Label>
                 <Input 
                   id="name"
-                  className="mt-2 w-full"
+                  className="mt-1.5 w-full"
                   value={name} 
                   onChange={e=>setName(e.target.value)} 
                   placeholder="Section name"
@@ -96,7 +105,7 @@ export default function SectionCreate(){
                   id="type"
                   value={String(typeId)} 
                   onChange={e=>setTypeId(Number(e.target.value))} 
-                  className="mt-2 w-full"
+                  className="mt-1.5 w-full"
                 >
                   <option value="">Select a type</option>
                   {types.map(t=> <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -108,27 +117,38 @@ export default function SectionCreate(){
               <Label htmlFor="description">Description</Label>
               <Textarea 
                 id="description"
-                className="mt-2 w-full"
+                className="mt-1.5 w-full"
                 value={description} 
                 onChange={e=>setDescription(e.target.value)} 
                 placeholder="Describe this section..."
               />
             </div>
+          </CardContent>
+        </Card>
 
+        {/* Products */}
+        <Card className="shadow-sm lg:col-span-2">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Products</CardTitle>
+            <CardDescription>
+              Choose which products belong to this section
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <div>
               <Label>Products</Label>
               <div className="flex gap-4 mt-2">
                 {/* Available Products */}
                 <div className="flex-1">
                   <div className="font-semibold mb-1 text-sm">Available</div>
-                  <div className="border rounded p-2 h-48 overflow-y-auto bg-white">
+                  <div className="border rounded p-2 h-48 overflow-y-auto bg-white dark:bg-slate-900">
                     {products.filter(p => !productsIds.includes(p.id)).length === 0 && (
                       <div className="text-xs text-gray-400">No more products</div>
                     )}
                     {products.filter(p => !productsIds.includes(p.id)).map(p => (
                       <div
                         key={p.id}
-                        className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 rounded cursor-pointer group"
+                        className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded cursor-pointer group"
                       >
                         <span>{p.name ?? String(p.id)}</span>
                         <Button
@@ -147,14 +167,14 @@ export default function SectionCreate(){
                 {/* Selected Products */}
                 <div className="flex-1">
                   <div className="font-semibold mb-1 text-sm">Selected</div>
-                  <div className="border rounded p-2 h-48 overflow-y-auto bg-white">
+                  <div className="border rounded p-2 h-48 overflow-y-auto bg-white dark:bg-slate-900">
                     {productsIds.length === 0 && (
                       <div className="text-xs text-gray-400">No products selected</div>
                     )}
                     {products.filter(p => productsIds.includes(p.id)).map(p => (
                       <div
                         key={p.id}
-                        className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 rounded cursor-pointer group"
+                        className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded cursor-pointer group"
                       >
                         <span>{p.name ?? String(p.id)}</span>
                         <Button
@@ -173,7 +193,9 @@ export default function SectionCreate(){
                   </div>
                 </div>
               </div>
-              <p className="mt-1 text-xs text-gray-500">Click "Add" to select, "Remove" to unselect.</p>
+              <p className="mt-1 text-xs text-gray-500">
+                Click &quot;Add&quot; to select, &quot;Remove&quot; to unselect.
+              </p>
             </div>
 
             {error && (
@@ -183,13 +205,13 @@ export default function SectionCreate(){
               </Alert>
             )}
 
-            <div className="flex justify-end gap-3 pt-4">
+            <div className="flex justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
               <Button type="button" variant="default" onClick={()=>navigate('/sections')}>Cancel</Button>
               <Button type="submit" variant="primary" disabled={loading}>{loading ? 'Saving...' : params.id ? 'Update' : 'Create'}</Button>
             </div>
-          </form>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </form>
     </div>
   )
 }
