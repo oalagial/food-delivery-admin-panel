@@ -7,6 +7,8 @@ import { Label } from "../components/ui/label"
 import { Input } from "../components/ui/input"
 import { Select } from "../components/ui/select"
 import { Checkbox } from "../components/ui/checkbox"
+import { Alert, AlertDescription } from "../components/ui/alert"
+import { AlertCircle } from "lucide-react"
 
 export default function OfferCreate () {
   const { id } = useParams<{ id?: string }>()
