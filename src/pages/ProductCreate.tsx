@@ -2,12 +2,14 @@ import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button'
+import { Textarea } from '../components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 import { Label } from '../components/ui/label'
 import { Alert, AlertDescription } from '../components/ui/alert'
 import { AlertCircle } from 'lucide-react'
-import { createProduct, getProductById, updateProduct, updateProductImage, getTypesList, getExtrasByProduct, getProductDiscount } from '../utils/api'
+import { createProduct, getProductById, updateProduct, updateProductImage, getTypesList, getExtrasByProduct, getProductDiscount, ProductAllergy } from '../utils/api'
 import type { CreateProductPayload, ProductDiscount, ProductExtra } from '../utils/api'
+import { Checkbox } from '../components/ui/checkbox'
 
 const ProductLabel = {
   GLUTEN_FREE: 'GLUTEN_FREE',
@@ -41,70 +43,69 @@ type ProductDiscountRowProps = {
 
 function ProductDiscountRow({ discount, index, onChange, onRemove }: ProductDiscountRowProps) {
   return (
-      <div className="rounded-lg border bg-gray-300 p-4">
-          <div className="flex justify-end">
-            <Button
-              type="button"
-              className="text-red-600 text-xs font-bold"
-              variant="default"
-              onClick={() => onRemove(index)}
-            >
-              Remove Discount
-            </Button>
-          </div>
-        <div className="grid grid-cols-[1fr_1fr_2fr_2fr_auto] gap-2 items-end">
-          <div className="flex flex-col">
-            <Label className="mb-3">Type *</Label>
-            <select
-              value={discount.type}
-              onChange={(e) => onChange(index, 'type', e.target.value)}
-              className="border rounded px-2 py-1 h-9"
-            >
-              <option value="FIXED">Fixed</option>
-              <option value="PERCENTAGE">Percentage</option>
-            </select>
-          </div>
-
-          <div className="flex flex-col">
-            <Label className="mb-2">{ discount.type === 'FIXED' ? 'Fixed Discount (€)' : 'Discount (%)' }</Label>
-            <Input
-              type="number"
-              step="0.01"
-              value={discount.value}
-              onChange={(e) => onChange(index, 'value', Number(e.target.value))}
-            />
-          </div>
-
-          <div className="flex flex-col">
-            <Label className="mb-2">Starts At *</Label>
-            <Input
-              type="datetime-local"
-              value={utcToLocalDateTimeInput(discount.startsAt)}
-              onChange={(e) => onChange(index, 'startsAt', e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="flex flex-col">
-            <Label className="mb-2">Ends At</Label>
-            <Input
-              type="datetime-local"
-              value={utcToLocalDateTimeInput(discount.endsAt)}
-              onChange={(e) => onChange(index, 'endsAt', e.target.value)}
-            />
-          </div>
-
-          <div className="flex flex-col w-xs">
-            <Label className="mb-5 mt-2">Active</Label>
-            <input
-              type="checkbox"
-              className="h-4 w-4 rounded border-gray-300 mt-1"
-              checked={!!discount.isActive}
-              onChange={(e) => onChange(index, 'isActive', e.target.checked)}
-            />
-          </div>
+    <div className="rounded-lg border bg-zinc-100 text-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 p-4">
+      <div className="flex justify-end">
+        <Button
+          type="button"
+          className="text-red-600 text-xs font-bold dark:text-red-400"
+          variant="default"
+          onClick={() => onRemove(index)}
+        >
+          Remove Discount
+        </Button>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_2fr_2fr_auto] gap-3 items-end">
+        <div className="flex flex-col">
+          <Label className="mb-3">Type *</Label>
+          <Select
+            value={discount.type}
+            onChange={(e) => onChange(index, 'type', e.target.value)}
+            className="border rounded px-2 py-1 h-9 bg-zinc-100 text-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700"
+          >
+            <option value="FIXED">Fixed</option>
+            <option value="PERCENTAGE">Percentage</option>
+          </Select>
         </div>
-      </div>)
+
+        <div className="flex flex-col">
+          <Label className="mb-2">{discount.type === 'FIXED' ? 'Fixed Discount (€)' : 'Discount (%)'}</Label>
+          <Input
+            type="number"
+            step="0.01"
+            value={discount.value}
+            onChange={(e) => onChange(index, 'value', Number(e.target.value))}
+          />
+        </div>
+
+        <div className="flex flex-col">
+          <Label className="mb-2">Starts At *</Label>
+          <Input
+            type="datetime-local"
+            value={utcToLocalDateTimeInput(discount.startsAt)}
+            onChange={(e) => onChange(index, 'startsAt', e.target.value)}
+            required
+          />
+        </div>
+
+        <div className="flex flex-col">
+          <Label className="mb-2">Ends At</Label>
+          <Input
+            type="datetime-local"
+            value={utcToLocalDateTimeInput(discount.endsAt)}
+            onChange={(e) => onChange(index, 'endsAt', e.target.value)}
+          />
+        </div>
+
+        <div className="flex flex-col w-xs">
+          <Label className="mb-5 mt-2">Active</Label>
+          <Checkbox
+            className="h-4 w-4 rounded border-gray-300 mt-1"
+            checked={!!discount.isActive}
+            onCheckedChange={(checked) => onChange(index, 'isActive', checked)}
+          />
+        </div>
+      </div>
+    </div>)
 }
 
 type ProductDiscountsProps = {
@@ -151,9 +152,9 @@ function ProductDiscounts({ discounts, setDiscounts, productId }: ProductDiscoun
         />
       ))}
 
-      <Button 
+      <Button
         className='mt-2'
-        type="button" 
+        type="button"
         onClick={addDiscount}>
         Add Discount
       </Button>
@@ -174,9 +175,10 @@ export default function ProductCreate() {
   const [loading, setLoading] = useState(true)
   const [productExtras, setProductExtras] = useState<ProductExtra[]>([])
   const [productDiscount, setProductDiscount] = useState<ProductDiscount[]>([]);
-  
+
   // Keep a raw ingredients text input so typing a trailing comma doesn't get trimmed away
   const [ingredientsInput, setIngredientsInput] = useState('')
+  const [selectedAllergies, setSelectedAllergies] = useState<ProductAllergy[]>([])
 
   const [form, setForm] = useState<Partial<CreateProductPayload> & { labels: ProductLabel[] }>({
     name: '',
@@ -184,8 +186,10 @@ export default function ProductCreate() {
     image: '',
     typeId: undefined,
     ingredients: [],
+    allergies: [],
     price: undefined,
     isAvailable: true,
+    stockQuantity: undefined,
     vatRate: undefined,
     labels: [] as ProductLabel[],
   })
@@ -214,12 +218,18 @@ export default function ProductCreate() {
           image: p.image,
           typeId: p.typeId,
           ingredients: p.ingredients ?? [],
+          allergies: p.allergies ?? [],
           price: p.price,
           isAvailable: p.isAvailable,
+          stockQuantity:
+            typeof p.stockQuantity === 'number'
+              ? p.stockQuantity
+              : undefined,
           vatRate: p.vatRate,
           labels: (Array.isArray(p.labels) ? p.labels : []) as ProductLabel[],
         })
         setIngredientsInput(Array.isArray(p.ingredients) ? p.ingredients.join(', ') : '')
+        setSelectedAllergies(Array.isArray(p.allergies) ? p.allergies : [])
       }
 
       if (pe) {
@@ -243,8 +253,8 @@ export default function ProductCreate() {
         })));
       }
     })
-    .catch((e) => { if (mounted) setError(String(e)) })
-    .finally(() => { if (mounted) setLoading(false) } )
+      .catch((e) => { if (mounted) setError(String(e)) })
+      .finally(() => { if (mounted) setLoading(false) })
     return () => { mounted = false }
   }, [id])
 
@@ -300,8 +310,10 @@ export default function ProductCreate() {
       image: form.image, // Keep existing image if no new file is selected
       typeId: form.typeId,
       ingredients: ingredientsInput.split(',').map((x) => x.trim()).filter(Boolean),
+      allergies: selectedAllergies,
       price: form.price !== undefined ? Number(form.price) : undefined,
       isAvailable: !!form.isAvailable,
+      stockQuantity: form.stockQuantity != null ? Number(form.stockQuantity) : null,
       vatRate: form.vatRate,
       labels: form.labels || [],
     }
@@ -316,7 +328,7 @@ export default function ProductCreate() {
             name: extra.name,
             price: Number(extra.price)
           }))
-        
+
         payload.discounts = productDiscount
           .map(discount => ({
             id: discount.id ? Number(discount.id) : undefined,
@@ -326,13 +338,13 @@ export default function ProductCreate() {
             endsAt: discount.endsAt ? new Date(discount.endsAt).toISOString() : undefined,
             isActive: discount.isActive
           }))
-        
+
         // Remove image from payload - it will be sent separately if needed
         delete payload.image
-        
+
         // First, update product data without image (classic JSON request)
         await updateProduct(id, payload)
-        
+
         // Then, if there's an image, upload it separately using FormData
         if (selectedFile) {
           await updateProductImage(id, selectedFile)
@@ -345,7 +357,7 @@ export default function ProductCreate() {
             name: extra.name,
             price: Number(extra.price)
           }))
-        
+
         payload.discounts = productDiscount
           .map(discount => ({
             type: discount.type,
@@ -354,10 +366,20 @@ export default function ProductCreate() {
             endsAt: discount.endsAt ? new Date(discount.endsAt).toISOString() : undefined,
             isActive: discount.isActive
           }))
-        
-        // Pass the selected file if one was chosen
-        const createdProduct = await createProduct(payload, selectedFile || undefined)
-        console.log('Created product:', createdProduct);
+
+        // Remove image from payload - it will be sent separately if needed
+        delete payload.image
+
+        // First, create product without image (JSON request)
+        const createdProduct = await createProduct(payload, undefined)
+
+        // Extract the product ID from the response
+        const createdProductId = (createdProduct as any)?.id || (createdProduct as any)?.data?.id
+
+        // Then, if there's an image, upload it separately using FormData
+        if (selectedFile && createdProductId) {
+          await updateProductImage(createdProductId, selectedFile)
+        }
       }
       navigate('/products')
     } catch (err: unknown) {
@@ -370,7 +392,7 @@ export default function ProductCreate() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">{id ? 'Edit Product' : 'Create Product'}</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{id ? 'Edit Product' : 'Create Product'}</h1>
       </div>
 
       {loading ? (
@@ -378,108 +400,177 @@ export default function ProductCreate() {
           <CardContent className="pt-6">Loading...</CardContent>
         </Card>
       ) : (
-        <Card className="shadow-md">  
-          <CardHeader>
-            <CardTitle>{id ? 'Update Product' : 'New Product'}</CardTitle>
-            <CardDescription>Fill in the product details below</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+        <form
+          onSubmit={handleSubmit}
+          className="grid gap-6 max-w-5xl lg:grid-cols-2"
+        >
+          {/* Basic info */}
+          <Card className="shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Basic info</CardTitle>
+              <CardDescription>Name and description</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="name">Product Name *</Label>
-                <Input 
+                <Input
                   id="name"
-                  className="mt-2 w-full"
-                  value={form.name as string} 
-                  onChange={(e) => setForm(s => ({...s, name: e.target.value}))} 
-                  placeholder="Product name" 
-                  required 
+                  className="mt-1.5 w-full"
+                  value={form.name as string}
+                  onChange={(e) => setForm(s => ({ ...s, name: e.target.value }))}
+                  placeholder="Product name"
+                  required
                 />
               </div>
-
               <div>
                 <Label htmlFor="description">Description</Label>
-                <textarea
+                <Textarea
                   id="description"
-                  className="mt-2 w-full border rounded px-3 py-2 min-h-[100px] resize-y"
+                  className="mt-1.5 w-full"
                   value={form.description as string}
-                  onChange={(e) => setForm(s => ({...s, description: e.target.value}))}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setForm(s => ({ ...s, description: e.target.value }))}
                   placeholder="Product description"
+                  rows={3}
                 />
               </div>
+            </CardContent>
+          </Card>
 
-              <div>
-                <Label htmlFor="type">Product Type</Label>
-                {loading ? (
-                  <div className="mt-2 text-sm text-gray-500">Loading types...</div>
-                ) : (
+          {/* Price & availability */}
+          <Card className="shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Price & availability</CardTitle>
+              <CardDescription>Type, price, stock, VAT</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="type">Product Type</Label>
+                  {loading ? (
+                    <div className="mt-1.5 text-sm text-gray-500 dark:text-slate-400">Loading types...</div>
+                  ) : (
+                    <Select
+                      id="type"
+                      className="mt-1.5 w-full"
+                      value={form.typeId !== undefined && form.typeId !== null ? String(form.typeId) : ''}
+                      onChange={(e) => setForm(s => ({ ...s, typeId: e.target.value ? Number(e.target.value) : undefined }))}
+                    >
+                      <option value="">Select a type</option>
+                      {types.map(t => <option key={t.id} value={String(t.id)}>{t.name}</option>)}
+                    </Select>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="price">Price (€)</Label>
+                  <Input
+                    id="price"
+                    className="mt-1.5 w-full"
+                    value={form.price !== undefined ? String(form.price) : ''}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setForm(s => ({ ...s, price: v === '' ? undefined : Number(v) }));
+                    }}
+                    placeholder="0.00"
+                    type="number"
+                    step="0.01"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="stockQuantity">Stock quantity</Label>
+                  <Input
+                    id="stockQuantity"
+                    className="mt-1.5 w-full"
+                    value={form.stockQuantity != null ? String(form.stockQuantity) : ''}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setForm(s => ({ ...s, stockQuantity: v === '' ? undefined : Number(v) }));
+                    }}
+                    placeholder="Leave empty for no limit"
+                    type="number"
+                    min={0}
+                    step={1}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="vatRate">VAT Rate</Label>
                   <Select
-                    id="type"
-                    className="mt-2 w-full"
-                    value={form.typeId !== undefined && form.typeId !== null ? String(form.typeId) : ''}
-                    onChange={(e) => setForm(s => ({ ...s, typeId: e.target.value ? Number(e.target.value) : undefined }))}
+                    id="vatRate"
+                    className="mt-1.5 w-full"
+                    value={form.vatRate || ''}
+                    onChange={(e) => setForm(s => ({ ...s, vatRate: e.target.value ? e.target.value as 'FOUR' | 'FIVE' | 'TEN' | 'TWENTY_TWO' : undefined }))}
                   >
-                    <option value="">Select a type</option>
-                    {types.map(t => <option key={t.id} value={String(t.id)}>{t.name}</option>)}
+                    <option value="">Select VAT Rate</option>
+                    <option value="FOUR">4%</option>
+                    <option value="FIVE">5%</option>
+                    <option value="TEN">10%</option>
+                    <option value="TWENTY_TWO">22%</option>
                   </Select>
-                )}
+                </div>
               </div>
-
-              <div>
-                <Label htmlFor="price">Price (€)</Label>
-                <Input
-                  id="price"
-                  className="mt-2 w-full"
-                  value={form.price !== undefined ? String(form.price) : ''}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setForm(s => ({ ...s, price: v === '' ? undefined : Number(v) }));
-                  }}
-                  placeholder="0.00"
-                  type="number"
-                  step="0.01"
+              <div className="flex items-center gap-3 pt-1">
+                <Checkbox
+                  id="available"
+                  checked={!!form.isAvailable}
+                  onCheckedChange={(checked) => setForm(s => ({ ...s, isAvailable: checked }))}
+                  className="h-4 w-4 rounded border-gray-300"
                 />
+                <Label htmlFor="available" className="mb-0 cursor-pointer text-sm">Available for order</Label>
               </div>
+            </CardContent>
+          </Card>
 
-              <div>
-                <Label htmlFor="vatRate">VAT Rate</Label>
-                <Select
-                  id="vatRate"
-                  className="mt-2 w-full"
-                  value={form.vatRate || ''}
-                  onChange={(e) => setForm(s => ({ ...s, vatRate: e.target.value ? e.target.value as 'FOUR' | 'FIVE' | 'TEN' | 'TWENTY_TWO' : undefined }))}
-                >
-                  <option value="">Select VAT Rate</option>
-                  <option value="FOUR">4%</option>
-                  <option value="FIVE">5%</option>
-                  <option value="TEN">10%</option>
-                  <option value="TWENTY_TWO">22%</option>
-                </Select>
-              </div>
-
+          {/* Ingredients & diet */}
+          <Card className="shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Ingredients & diet</CardTitle>
+              <CardDescription>Ingredients, allergies and labels</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
               <div>
                 <Label htmlFor="ingredients">Ingredients (comma separated)</Label>
                 <Input
                   id="ingredients"
-                  className="mt-2 w-full"
+                  className="mt-1.5 w-full"
                   value={ingredientsInput}
-                  onChange={(e)=> setIngredientsInput(e.target.value)}
+                  onChange={(e) => setIngredientsInput(e.target.value)}
                   placeholder="Tomato, Cheese, Basil"
                 />
               </div>
-
+              <div>
+                <Label className="block mb-2">Allergies</Label>
+                <div className="flex flex-wrap gap-x-4 gap-y-2">
+                  {Object.values(ProductAllergy).map((allergy) => (
+                    <div key={allergy} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`allergy-${allergy}`}
+                        checked={selectedAllergies.includes(allergy)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedAllergies([...selectedAllergies, allergy])
+                          } else {
+                            setSelectedAllergies(selectedAllergies.filter(a => a !== allergy))
+                          }
+                        }}
+                        className="h-4 w-4 rounded border-gray-300"
+                      />
+                      <Label htmlFor={`allergy-${allergy}`} className="mb-0 cursor-pointer text-sm">
+                        {allergy.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
               <div>
                 <Label>Product Labels</Label>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {Object.values(ProductLabel).map(label => (
-                    <label key={label} className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded cursor-pointer">
-                      <input
-                        type="checkbox"
+                    <label key={label} className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-600 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 text-sm">
+                      <Checkbox
                         checked={form.labels?.includes(label)}
-                        onChange={e => {
+                        onCheckedChange={(checked) => {
                           setForm(s => {
                             const labels = s.labels || [];
-                            if (e.target.checked) {
+                            if (checked) {
                               return { ...s, labels: [...labels, label] };
                             } else {
                               return { ...s, labels: labels.filter(l => l !== label) };
@@ -487,160 +578,140 @@ export default function ProductCreate() {
                           });
                         }}
                       />
-                      <span className="text-xs">{label.replace('_', ' ').replace(/_/g, ' ')}</span>
+                      <span>{label.replace(/_/g, ' ')}</span>
                     </label>
                   ))}
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
-              <div>
-                <Label htmlFor="image">Image</Label>
-                <div className="mt-2 space-y-4">
-                  <div className="flex items-center gap-4">
-                    <input 
-                      ref={fileInputRef}
-                      id="image-input" 
-                      type="file" 
-                      accept="image/*" 
-                      className="hidden" 
-                      onChange={handleFileSelect} 
-                    />
-                    <Button 
-                      variant="primary" 
-                      type="button" 
-                      onClick={handleChooseImageClick}
-                    >
-                      Choose Image
-                    </Button>
-                    {selectedFile && (
-                      <span className="text-sm text-gray-600">{selectedFile.name}</span>
-                    )}
-                    {!selectedFile && form.image && (
-                      <span className="text-sm text-gray-500">Using existing image</span>
-                    )}
-                  </div>
-                  {imagePreview && (
-                    <div className="mt-2">
-                      <img 
-                        src={imagePreview} 
-                        alt="Preview" 
-                        className="w-32 h-32 object-cover rounded border"
-                      />
-                    </div>
-                  )}
-                  {!imagePreview && form.image && (
-                    <div className="mt-2">
-                      <img 
-                        src={`${API_BASE}/images/${form.image}`} 
-                        alt="Current" 
-                        className="w-32 h-32 object-cover rounded border"
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              <div className="flex items-end gap-3">
-                <input 
-                  id="available"
-                  type="checkbox" 
-                  checked={!!form.isAvailable} 
-                  onChange={(e)=> setForm(s=>({...s, isAvailable: e.target.checked}))}
-                  className="h-4 w-4 rounded border-gray-300"
+          {/* Image */}
+          <Card className="shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Image</CardTitle>
+              <CardDescription>Product photo</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex flex-wrap items-center gap-4">
+                <input
+                  ref={fileInputRef}
+                  id="image-input"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleFileSelect}
                 />
-                <Label htmlFor="available" className="mb-0 cursor-pointer">Available for order</Label>
+                <Button variant="primary" type="button" onClick={handleChooseImageClick}>
+                  Choose Image
+                </Button>
+                {selectedFile && (
+                  <span className="text-sm text-gray-600 dark:text-slate-400">{selectedFile.name}</span>
+                )}
+                {!selectedFile && form.image && (
+                  <span className="text-sm text-gray-500 dark:text-slate-500">Using existing image</span>
+                )}
               </div>
-              
-              <div className="col-span-2">
-                <Label className="block mb-2">Product Extras</Label>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  {productExtras.map((extra, index) => (
-                    <div
-                      key={index}
-                      className="rounded-lg border bg-gray-300 p-4"
-                    >
-                      <div className="flex justify-end">
-                        <Button
-                          type="button"
-                          variant="default"
-                          className="text-red-600 text-xs font-bold"
-                          onClick={() => removeExtra(index)}
-                        >
-                          Remove Extra
-                        </Button>
-                      </div>
-                      <div>
+              {(imagePreview || form.image) && (
+                <div className="pt-1">
+                  <img
+                    src={imagePreview ?? (form.image ? `${API_BASE}/images/${form.image}` : '')}
+                    alt="Preview"
+                    className="w-32 h-32 object-cover rounded-lg border border-slate-200 dark:border-slate-700"
+                  />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Extras */}
+          <Card className="shadow-sm lg:col-span-2">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Product Extras</CardTitle>
+              <CardDescription>Options and add-ons (e.g. extra cheese)</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-3">
+                {productExtras.map((extra, index) => (
+                  <div
+                    key={index}
+                    className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30 p-4"
+                  >
+                    <div className="flex flex-wrap gap-3 items-end">
+                      <div className="flex-1 min-w-[140px]">
                         <Label htmlFor={`productExtraName-${index}`}>Extra Name</Label>
                         <Input
                           id={`productExtraName-${index}`}
+                          className="mt-1"
                           value={extra.name}
-                          onChange={e => {
-                            const value = e.target.value;
-                            updateProductExtra(index, 'name', value)
-                          }}
+                          onChange={e => updateProductExtra(index, 'name', e.target.value)}
                           placeholder="e.g. Extra cheese"
                         />
                       </div>
-
-                      <div>
-                        <Label htmlFor={`productExtraPrice-${index}`}>Extra Price (€)</Label>
+                      <div className="w-28">
+                        <Label htmlFor={`productExtraPrice-${index}`}>Price (€)</Label>
                         <Input
                           id={`productExtraPrice-${index}`}
+                          className="mt-1"
                           type="number"
                           step="0.01"
                           value={extra.price}
-                          onChange={e => {
-                            const value = Number(e.target.value);
-                            updateProductExtra(index, 'price', value)
-                          }}
+                          onChange={e => updateProductExtra(index, 'price', Number(e.target.value))}
                           placeholder="0.00"
                         />
                       </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 dark:text-red-400 shrink-0"
+                        onClick={() => removeExtra(index)}
+                      >
+                        Remove
+                      </Button>
                     </div>
-                  ))}
-                </div>
-                <div>
-                  <Button
-                    className='mt-2'
-                    type="button" 
-                    onClick={addExtra}
-                  > Add Extra
-                  </Button>
-
-                </div>
+                  </div>
+                ))}
               </div>
+              <Button type="button" variant="default" size="sm" onClick={addExtra}>
+                Add Extra
+              </Button>
+            </CardContent>
+          </Card>
 
-              <div className="col-span-2">
-                <ProductDiscounts
-                  discounts={productDiscount}
-                  setDiscounts={setProductDiscount}
-                  productId={id}
-                />
-              
-              </div>  
+          {/* Discounts */}
+          <Card className="shadow-sm lg:col-span-2">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Discounts</CardTitle>
+              <CardDescription>Schedule and amount of product discounts</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ProductDiscounts
+                discounts={productDiscount}
+                setDiscounts={setProductDiscount}
+                productId={id}
+              />
+            </CardContent>
+          </Card>
 
+          {error && (
+            <Alert variant="destructive" className="lg:col-span-2">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
+          <div className="flex flex-wrap justify-end gap-3 pt-2 lg:col-span-2">
+            <Button variant="default" type="button" onClick={() => navigate('/products')}>
+              Cancel
+            </Button>
+            <Button variant="primary" type="submit" disabled={saving}>
+              {saving ? 'Saving...' : id ? 'Update' : 'Create'}
+            </Button>
+          </div>
+        </form>
+      )}
 
-              {error && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
-              <div className="col-start-2 flex justify-end gap-3 pt-4">
-                <Button variant="default" type="button" onClick={() => navigate('/products')}>Cancel</Button>
-                <Button variant="primary" type="submit" disabled={saving}>{saving ? 'Saving...' : id ? 'Update' : 'Create'}</Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card> 
-      )
-      }
-
-     
-      
     </div>
   )
 }

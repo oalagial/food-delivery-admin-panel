@@ -60,6 +60,24 @@ export function getToken(): string | null {
   try { return localStorage.getItem('access_token') } catch { return null }
 }
 
+/** Returns the current user id from the JWT payload (sub, id, or userId), or null if not available. */
+export function getCurrentUserId(): string | number | null {
+  const token = getToken()
+  if (!token || typeof token !== 'string') return null
+  const parts = token.split('.')
+  if (parts.length !== 3) return null
+  try {
+    const payload = JSON.parse(
+      atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'))
+    ) as Record<string, unknown>
+    const id = payload.sub ?? payload.id ?? payload.userId ?? payload.user_id
+    if (id === undefined || id === null) return null
+    return typeof id === 'number' ? id : String(id)
+  } catch {
+    return null
+  }
+}
+
 export function authFetch(input: RequestInfo, init?: RequestInit) {
   const token = getToken()
   const headers = new Headers(init?.headers || {})
@@ -296,6 +314,27 @@ export async function getRoleById(id: string | number): Promise<Restaurant | nul
   return data.data?.[0] || null
 }
 
+export async function deleteUser(id: string | number): Promise<void> {
+  if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
+  const res = await authFetch(`/users/${encodeURIComponent(String(id))}`, { method: 'DELETE' })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(text || `Delete user failed (${res.status})`)
+  }
+}
+
+export async function setUserActive(id: string | number, active: boolean): Promise<void> {
+  if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
+  const res = await authFetch(`/users/${encodeURIComponent(String(id))}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ active }),
+  })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(text || `Update user failed (${res.status})`)
+  }
+}
 
 export type TypeItem = {
   id?: string | number
@@ -411,6 +450,25 @@ export async function deleteType(id: string | number) {
 }
 
 // Product types + APIs
+export const ProductAllergy = {
+  GLUTEN: 'GLUTEN',
+  DAIRY: 'DAIRY',
+  EGGS: 'EGGS',
+  FISH: 'FISH',
+  SHELLFISH: 'SHELLFISH',
+  TREE_NUTS: 'TREE_NUTS',
+  PEANUTS: 'PEANUTS',
+  SOY: 'SOY',
+  SESAME: 'SESAME',
+  SULPHITES: 'SULPHITES',
+  LUPIN: 'LUPIN',
+  MOLLUSCS: 'MOLLUSCS',
+  MUSTARD: 'MUSTARD',
+  CELERY: 'CELERY',
+} as const
+
+export type ProductAllergy = (typeof ProductAllergy)[keyof typeof ProductAllergy]
+
 export type Product = {
   id?: string | number
   name?: string
@@ -419,6 +477,7 @@ export type Product = {
   typeId?: number | string
   type: any
   ingredients?: string[]
+  allergies?: ProductAllergy[]
   price?: number
   isAvailable?: boolean
   extras?: ProductExtra[]
@@ -434,8 +493,10 @@ export type CreateProductPayload = {
   imageFile?: string
   typeId?: number | string
   ingredients?: string[]
+  allergies?: ProductAllergy[]
   price?: number
   isAvailable?: boolean
+  stockQuantity?: number | null
   vatRate?: 'FOUR' | 'FIVE' | 'TEN' | 'TWENTY_TWO'
   extras?: Array<{ id?: number; name: string; price: number }>
   discounts?: Array<{ id?: number; type: 'PERCENTAGE' | 'FIXED'; value: number; startsAt: string; endsAt?: string; isActive: boolean }>
@@ -492,6 +553,13 @@ export async function createProduct(payload: CreateProductPayload, imageFile?: F
     if (payload.ingredients && payload.ingredients.length > 0) {
       payload.ingredients.forEach((ingredient, index) => {
         formData.append(`ingredients[${index}]`, ingredient)
+      })
+    }
+    
+    // Append allergies array
+    if (payload.allergies && payload.allergies.length > 0) {
+      payload.allergies.forEach((allergy, index) => {
+        formData.append(`allergies[${index}]`, allergy)
       })
     }
     
@@ -1603,4 +1671,125 @@ export async function deleteRestaurant(id: string | number) {
 
   const data = await res.json().catch(() => null)
   return data
+}
+
+// Stats API
+export type StatsOverviewResponse = {
+  totalRevenue: number
+  totalOrders: number
+  averageOrderValue: number
+  deliveredOrders: number
+  cancelledOrders: number
+  deliveryRate: number
+  cancellationRate: number
+  newCustomers: number
+  ordersWithCoupon: number
+}
+
+export type StatsRevenueItem = {
+  period: string
+  revenue: number
+  orderCount: number
+}
+
+export type StatsProductItem = {
+  productId: number
+  productName: string
+  quantity: number
+  revenue: number
+}
+
+export type StatsPaymentMethodItem = {
+  method: string
+  count: number
+  total: number
+}
+
+export type StatsTopCustomerItem = {
+  customerId: number
+  customerName: string
+  customerEmail: string
+  customerPhone: string
+  orderCount: number
+  totalRevenue: number
+  averageOrderValue: number
+}
+
+export type StatsParams = {
+  from?: string
+  to?: string
+  restaurantId?: number
+  groupBy?: 'day' | 'week' | 'month'
+}
+
+export async function getStatsOverview(params?: StatsParams): Promise<StatsOverviewResponse> {
+  const search = new URLSearchParams()
+  if (params?.from) search.set('from', params.from)
+  if (params?.to) search.set('to', params.to)
+  if (params?.restaurantId != null) search.set('restaurantId', String(params.restaurantId))
+  if (params?.groupBy) search.set('groupBy', params.groupBy)
+  const res = await authFetch(`/stats/overview?${search}`)
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(text || `GET /stats/overview failed (${res.status})`)
+  }
+  return res.json()
+}
+
+export async function getStatsRevenue(params?: StatsParams): Promise<StatsRevenueItem[]> {
+  const search = new URLSearchParams()
+  if (params?.from) search.set('from', params.from)
+  if (params?.to) search.set('to', params.to)
+  if (params?.restaurantId != null) search.set('restaurantId', String(params.restaurantId))
+  if (params?.groupBy) search.set('groupBy', params.groupBy)
+  const res = await authFetch(`/stats/revenue?${search}`)
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(text || `GET /stats/revenue failed (${res.status})`)
+  }
+  const data = await res.json()
+  return Array.isArray(data) ? data : []
+}
+
+export async function getStatsProducts(params?: StatsParams): Promise<StatsProductItem[]> {
+  const search = new URLSearchParams()
+  if (params?.from) search.set('from', params.from)
+  if (params?.to) search.set('to', params.to)
+  if (params?.restaurantId != null) search.set('restaurantId', String(params.restaurantId))
+  if (params?.groupBy) search.set('groupBy', params.groupBy)
+  const res = await authFetch(`/stats/products/top?${search}`)
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(text || `GET /stats/products/top failed (${res.status})`)
+  }
+  const data = await res.json()
+  return Array.isArray(data) ? data : []
+}
+
+export async function getStatsPaymentMethods(params?: StatsParams): Promise<StatsPaymentMethodItem[]> {
+  const search = new URLSearchParams()
+  if (params?.from) search.set('from', params.from)
+  if (params?.to) search.set('to', params.to)
+  if (params?.restaurantId != null) search.set('restaurantId', String(params.restaurantId))
+  const res = await authFetch(`/stats/payment-methods?${search}`)
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(text || `GET /stats/payment-methods failed (${res.status})`)
+  }
+  const data = await res.json()
+  return Array.isArray(data) ? data : []
+}
+
+export async function getStatsTopCustomers(params?: StatsParams): Promise<StatsTopCustomerItem[]> {
+  const search = new URLSearchParams()
+  if (params?.from) search.set('from', params.from)
+  if (params?.to) search.set('to', params.to)
+  if (params?.restaurantId != null) search.set('restaurantId', String(params.restaurantId))
+  const res = await authFetch(`/stats/customers/top?${search}`)
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(text || `GET /stats/customers/top failed (${res.status})`)
+  }
+  const data = await res.json()
+  return Array.isArray(data) ? data : []
 }

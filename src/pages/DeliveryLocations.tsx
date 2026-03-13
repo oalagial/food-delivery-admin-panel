@@ -4,6 +4,7 @@ import { FiPlus, FiEdit, FiTrash, FiCheckCircle, FiXCircle } from 'react-icons/f
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { Button } from '../components/ui/button'
 import { Skeleton } from '../components/ui/skeleton'
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/card'
 import { getDeliveryLocationsList, getRestaurantsList, updateDeliveryLocation } from '../utils/api'
 import type { CreateDeliveryLocationPayload as DeliveryLocation, Restaurant as RestaurantType } from '../utils/api'
 
@@ -67,7 +68,7 @@ export default function DeliveryLocations() {
   const toggleActiveStatus = async (loc: Partial<DeliveryLocation>) => {
     const locId = (loc as any).id
     if (!locId) return
-    
+
     try {
       const currentStatus = loc.isActive ?? false
       const updatedPayload: DeliveryLocation = {
@@ -82,9 +83,9 @@ export default function DeliveryLocations() {
         description: loc.description,
         isActive: !currentStatus,
       }
-      
+
       await updateDeliveryLocation(String(locId), updatedPayload)
-      
+
       // Reload the list
       const locsRaw = await getDeliveryLocationsList()
       const locsArray = Array.isArray(locsRaw) ? locsRaw : (locsRaw && (locsRaw as any).items) || (locsRaw && (locsRaw as any).data) || []
@@ -123,8 +124,8 @@ export default function DeliveryLocations() {
           return (
             <span key={idx} className={inactive ? 'opacity-60' : ''}>
               <span className="font-medium">{name}</span>
-              {fee && <span className="ml-2 bg-gray-100 rounded px-2 py-0.5 text-xs">{fee}</span>}
-              {min && <span className="ml-2 bg-gray-100 rounded px-2 py-0.5 text-xs">{min}</span>}
+              {fee && <span className="ml-2 bg-gray-100 text-gray-800 rounded px-2 py-0.5 text-xs">{fee}</span>}
+              {min && <span className="ml-2 bg-gray-100 text-gray-800 rounded px-2 py-0.5 text-xs">{min}</span>}
               {inactive && <span className="ml-2 bg-red-200 text-red-800 rounded px-2 py-0.5 text-xs">Inactive</span>}
             </span>
           )
@@ -136,12 +137,20 @@ export default function DeliveryLocations() {
   return (
     <div className="space-y-6">
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Delivery Locations</h1>
-          <p className="text-gray-600 mt-1">Manage delivery zones and locations</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Delivery Locations</h1>
+          <p className="text-gray-600 mt-1 dark:text-slate-400">Manage delivery zones and locations</p>
         </div>
-        <Link to="/delivery-locations/creation"><Button variant="primary" icon={<FiPlus className="w-5 h-5" />} className="px-6 py-3 text-base">Create Location</Button></Link>
+        <Link to="/delivery-locations/creation" className="w-full sm:w-auto">
+          <Button
+            variant="primary"
+            icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
+            className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
+          >
+            <span className="sm:inline">Create Location</span>
+          </Button>
+        </Link>
       </div>
 
       {error && <p className="text-red-600">{error}</p>}
@@ -176,94 +185,223 @@ export default function DeliveryLocations() {
       ) : (
         <>
           <div className="mt-4">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">Active Delivery Locations</h2>
-            <Table>
-              <TableHead>
-                <tr>
-                  <TableHeadCell>Name</TableHeadCell>
-                  <TableHeadCell>Address</TableHeadCell>
-                  <TableHeadCell>City</TableHeadCell>
-                  <TableHeadCell>Province</TableHeadCell>
-                  <TableHeadCell>Zip</TableHeadCell>
-                  <TableHeadCell>Country</TableHeadCell>
-                  <TableHeadCell>Active</TableHeadCell>
-                  <TableHeadCell>Restaurants</TableHeadCell>
-                  <TableHeadCell>Actions</TableHeadCell>
-                </tr>
-              </TableHead>
-              <TableBody>
-                {activeLocations.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={11}>No active delivery locations found.</TableCell>
-                  </TableRow>
-                )}
+            <h2 className="text-2xl font-semibold mb-4">Active Delivery Locations</h2>
 
-                {activeLocations.map((loc) => (
-                  <TableRow key={String(loc.id ?? '') + String(loc.name ?? '')}>
-                    <TableCell>{loc.name ?? ''}</TableCell>
-                    <TableCell>{loc.address ?? ''}</TableCell>
-                    <TableCell>{loc.city ?? ''}</TableCell>
-                    <TableCell>{loc.province ?? ''}</TableCell>
-                    <TableCell>{loc.zipCode ?? ''}</TableCell>
-                    <TableCell>{loc.country ?? ''}</TableCell>
-                    <TableCell>{loc.isActive ? 'Yes' : 'No'}</TableCell>
-                    <TableCell>{renderRestaurantsCell(loc)}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Link to={`/delivery-locations/creation/${encodeURIComponent(String(loc.id ?? ''))}`}><Button variant="ghost" className='p-2' size="sm" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
-                        <Button 
-                          variant={loc.isActive ? "ghost" : "ghost"} 
-                          size="sm" 
-                          className='p-2' 
-                          icon={loc.isActive ? <FiCheckCircle className="w-4 h-4 text-green-600" /> : <FiXCircle className="w-4 h-4 text-red-600" />}
-                          onClick={() => toggleActiveStatus(loc)}
-                          title={loc.isActive ? "Deactivate" : "Activate"}
-                        ></Button>
-                        <Button variant="danger" size="sm" className='p-2' icon={<FiTrash className="w-4 h-4" />}></Button>
+            {/* Mobile: cards */}
+            <div className="space-y-3 md:hidden">
+              {activeLocations.length === 0 ? (
+                <p className="text-sm">
+                  No active delivery locations found.
+                </p>
+              ) : (
+                activeLocations.map((loc) => (
+                  <Card
+                    key={String(loc.id ?? '') + String(loc.name ?? '')}
+                    className="shadow-sm"
+                  >
+                    <CardHeader className="p-4 pb-2">
+                      <CardTitle className="text-base font-semibold">
+                        {loc.name ?? ''}
+                      </CardTitle>
+                      <p className="text-xs">
+                        {[loc.city, loc.province, loc.country].filter(Boolean).join(', ')}
+                      </p>
+                    </CardHeader>
+                    <CardContent className="px-4 pb-2 pt-0 space-y-1">
+                      <p className="text-xs">
+                        {loc.address ?? ''}{loc.zipCode ? `, ${loc.zipCode}` : ''}
+                      </p>
+                      <p className="text-xs">
+                        <span
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${loc.isActive
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-red-100 text-red-700'
+                            }`}
+                        >
+                          {loc.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </p>
+                      <div className="text-xs">
+                        <span className="font-semibold">Restaurants:</span>{' '}
+                        {renderRestaurantsCell(loc)}
                       </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    </CardContent>
+                    <CardFooter className="flex justify-end gap-1 px-4 pb-4 pt-0">
+                      <Link to={`/delivery-locations/creation/${encodeURIComponent(String(loc.id ?? ''))}`}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="p-2 text-xs"
+                          icon={<FiEdit className="w-4 h-4" />}
+                        />
+                      </Link>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="p-2 text-xs"
+                        icon={
+                          loc.isActive ? (
+                            <FiCheckCircle className="w-4 h-4 text-green-600" />
+                          ) : (
+                            <FiXCircle className="w-4 h-4 text-red-600" />
+                          )
+                        }
+                        onClick={() => toggleActiveStatus(loc)}
+                        title={loc.isActive ? 'Deactivate' : 'Activate'}
+                      />
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        className="p-2 text-xs"
+                        icon={<FiTrash className="w-4 h-4" />}
+                      />
+                    </CardFooter>
+                  </Card>
+                ))
+              )}
+            </div>
+
+            {/* Desktop: table */}
+            <div className="hidden md:block">
+              <Table>
+                <TableHead>
+                  <tr>
+                    <TableHeadCell>Name</TableHeadCell>
+                    <TableHeadCell>Address</TableHeadCell>
+                    <TableHeadCell>City</TableHeadCell>
+                    <TableHeadCell>Province</TableHeadCell>
+                    <TableHeadCell>Zip</TableHeadCell>
+                    <TableHeadCell>Country</TableHeadCell>
+                    <TableHeadCell>Active</TableHeadCell>
+                    <TableHeadCell>Restaurants</TableHeadCell>
+                    <TableHeadCell>Actions</TableHeadCell>
+                  </tr>
+                </TableHead>
+                <TableBody>
+                  {activeLocations.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={11}>No active delivery locations found.</TableCell>
+                    </TableRow>
+                  )}
+
+                  {activeLocations.map((loc) => (
+                    <TableRow key={String(loc.id ?? '') + String(loc.name ?? '')}>
+                      <TableCell>{loc.name ?? ''}</TableCell>
+                      <TableCell>{loc.address ?? ''}</TableCell>
+                      <TableCell>{loc.city ?? ''}</TableCell>
+                      <TableCell>{loc.province ?? ''}</TableCell>
+                      <TableCell>{loc.zipCode ?? ''}</TableCell>
+                      <TableCell>{loc.country ?? ''}</TableCell>
+                      <TableCell>{loc.isActive ? 'Yes' : 'No'}</TableCell>
+                      <TableCell>{renderRestaurantsCell(loc)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Link to={`/delivery-locations/creation/${encodeURIComponent(String(loc.id ?? ''))}`}><Button variant="ghost" className='p-2' size="sm" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
+                          <Button
+                            variant={loc.isActive ? "ghost" : "ghost"}
+                            size="sm"
+                            className='p-2'
+                            icon={loc.isActive ? <FiCheckCircle className="w-4 h-4 text-green-600" /> : <FiXCircle className="w-4 h-4 text-red-600" />}
+                            onClick={() => toggleActiveStatus(loc)}
+                            title={loc.isActive ? "Deactivate" : "Activate"}
+                          ></Button>
+                          <Button variant="danger" size="sm" className='p-2' icon={<FiTrash className="w-4 h-4" />}></Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
 
           {deletedLocations.length > 0 && (
             <div className="mt-8">
-              <h2 className="text-2xl font-semibold text-gray-600 mb-4">Deleted Delivery Locations</h2>
-              <Table>
-                <TableHead>
-                  <tr className="bg-gray-100">
-                    <TableHeadCell className="text-gray-600">Name</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">Address</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">City</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">Province</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">Zip</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">Country</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">Active</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">Restaurants</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">Deleted By</TableHeadCell>
-                  </tr>
-                </TableHead>
-                <TableBody>
-                  {deletedLocations.map((loc) => {
-                    const anyLoc = loc as unknown as Record<string, unknown>
-                    return (
-                      <TableRow key={String(loc.id ?? '') + String(loc.name ?? '')} className="bg-gray-50 opacity-75">
-                        <TableCell className="text-gray-600">{loc.name ?? ''}</TableCell>
-                        <TableCell className="text-gray-600">{loc.address ?? ''}</TableCell>
-                        <TableCell className="text-gray-600">{loc.city ?? ''}</TableCell>
-                        <TableCell className="text-gray-600">{loc.province ?? ''}</TableCell>
-                        <TableCell className="text-gray-600">{loc.zipCode ?? ''}</TableCell>
-                        <TableCell className="text-gray-600">{loc.country ?? ''}</TableCell>
-                        <TableCell className="text-gray-600">{loc.isActive ? 'Yes' : 'No'}</TableCell>
-                        <TableCell className="text-gray-600">{renderRestaurantsCell(loc)}</TableCell>
-                        <TableCell className="text-gray-500 text-sm">{String(anyLoc.deletedBy ?? '')}</TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
+              <h2 className="text-2xl font-semibold mb-4">Deleted Delivery Locations</h2>
+
+              {/* Mobile: cards for deleted */}
+              <div className="space-y-3 md:hidden">
+                {deletedLocations.map((loc) => {
+                  const anyLoc = loc as unknown as Record<string, unknown>
+                  return (
+                    <Card
+                      key={String(loc.id ?? '') + String(loc.name ?? '')}
+                      className="shadow-sm bg-gray-50"
+                    >
+                      <CardHeader className="p-4 pb-2">
+                        <CardTitle className="text-base font-semibold">
+                          {loc.name ?? ''}
+                        </CardTitle>
+                        <p className="text-xs">
+                          {[loc.city, loc.province, loc.country].filter(Boolean).join(', ')}
+                        </p>
+                      </CardHeader>
+                      <CardContent className="px-4 pb-2 pt-0 space-y-1">
+                        <p className="text-xs">
+                          {loc.address ?? ''}{loc.zipCode ? `, ${loc.zipCode}` : ''}
+                        </p>
+                        <p className="text-xs">
+                          <span
+                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${loc.isActive
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-red-100 text-red-700'
+                              }`}
+                          >
+                            {loc.isActive ? 'Active' : 'Inactive'}
+                          </span>
+                        </p>
+                        <div className="text-xs">
+                          <span className="font-semibold">Restaurants:</span>{' '}
+                          {renderRestaurantsCell(loc)}
+                        </div>
+                        <p className="text-[11px]">
+                          Deleted by:{' '}
+                          <span className="font-medium">
+                            {String(anyLoc.deletedBy ?? '')}
+                          </span>
+                        </p>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
+
+              {/* Desktop: table for deleted */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHead>
+                    <tr className="bg-gray-100 dark:bg-slate-900">
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Name</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Address</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">City</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Province</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Zip</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Country</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Active</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Restaurants</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Deleted By</TableHeadCell>
+                    </tr>
+                  </TableHead>
+                  <TableBody>
+                    {deletedLocations.map((loc) => {
+                      const anyLoc = loc as unknown as Record<string, unknown>
+                      return (
+                        <TableRow key={String(loc.id ?? '') + String(loc.name ?? '')} className="bg-gray-50 opacity-75 dark:bg-slate-800">
+                          <TableCell className="text-gray-600">{loc.name ?? ''}</TableCell>
+                          <TableCell className="text-gray-600">{loc.address ?? ''}</TableCell>
+                          <TableCell className="text-gray-600">{loc.city ?? ''}</TableCell>
+                          <TableCell className="text-gray-600">{loc.province ?? ''}</TableCell>
+                          <TableCell className="text-gray-600">{loc.zipCode ?? ''}</TableCell>
+                          <TableCell className="text-gray-600">{loc.country ?? ''}</TableCell>
+                          <TableCell className="text-gray-600">{loc.isActive ? 'Yes' : 'No'}</TableCell>
+                          <TableCell className="text-gray-600">{renderRestaurantsCell(loc)}</TableCell>
+                          <TableCell className="text-gray-500 text-sm">{String(anyLoc.deletedBy ?? '')}</TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
           )}
         </>

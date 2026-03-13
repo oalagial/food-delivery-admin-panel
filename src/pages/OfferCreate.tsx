@@ -6,6 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../co
 import { Label } from "../components/ui/label"
 import { Input } from "../components/ui/input"
 import { Select } from "../components/ui/select"
+import { Checkbox } from "../components/ui/checkbox"
+import { Alert, AlertDescription } from "../components/ui/alert"
+import { AlertCircle } from "lucide-react"
 
 export default function OfferCreate () {
   const { id } = useParams<{ id?: string }>()
@@ -168,223 +171,300 @@ export default function OfferCreate () {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">{editing ? "Edit Offer" : "Create Offer"}</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">
+          {editing ? 'Edit Offer' : 'Create Offer'}
+        </h1>
       </div>
       {loading ? (
-          <Card className="shadow-md">
-            <CardContent className="pt-6">Loading...</CardContent>
-          </Card>
-        ) : (
-          <Card className="shadow-md">
-            <CardHeader>
-              <CardTitle> {editing ? "Update Offer" : "New Offer"} </CardTitle>
-              <CardDescription>Fill in the offer information below</CardDescription>
+        <Card className="shadow-md">
+          <CardContent className="pt-6">Loading...</CardContent>
+        </Card>
+      ) : (
+        <form
+          onSubmit={handleSubmit}
+          className="grid gap-6 max-w-5xl lg:grid-cols-2"
+        >
+          {/* Basic info */}
+          <Card className="shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">
+                {editing ? 'Update Offer' : 'New Offer'}
+              </CardTitle>
+              <CardDescription>Fill in the offer details</CardDescription>
             </CardHeader>
-            <CardContent>
-              {createError && (
-                <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
-                  {createError}
-                </div>
-              )}
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="name">Offer Name *</Label>
-                    <Input
-                      id="name"
-                      className="mt-2 w-full"
-                      value={form.name !== undefined && form.name !== null ? String(form.name) : ''}
-                      onChange={e => {
-                        setForm(s => ({...s, name: e.target.value}))
-                      }}
-                      placeholder="Offer name"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="description">Description</Label>
-                    <Input
-                      id="description"
-                      className="mt-2 w-full"
-                      value={form.description}
-                      onChange={(e) => setForm(s => ({...s, description: e.target.value}))}
-                      placeholder="Offer description"
-                    />
-                  </div>
-                </div>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="name">Offer Name *</Label>
+                <Input
+                  id="name"
+                  className="mt-1.5 w-full"
+                  value={
+                    form.name !== undefined && form.name !== null
+                      ? String(form.name)
+                      : ''
+                  }
+                  onChange={(e) =>
+                    setForm((s) => ({ ...s, name: e.target.value }))
+                  }
+                  placeholder="Offer name"
+                  required
+                />
+              </div>
 
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="price" >Price ($) *</Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      className="mt-2 w-full"
-                      value={form.price}
-                      step={0.01}
-                      onChange={(e) => setForm(s => ({...s, price: Number(e.target.value) }))}
-                      placeholder="Offer price"
-                      required
-                    />
-                  </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Input
+                  id="description"
+                  className="mt-1.5 w-full"
+                  value={form.description}
+                  onChange={(e) =>
+                    setForm((s) => ({ ...s, description: e.target.value }))
+                  }
+                  placeholder="Offer description"
+                />
+              </div>
 
-                  <div>
-                    <Label htmlFor="restaurant">Restaurant *</Label>
-                    <Select
-                      id="restaurant"
-                      className="mt-2 w-full"
-                      value={String(form.restaurantId ?? '')}
-                      onChange={(e) => setForm(s => ({...s, restaurantId: String(e.target.value) }))}
-                      required
-                    >
-                      <option value="">Select a restaurant</option>
-                      {restaurants.map(r => <option key={String(r.id)} value={String(r.id)}>{r.name ?? String(r.id)}</option>)}
-
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="menu">Menu *</Label>
-                    <Select
-                      id="menu"
-                      className="mt-2 w-full"
-                      value={String(form.menuId ?? '')}
-                      onChange={(e) => setForm(s => ({...s, menuId: String(e.target.value)}))}
-                      required
-                      disabled={!form.restaurantId}  // Disable if no restaurant selected
-                    >
-                      <option value="">Select a menu</option>
-                      {selectedRestaurant?.menu && (
-                        Array.isArray(selectedRestaurant.menu) ? (
-                          selectedRestaurant.menu.map(m => (
-                            <option key={String(m.id)} value={String(m.id)}>
-                              {m.name ?? String(m.id)}
-                            </option>
-                          ))
-                        ) : (
-                          <option key={String((selectedRestaurant.menu as any).id)} value={String((selectedRestaurant.menu as any).id)}>
-                            {(selectedRestaurant.menu as any).name ?? String((selectedRestaurant.menu as any).id)}
-                          </option>
-                        )
-                      )}
-                    </Select>
-                  </div>
-
-                   <div className="flex items-end gap-3">
-                    <Label htmlFor="available" className="mb-0 cursor-pointer">Active</Label>
-                    <input 
-                      id="available"
-                      type="checkbox" 
-                      checked={!!form.isActive} 
-                      onChange={(e)=> setForm(s=>({...s, isActive: e.target.checked}))}
-                      className="h-4 w-4 rounded border-gray-300"
-                    />
-                  </div>
-                </div>
-                
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <Button type="button" onClick={addGroup}>
-                    Add Group
-                  </Button>
-
+                  <Label htmlFor="price">Price (€) *</Label>
+                  <Input
+                    id="price"
+                    type="number"
+                    className="mt-1.5 w-full"
+                    value={form.price}
+                    step={0.01}
+                    onChange={(e) =>
+                      setForm((s) => ({
+                        ...s,
+                        price: Number(e.target.value),
+                      }))
+                    }
+                    placeholder="Offer price"
+                    required
+                  />
                 </div>
 
+                <div>
+                  <Label htmlFor="restaurant">Restaurant *</Label>
+                  <Select
+                    id="restaurant"
+                    className="mt-1.5 w-full"
+                    value={String(form.restaurantId ?? '')}
+                    onChange={(e) =>
+                      setForm((s) => ({
+                        ...s,
+                        restaurantId: String(e.target.value),
+                      }))
+                    }
+                    required
+                  >
+                    <option value="">Select a restaurant</option>
+                    {restaurants.map((r) => (
+                      <option key={String(r.id)} value={String(r.id)}>
+                        {r.name ?? String(r.id)}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="menu">Menu *</Label>
+                  <Select
+                    id="menu"
+                    className="mt-1.5 w-full"
+                    value={String(form.menuId ?? '')}
+                    onChange={(e) =>
+                      setForm((s) => ({
+                        ...s,
+                        menuId: String(e.target.value),
+                      }))
+                    }
+                    required
+                    disabled={!form.restaurantId}
+                  >
+                    <option value="">Select a menu</option>
+                    {selectedRestaurant?.menu &&
+                      (Array.isArray(selectedRestaurant.menu) ? (
+                        selectedRestaurant.menu.map((m) => (
+                          <option key={String(m.id)} value={String(m.id)}>
+                            {m.name ?? String(m.id)}
+                          </option>
+                        ))
+                      ) : (
+                        <option
+                          key={String((selectedRestaurant.menu as any).id)}
+                          value={String((selectedRestaurant.menu as any).id)}
+                        >
+                          {(selectedRestaurant.menu as any).name ??
+                            String((selectedRestaurant.menu as any).id)}
+                        </option>
+                      ))}
+                  </Select>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 pt-1">
+                <Checkbox
+                  id="available"
+                  checked={!!form.isActive}
+                  onCheckedChange={(checked) =>
+                    setForm((s) => ({ ...s, isActive: checked }))
+                  }
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <Label
+                  htmlFor="available"
+                  className="mb-0 cursor-pointer text-sm"
+                >
+                  Active offer
+                </Label>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Groups & products */}
+          <Card className="shadow-sm lg:col-span-2">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Offer groups</CardTitle>
+              <CardDescription>
+                Configure groups and assign products to each group
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {createError && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{createError}</AlertDescription>
+                </Alert>
+              )}
+
+              <Button type="button" variant="default" size="sm" onClick={addGroup}>
+                Add Group
+              </Button>
+
+              <div className="space-y-4">
                 {form.groups.map((g, index) => (
-                  <div className="bg-gray-300 rounded-lg">
-                    <div key={index} className="m-3 p-3">
-                      <div className="flex justify-end">
+                  <div
+                    key={index}
+                    className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30"
+                  >
+                    <div className="p-4 space-y-4">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-sm font-semibold">
+                          Group {index + 1}
+                        </h3>
                         <Button
                           type="button"
-                          variant="default"
-                          className="text-red-600 text-xs font-bold mb-4"
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 dark:text-red-400 text-xs font-semibold"
                           onClick={() => removeGroup(index)}
                         >
                           Remove Group
                         </Button>
                       </div>
-                      <div className="grid grid-cols-3 gap-4">
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
                           <Label htmlFor={`groupName-${index}`}>Group Name</Label>
                           <Input
                             id={`groupName-${index}`}
+                            className="mt-1"
                             value={g.name}
-                            onChange={e => {
-                              const value = e.target.value;
-                              setForm(prev => ({
+                            onChange={(e) => {
+                              const value = e.target.value
+                              setForm((prev) => ({
                                 ...prev,
                                 groups: prev.groups.map((group, i) =>
-                                  i === index ? { ...group, name: value } : group
-                                )
-                              }));
+                                  i === index ? { ...group, name: value } : group,
+                                ),
+                              }))
                             }}
                             required
                           />
                         </div>
-                        
+
                         <div>
                           <Label htmlFor={`minItems-${index}`}>Minimum Items</Label>
                           <Input
                             id={`minItems-${index}`}
+                            className="mt-1"
+                            type="number"
                             value={g.minItems}
-                            onChange={e => {
-                              const value = e.target.value;
-                              setForm(prev => ({
+                            onChange={(e) => {
+                              const value = e.target.value
+                              setForm((prev) => ({
                                 ...prev,
                                 groups: prev.groups.map((group, i) =>
-                                  i === index ? { ...group, minItems: Number(value) } : group
-                                )
-                              }));
+                                  i === index
+                                    ? { ...group, minItems: Number(value) }
+                                    : group,
+                                ),
+                              }))
                             }}
                             required
                           />
                         </div>
-                        
+
                         <div>
                           <Label htmlFor={`maxItems-${index}`}>Maximum Items</Label>
                           <Input
                             id={`maxItems-${index}`}
+                            className="mt-1"
+                            type="number"
                             value={g.maxItems}
-                            onChange={e => {
-                              const value = e.target.value;
-                              setForm(prev => ({
+                            onChange={(e) => {
+                              const value = e.target.value
+                              setForm((prev) => ({
                                 ...prev,
                                 groups: prev.groups.map((group, i) =>
-                                  i === index ? { ...group, maxItems: Number(value) } : group
-                                )
-                              }));
+                                  i === index
+                                    ? { ...group, maxItems: Number(value) }
+                                    : group,
+                                ),
+                              }))
                             }}
                             required
                           />
                         </div>
-                     
                       </div>
+
                       <div>
                         <Label>Products</Label>
                         <div className="flex gap-4 mt-2">
                           {/* Available */}
                           <div className="flex-1">
-                            <div className="font-semibold mb-1 text-sm">Available</div>
-                            <div className="border rounded p-2 h-48 overflow-y-auto bg-white">
-                              {products.filter(p => !g.productsIds.includes(Number(p.id))).length === 0 && (
-                                <div className="text-xs text-gray-400">No more products</div>
+                            <div className="font-semibold mb-1 text-sm">
+                              Available
+                            </div>
+                            <div className="border rounded p-2 h-48 overflow-y-auto bg-white dark:bg-slate-900">
+                              {products.filter(
+                                (p) => !g.productsIds.includes(Number(p.id)),
+                              ).length === 0 && (
+                                <div className="text-xs text-gray-400">
+                                  No more products
+                                </div>
                               )}
 
                               {products
-                                .filter(p => !g.productsIds.includes(Number(p.id)))
-                                .map(p => (
+                                .filter(
+                                  (p) => !g.productsIds.includes(Number(p.id)),
+                                )
+                                .map((p) => (
                                   <div
                                     key={p.id}
-                                    className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 rounded group"
+                                    className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded group"
                                   >
                                     <span>{p.name ?? p.id}</span>
-                                    <button
+                                    <Button
                                       type="button"
+                                      variant="ghost"
+                                      size="sm"
                                       className="text-green-600 text-xs font-bold"
                                       onClick={() => addProductToGroup(index, p.id)}
                                     >
                                       Add
-                                    </button>
+                                    </Button>
                                   </div>
                                 ))}
                             </div>
@@ -392,27 +472,37 @@ export default function OfferCreate () {
 
                           {/* Selected */}
                           <div className="flex-1">
-                            <div className="font-semibold mb-1 text-sm">Selected</div>
-                            <div className="border rounded p-2 h-48 overflow-y-auto bg-white">
+                            <div className="font-semibold mb-1 text-sm">
+                              Selected
+                            </div>
+                            <div className="border rounded p-2 h-48 overflow-y-auto bg-white dark:bg-slate-900">
                               {g.productsIds.length === 0 && (
-                                <div className="text-xs text-gray-400">No products selected</div>
+                                <div className="text-xs text-gray-400">
+                                  No products selected
+                                </div>
                               )}
 
                               {products
-                                .filter(p => g.productsIds.includes(Number(p.id)))
-                                .map(p => (
+                                .filter((p) =>
+                                  g.productsIds.includes(Number(p.id)),
+                                )
+                                .map((p) => (
                                   <div
                                     key={p.id}
-                                    className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 rounded group"
+                                    className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded group"
                                   >
                                     <span>{p.name ?? p.id}</span>
-                                    <button
+                                    <Button
                                       type="button"
+                                      variant="ghost"
+                                      size="sm"
                                       className="text-red-600 text-xs font-bold"
-                                      onClick={() => removeProductFromGroup(index, p.id)}
+                                      onClick={() =>
+                                        removeProductFromGroup(index, p.id)
+                                      }
                                     >
                                       Remove
-                                    </button>
+                                    </Button>
                                   </div>
                                 ))}
                             </div>
@@ -420,35 +510,39 @@ export default function OfferCreate () {
                         </div>
 
                         <p className="mt-1 text-xs text-gray-500">
-                          Click "Add" to select, "Remove" to unselect.
+                          Click &quot;Add&quot; to select, &quot;Remove&quot; to
+                          unselect.
                         </p>
-
-
                       </div>
                     </div>
-
                   </div>
                 ))}
+              </div>
 
-
-                <div className="col-start-2 flex justify-end gap-3 pt-4">
-                  <Link to="/offers">
-                    <Button variant="default" type="submit">Cancel</Button>
-                  </Link>
-                  <Button
-                    variant="primary"
-                    type="submit"
-                    disabled={saving}
-                  >
-                    {saving ? (id ? 'Saving...' : 'Creating...') : (id ? 'Update' : 'Create')}
+              <div className="flex flex-wrap justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
+                <Link to="/offers">
+                  <Button variant="default" type="button">
+                    Cancel
                   </Button>
-                </div>
-
-              </form>
+                </Link>
+                <Button
+                  variant="primary"
+                  type="submit"
+                  disabled={saving}
+                >
+                  {saving
+                    ? id
+                      ? 'Saving...'
+                      : 'Creating...'
+                    : id
+                    ? 'Update'
+                    : 'Create'}
+                </Button>
+              </div>
             </CardContent>
           </Card>
-        )
-      }
+        </form>
+      )}
     </div>
   )
 }

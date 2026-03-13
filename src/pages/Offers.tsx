@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeadCell, TableRow } from "../components/ui/table";
-import { Card, CardContent } from "../components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from "../components/ui/alert";
 
 type OfferRowProps = {
@@ -25,12 +25,12 @@ function offerRowDetails(offer: any) {
           <CardContent className="h-full flex flex-col p-4">
 
             {/* Header */}
-            <div className="mb-3 border-b pb-2">
-              <h3 className="font-semibold text-base">
+            <div className="mb-3 border-b border-slate-200 dark:border-slate-600 pb-2">
+              <h3 className="font-semibold text-base text-slate-900 dark:text-slate-100">
                 {group.name || `Group ${group.id}`}
               </h3>
 
-              <div className="flex gap-4 text-xs text-gray-600 mt-1">
+              <div className="flex gap-4 text-xs text-gray-600 dark:text-slate-400 mt-1">
                 <span>Min Selected: <b>{group.minItems}</b></span>
                 <span>Max Selected: <b>{group.maxItems}</b></span>
               </div>
@@ -38,12 +38,12 @@ function offerRowDetails(offer: any) {
 
             {/* Products */}
             <div className="flex-1">
-              <h4 className="text-xs font-semibold text-gray-500 mb-2">
-                PRODUCTS
+              <h4 className="text-xs font-semibold text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-wide">
+                Products
               </h4>
 
               {group.offerGroupProducts.length === 0 ? (
-                <p className="text-gray-400 text-sm">
+                <p className="text-gray-400 dark:text-slate-500 text-sm">
                   No items in this group
                 </p>
               ) : (
@@ -51,7 +51,7 @@ function offerRowDetails(offer: any) {
                   {group.offerGroupProducts.map((og: any) => (
                     <li
                       key={og.id}
-                      className="px-2 py-1 rounded bg-gray-50 border text-sm"
+                      className="px-2 py-1 rounded bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-sm text-slate-800 dark:text-slate-200"
                     >
                       {og.product.name || og.product.id}
                     </li>
@@ -76,17 +76,20 @@ function OfferRow({ offer, isOpen, onToggle, onDelete, isDeleting = false, onTog
         <TableCell>{offer.description}</TableCell>
         <TableCell>{offer.price}</TableCell>
         <TableCell className="text-center">
-          <button
+          <Button
             type="button"
-            className="inline-flex items-center justify-center focus:outline-none"
+            variant="ghost"
+            size="sm"
+            className="inline-flex items-center justify-center"
             onClick={() => onToggleActive && onToggleActive(offer)}
             aria-label={offer.isActive ? 'Set inactive' : 'Set active'}
-          >
-              {offer.isActive
-              ? <FiCheckCircle className="w-5 h-5 text-green-500" aria-label="Active" />
-              : <FiXCircle className="w-5 h-5 text-red-500" aria-label="Inactive" />}
-          </button>
-          </TableCell>
+            icon={
+              offer.isActive
+                ? <FiCheckCircle className="w-5 h-5 text-green-500" aria-label="Active" />
+                : <FiXCircle className="w-5 h-5 text-red-500" aria-label="Inactive" />
+            }
+          />
+        </TableCell>
         <TableCell>
           <div className="flex justify-center gap-2">
             <Button
@@ -114,14 +117,14 @@ function OfferRow({ offer, isOpen, onToggle, onDelete, isDeleting = false, onTog
 
       {/* DETAILS ROW */}
       {isOpen && (
-        <TableRow className="bg-gray-50">
-          <TableCell colSpan={5}>
+        <TableRow className="bg-gray-50 dark:bg-slate-800/60">
+          <TableCell colSpan={5} className="!p-0">
             {offer.groups.length === 0 ? (
-              <div className="p-4 text-sm text-gray-500">No groups in this offer.</div>
+              <div className="p-4 text-sm text-gray-500 dark:text-slate-400">No groups in this offer.</div>
             ) : (
-            <div className="border-t border-gray-200">
-              {offerRowDetails(offer)}
-            </div>
+              <div className="border-t border-gray-200 dark:border-slate-700">
+                {offerRowDetails(offer)}
+              </div>
             )}
           </TableCell>
         </TableRow>
@@ -250,15 +253,15 @@ export default function Offers() {
       {/* Confirmation Dialog Modal */}
       {confirmDialog.show && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70"
           onClick={closeConfirmDialog}
         >
           <div
-            className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4"
+            className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full mx-4 border border-slate-200 dark:border-slate-700"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-6">
-              <Alert variant="default">
+              <Alert variant="destructive">
                 <FiAlertCircle className="h-4 w-4" />
                 <AlertTitle>
                   {confirmDialog.type === 'delete' ? 'Delete Offer' : 'Restore Offer'}
@@ -285,12 +288,20 @@ export default function Offers() {
         </div>
       )}
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Offers</h1>
-          <p className="text-gray-600 mt-1">Manage your offers</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Offers</h1>
+          <p className="text-gray-600 mt-1 dark:text-slate-400">Manage your offers</p>
         </div>
-        <Link to="/offers/creation"><Button variant="primary" icon={<FiPlus className="w-5 h-5" />} className="px-6 py-3 text-base">Create Offer</Button></Link>
+        <Link to="/offers/creation" className="w-full sm:w-auto">
+          <Button
+            variant="primary"
+            icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
+            className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
+          >
+            <span className="sm:inline">Create Offer</span>
+          </Button>
+        </Link>
       </div>
       {loading && (
         <Table>
@@ -306,77 +317,174 @@ export default function Offers() {
             {Array.from({ length: 6 }).map((_, r) => (
               <TableRow key={r} className="animate-pulse">
                 {Array.from({ length: 11 }).map((__, c) => (
-                  <TableCell key={c}><Skeleton className="h-4 w-full bg-gray-200" /></TableCell>
+                  <TableCell key={c}><Skeleton className="h-4 w-full bg-gray-200 dark:bg-slate-700" /></TableCell>
                 ))}
               </TableRow>
             ))}
           </TableBody>
         </Table>
       )}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {error && <p className="text-red-600 dark:text-red-400">{error}</p>}
       {!loading && (
         <div className="space-y-8">
           <div>
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">Active Offers</h2>
-        <Table>
-          <TableHead>
-            <tr>
-              <TableHeadCell>Name</TableHeadCell>
-              <TableHeadCell>Description</TableHeadCell>
-              <TableHeadCell>Price</TableHeadCell>
-              <TableHeadCell>Active</TableHeadCell>
-              <TableHeadCell>Actions</TableHeadCell>
-            </tr>
-          </TableHead>
-          <TableBody>
-                {activeOffers.length === 0 && (
-              <TableRow>
-                    <TableCell colSpan={5}>No active offers found.</TableCell>
-              </TableRow>
-            )}
-                {activeOffers.map((o) => (
-              <OfferRow
-                    key={o.id}
-                offer={o}
-                    isOpen={openRowId === String(o.id)}
-                    onToggle={() => toggleRow(String(o.id))}
-                    onDelete={handleDelete}
-                    isDeleting={deletingId === o.id}
-                    onToggleActive={handleToggleActive}
-              />
-            ))}
-          </TableBody>
-        </Table>
+            <h2 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-slate-100">Active Offers</h2>
+
+            {/* Mobile: cards */}
+            <div className="space-y-3 md:hidden">
+              {activeOffers.length === 0 ? (
+                <p className="text-sm text-gray-600 dark:text-slate-400">No active offers found.</p>
+              ) : (
+                activeOffers.map((o) => (
+                  <Card key={o.id} className="shadow-sm">
+                    <CardHeader className="p-4 pb-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div>
+                          <CardTitle className="text-base font-semibold">
+                            {o.name}
+                          </CardTitle>
+                          <p className="text-xs text-gray-600 dark:text-slate-400">
+                            {o.description || 'No description'}
+                          </p>
+                        </div>
+                        <span
+                          className={`inline-flex flex-shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${o.isActive
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'
+                            : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
+                            }`}
+                        >
+                          {o.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="px-4 pb-4 pt-0 space-y-2 text-xs text-gray-700 dark:text-slate-300">
+                      <p>
+                        Price:{' '}
+                        <span className="font-semibold">
+                          {o.price != null ? `${o.price} €` : '-'}
+                        </span>
+                      </p>
+                      <div className="flex justify-between gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="px-2 text-xs"
+                          onClick={() => toggleRow(String(o.id))}
+                        >
+                          {openRowId === String(o.id) ? 'Hide details' : 'Details'}
+                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="p-2 text-xs"
+                            icon={
+                              o.isActive ? (
+                                <FiCheckCircle className="w-4 h-4 text-green-600" />
+                              ) : (
+                                <FiXCircle className="w-4 h-4 text-red-600" />
+                              )
+                            }
+                            onClick={() => handleToggleActive(o)}
+                          />
+                          <Link to={`/offers/creation/${o.id}`}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="p-2 text-xs"
+                              icon={<FiEdit className="w-4 h-4" />}
+                            />
+                          </Link>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            className="p-2 text-xs"
+                            icon={<FiTrash className="w-4 h-4" />}
+                            onClick={() => handleDelete(o.id, o.name)}
+                            disabled={deletingId === o.id}
+                          />
+                        </div>
+                      </div>
+
+                      {openRowId === String(o.id) && (
+                        <div className="mt-2 border-t border-gray-200 dark:border-slate-700 pt-2">
+                          {o.groups && o.groups.length > 0 ? (
+                            offerRowDetails(o)
+                          ) : (
+                            <p className="text-xs">
+                              No groups in this offer.
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+
+            {/* Desktop: table */}
+            <div className="hidden md:block">
+              <Table>
+                <TableHead>
+                  <tr>
+                    <TableHeadCell>Name</TableHeadCell>
+                    <TableHeadCell>Description</TableHeadCell>
+                    <TableHeadCell>Price</TableHeadCell>
+                    <TableHeadCell>Active</TableHeadCell>
+                    <TableHeadCell>Actions</TableHeadCell>
+                  </tr>
+                </TableHead>
+                <TableBody>
+                  {activeOffers.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-gray-500 dark:text-slate-400">No active offers found.</TableCell>
+                    </TableRow>
+                  )}
+                  {activeOffers.map((o) => (
+                    <OfferRow
+                      key={o.id}
+                      offer={o}
+                      isOpen={openRowId === String(o.id)}
+                      onToggle={() => toggleRow(String(o.id))}
+                      onDelete={handleDelete}
+                      isDeleting={deletingId === o.id}
+                      onToggleActive={handleToggleActive}
+                    />
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
 
           {deletedOffers.length > 0 && (
             <div>
-              <h2 className="text-2xl font-semibold text-gray-600 mb-4">Deleted Offers</h2>
+              <h2 className="text-2xl font-semibold text-gray-600 dark:text-slate-400 mb-4">Deleted Offers</h2>
               <Table>
                 <TableHead>
-                  <tr className="bg-gray-100">
-                    <TableHeadCell className="text-gray-600">Name</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">Description</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">Price</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">Active</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">Deleted By</TableHeadCell>
-                    <TableHeadCell className="text-gray-600">Actions</TableHeadCell>
+                  <tr className="bg-gray-100 dark:bg-slate-900">
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">Name</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">Description</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">Price</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">Active</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">Deleted By</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">Actions</TableHeadCell>
                   </tr>
                 </TableHead>
                 <TableBody>
                   {deletedOffers.map((o) => {
                     const anyOffer = o as Record<string, unknown>;
                     return (
-                      <TableRow key={o.id} className="bg-gray-50 opacity-75">
-                        <TableCell className="text-gray-600">{o.name}</TableCell>
-                        <TableCell className="text-gray-600">{o.description}</TableCell>
-                        <TableCell className="text-gray-600">{o.price}</TableCell>
-                        <TableCell className="text-gray-600">
+                      <TableRow key={o.id} className="bg-gray-50 opacity-75 dark:bg-slate-800">
+                        <TableCell className="text-gray-600 dark:text-slate-300">{o.name}</TableCell>
+                        <TableCell className="text-gray-600 dark:text-slate-300">{o.description}</TableCell>
+                        <TableCell className="text-gray-600 dark:text-slate-300">{o.price}</TableCell>
+                        <TableCell className="text-gray-600 dark:text-slate-300">
                           {o.isActive
                             ? <FiCheckCircle className="w-5 h-5 text-green-500" aria-label="Available" />
                             : <FiXCircle className="w-5 h-5 text-red-500" aria-label="Not available" />}
                         </TableCell>
-                        <TableCell className="text-gray-500 text-sm">
+                        <TableCell className="text-gray-500 dark:text-slate-400 text-sm">
                           {String(anyOffer.deletedBy ?? '')}
                         </TableCell>
                         <TableCell>

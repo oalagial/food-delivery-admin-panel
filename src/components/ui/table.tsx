@@ -10,29 +10,36 @@ type TdProps = React.TdHTMLAttributes<HTMLTableCellElement>
 
 export function Table({ className, ...props }: TableProps) {
   return (
-    <div className={cn('w-full overflow-x-auto rounded-lg border border-gray-200 shadow-sm', className)}>
-      <table className="min-w-full divide-y divide-gray-200" {...props} />
+    <div className={cn('w-full overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900', className)}>
+      <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700" {...props} />
     </div>
   )
 }
 
 export const TableHead = React.forwardRef<HTMLTableSectionElement, THeadProps>(
   ({ className, ...props }, ref) => (
-    <thead ref={ref} className={cn('bg-gradient-to-r from-blue-50 to-indigo-50', className)} {...props} />
+    <thead ref={ref} className={cn('bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-700', className)} {...props} />
   )
 )
 TableHead.displayName = 'TableHead'
 
 export const TableBody = React.forwardRef<HTMLTableSectionElement, TBodyProps>(
   ({ className, ...props }, ref) => (
-    <tbody ref={ref} className={cn('bg-white divide-y divide-gray-200', className)} {...props} />
+    <tbody ref={ref} className={cn('bg-white divide-y divide-gray-200 dark:bg-slate-900 dark:divide-slate-800', className)} {...props} />
   )
 )
 TableBody.displayName = 'TableBody'
 
 export const TableRow = React.forwardRef<HTMLTableRowElement, TrProps>(
   ({ className, ...props }, ref) => (
-    <tr ref={ref} className={cn('odd:bg-white even:bg-slate-50 hover:bg-blue-50 transition-colors', className)} {...props} />
+    <tr
+      ref={ref}
+      className={cn(
+        'odd:bg-white even:bg-slate-50 hover:bg-blue-50 transition-colors dark:odd:bg-slate-900 dark:even:bg-slate-800 dark:hover:bg-slate-700',
+        className
+      )}
+      {...props}
+    />
   )
 )
 TableRow.displayName = 'TableRow'
@@ -42,7 +49,7 @@ export const TableHeadCell = React.forwardRef<HTMLTableCellElement, ThProps>(
     <th
       ref={ref}
       scope="col"
-      className={cn('px-6 py-4 text-center text-sm font-bold text-gray-700 uppercase tracking-wider', className)}
+      className={cn('px-6 py-4 text-center text-sm font-bold text-gray-700 uppercase tracking-wider dark:text-slate-100', className)}
       {...props}
     />
   )
@@ -51,7 +58,11 @@ TableHeadCell.displayName = 'TableHeadCell'
 
 export const TableCell = React.forwardRef<HTMLTableCellElement, TdProps>(
   ({ className, ...props }, ref) => (
-    <td ref={ref} className={cn('px-6 py-4 text-center text-base text-gray-700 font-medium', className)} {...props} />
+    <td
+      ref={ref}
+      className={cn('px-6 py-4 text-center text-base text-gray-700 font-medium dark:text-slate-100', className)}
+      {...props}
+    />
   )
 )
 TableCell.displayName = 'TableCell'

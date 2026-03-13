@@ -63,7 +63,9 @@ export default function TypeCreate() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">{editing ? 'Edit Type' : 'Create Type'}</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">
+          {editing ? 'Edit Type' : 'Create Type'}
+        </h1>
       </div>
 
       {loading ? (
@@ -71,43 +73,66 @@ export default function TypeCreate() {
           <CardContent className="pt-6">Loading...</CardContent>
         </Card>
       ) : (
-        <Card className="shadow-md">
-          <CardHeader>
-            <CardTitle>{editing ? 'Update Type' : 'New Type'}</CardTitle>
-            <CardDescription>Create or edit a product type</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+        <form
+          onSubmit={handleSubmit}
+          className="grid gap-6 max-w-3xl lg:grid-cols-2"
+        >
+          {/* Basic info */}
+          <Card className="shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">
+                {editing ? 'Update Type' : 'New Type'}
+              </CardTitle>
+              <CardDescription>Create or edit a product type</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="name">Type Name *</Label>
-                <Input 
+                <Input
                   id="name"
-                  className="mt-2 w-full"
-                  value={form.name as string} 
-                  onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} 
-                  placeholder="e.g., Beverages, Desserts" 
-                  required 
+                  className="mt-1.5 w-full"
+                  value={form.name as string}
+                  onChange={(e) =>
+                    setForm((s) => ({ ...s, name: e.target.value }))
+                  }
+                  placeholder="e.g., Beverages, Desserts"
+                  required
                 />
               </div>
 
               <div>
                 <Label htmlFor="tag">Tag</Label>
-                <Input 
+                <Input
                   id="tag"
-                  className="mt-2 w-full"
-                  value={form.tag as string} 
-                  onChange={(e) => setForm((s) => ({ ...s, tag: e.target.value }))} 
+                  className="mt-1.5 w-full"
+                  value={form.tag as string}
+                  onChange={(e) =>
+                    setForm((s) => ({ ...s, tag: e.target.value }))
+                  }
                   placeholder="e.g., food, drinks"
                 />
               </div>
+            </CardContent>
+          </Card>
 
+          {/* Description & actions */}
+          <Card className="shadow-sm lg:col-span-2">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Description</CardTitle>
+              <CardDescription>
+                Optional details to better describe this type
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="description">Description</Label>
-                <Textarea 
+                <Textarea
                   id="description"
-                  className="mt-2 w-full"
-                  value={form.description as string} 
-                  onChange={(e) => setForm((s) => ({ ...s, description: e.target.value }))} 
+                  className="mt-1.5 w-full"
+                  value={form.description as string}
+                  onChange={(e) =>
+                    setForm((s) => ({ ...s, description: e.target.value }))
+                  }
                   placeholder="Describe this type..."
                 />
               </div>
@@ -119,13 +144,21 @@ export default function TypeCreate() {
                 </Alert>
               )}
 
-              <div className="flex justify-end gap-3 pt-4">
-                <Button variant="default" type="button" onClick={() => navigate('/types')}>Cancel</Button>
-                <Button variant="primary" type="submit" disabled={submitting}>{submitting ? 'Saving...' : editing ? 'Update' : 'Create'}</Button>
+              <div className="flex justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
+                <Button
+                  variant="default"
+                  type="button"
+                  onClick={() => navigate('/types')}
+                >
+                  Cancel
+                </Button>
+                <Button variant="primary" type="submit" disabled={submitting}>
+                  {submitting ? 'Saving...' : editing ? 'Update' : 'Create'}
+                </Button>
               </div>
-            </form>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </form>
       )}
     </div>
   )

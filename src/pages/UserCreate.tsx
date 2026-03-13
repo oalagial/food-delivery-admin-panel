@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from '../components/ui/alert'
 import { AlertCircle } from 'lucide-react'
 
 import { API_BASE } from '../config'
-import { getRolesList } from '../utils/api'
+import { getRolesList, getCurrentUserId } from '../utils/api'
 import { Select } from '../components/ui/select';
 
 export default function UserCreate() {
@@ -17,8 +17,8 @@ export default function UserCreate() {
 
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [form, setForm] = useState({ email: '', username: '', password: '' })
-  const [roleIds, setRoleIds] = useState<Array<{ id?: string | number; name?: string }>>([])
+  const [form, setForm] = useState({ email: '', username: '' })
+  const [roleIds, setRoleIds] = useState<Array<{ id?: string | number; name?: string }>>([]);
   const [roleId, setRoleId] = useState<string | number | ''>('')
 
   useEffect(() => {
@@ -36,7 +36,6 @@ export default function UserCreate() {
           setForm({
             email: String(user.email ?? ''),
             username: String(user.username ?? ''),
-            password: '',
           })
           // try to populate role selection from returned user object
           let roleFromApi = ''
@@ -66,6 +65,8 @@ export default function UserCreate() {
     }
   }, [id])
 
+  const isEditingSelf = id != null && getCurrentUserId() != null && String(id) === String(getCurrentUserId())
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
@@ -80,11 +81,11 @@ export default function UserCreate() {
         setSaving(false)
         return
       }
-      // Always send roleIds array if a role is selected
-      if (roleId !== '' && roleId !== undefined) payload.roleIds = [Number(roleId)]
+      // Don't send roleIds when editing yourself (you can't change your own role)
+      if (!isEditingSelf && roleId !== '' && roleId !== undefined) payload.roleIds = [Number(roleId)]
       let res
       if (id) {
-        if (form.password) payload.password = String(form.password)
+        // if (form.password) payload.password = String(form.password)
         res = await fetch(`${API_BASE}/users/${id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -92,12 +93,12 @@ export default function UserCreate() {
         })
         if (!res.ok) throw new Error(`Update failed ${res.status}`)
       } else {
-        if (!form.password) {
-          setError('Password is required when creating a user')
-          setSaving(false)
-          return
-        }
-        payload.password = String(form.password)
+        // if (!form.password) {
+        //   setError('Password is required when creating a user')
+        //   setSaving(false)
+        //   return
+        // }
+        // payload.password = String(form.password)
         res = await fetch(`${API_BASE}/users`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -127,73 +128,64 @@ export default function UserCreate() {
           <CardDescription>Manage user account and permissions</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSave} className="grid grid-cols-2 gap-3">
+          <form onSubmit={handleSave} className="space-y-6">
             {error && (
-              <Alert variant="destructive">
+              <Alert variant="destructive" className="rounded-lg">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
 
-            <div>
-              <Label htmlFor="email">Email *</Label>
-              <Input 
-                id="email"
-                className="mt-2 w-full"
-                value={form.email} 
-                onChange={(e) => setForm((s) => ({ ...s, email: e.target.value }))} 
-                placeholder="user@example.com" 
-                required 
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-sm font-medium">Email *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  className="w-full"
+                  value={form.email}
+                  onChange={(e) => setForm((s) => ({ ...s, email: e.target.value }))}
+                  placeholder="user@example.com"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="username" className="text-sm font-medium">Username *</Label>
+                <Input
+                  id="username"
+                  className="w-full"
+                  value={form.username}
+                  onChange={(e) => setForm((s) => ({ ...s, username: e.target.value }))}
+                  placeholder="Username"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="role" className="text-sm font-medium">Role{isEditingSelf && <span className="text-gray-500 font-normal ml-1">(you cannot change your own role)</span>}</Label>
+                <Select
+                  id="role"
+                  value={String(roleId ?? '')}
+                  onChange={(e) => setRoleId(e.target.value)}
+                  className="w-full"
+                  disabled={isEditingSelf}
+                >
+                  <option value="">(No role)</option>
+                  {roleIds.map((r) => (
+                    <option key={String(r.id)} value={String(r.id)}>
+                      {r.name ?? String(r.id)}
+                    </option>
+                  ))}
+                </Select>
+              </div>
             </div>
 
-            <div>
-              <Label htmlFor="username">Username *</Label>
-              <Input 
-                id="username"
-                className="mt-2 w-full"
-                value={form.username} 
-                onChange={(e) => setForm((s) => ({ ...s, username: e.target.value }))} 
-                placeholder="Username" 
-                required 
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="role">Role</Label>
-              <Select 
-                id="role"
-                value={String(roleId ?? '')} 
-                onChange={(e) => setRoleId(e.target.value)} 
-                className="mt-2 w-full"
-              >
-                <option value="">(No role)</option>
-                {roleIds.map(r => <option key={String(r.id)} value={String(r.id)}>{r.name ?? String(r.id)}</option>)}
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="password">Password {id && <span className="text-xs ">(leave blank to keep)</span>}</Label>
-              <Input 
-                id="password"
-                className="mt-2 w-full"
-                value={form.password} 
-                onChange={(e) => setForm((s) => ({ ...s, password: e.target.value }))} 
-                placeholder={id ? 'Leave blank to keep current' : 'Enter password'} 
-                type="password" 
-                required={!id}
-              />
-            </div>
-      
-            <div className="col-start-2 flex justify-end gap-3 pt-4">
+            <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-gray-200">
               <Link to="/users">
-                <Button variant="default" type="button">Cancel</Button>
+                <Button variant="default" type="button">
+                  Cancel
+                </Button>
               </Link>
-              <Button
-                variant="primary"
-                type="submit"
-                disabled={saving}
-              >
+              <Button variant="primary" type="submit" disabled={saving}>
                 {saving ? (id ? 'Saving...' : 'Creating...') : (id ? 'Update' : 'Create')}
               </Button>
             </div>
