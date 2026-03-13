@@ -201,7 +201,7 @@ function OrderRow({ order, isOpen, onToggle, onAccept, onReject, onLocalNotify }
             </Button>
 
             <Button
-              variant="secondary"
+              variant="default"
               size="sm"
               onClick={() => onLocalNotify(order)}
             >
@@ -294,7 +294,7 @@ function OrderCard({ order, isOpen, onToggle, onAccept, onReject, onLocalNotify 
         </Button>
 
         <Button
-          variant="secondary"
+          variant="default"
           size="sm"
           onClick={() => onLocalNotify(order)}
         >
