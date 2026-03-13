@@ -6,6 +6,7 @@ import type { OrderItem } from '../utils/api'
 import { Skeleton } from '../components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../components/ui/card'
 import { Table, TableBody, TableHead, TableRow, TableCell, TableHeadCell } from '../components/ui/table'
+import { LOCAL_BACKEND } from '../config'
 
 type OrderRowProps = {
   order: OrderItem;
@@ -13,6 +14,7 @@ type OrderRowProps = {
   onToggle: () => void;
   onAccept: (id: string) => void;
   onReject: (id: string) => void;
+  onLocalNotify: (order: OrderItem) => void;
 };
 
 type OrderCardProps = OrderRowProps;
@@ -156,7 +158,7 @@ function OrderDetails({ order }: OrderDetailsProps) {
   );
 }
 
-function OrderRow({ order, isOpen, onToggle, onAccept, onReject }: OrderRowProps) {
+function OrderRow({ order, isOpen, onToggle, onAccept, onReject, onLocalNotify }: OrderRowProps) {
   return (
     <>
       {/* Header Row */}
@@ -199,6 +201,14 @@ function OrderRow({ order, isOpen, onToggle, onAccept, onReject }: OrderRowProps
             </Button>
 
             <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => onLocalNotify(order)}
+            >
+              Print
+            </Button>
+
+            <Button
               variant="primary"
               size="sm"
               icon={<FiCheckCircle className="w-4 h-4" />}
@@ -229,7 +239,7 @@ function OrderRow({ order, isOpen, onToggle, onAccept, onReject }: OrderRowProps
   );
 }
 
-function OrderCard({ order, isOpen, onToggle, onAccept, onReject }: OrderCardProps) {
+function OrderCard({ order, isOpen, onToggle, onAccept, onReject, onLocalNotify }: OrderCardProps) {
   return (
     <Card className="shadow-sm">
       <CardHeader
@@ -282,6 +292,15 @@ function OrderCard({ order, isOpen, onToggle, onAccept, onReject }: OrderCardPro
         >
           {isOpen ? 'Hide details' : 'Details'}
         </Button>
+
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => onLocalNotify(order)}
+        >
+          Print
+        </Button>
+
         <div className="flex gap-1">
           <Button
             variant="primary"
@@ -328,6 +347,28 @@ export default function Orders() {
 
   const rejectOrder = (id: string) => {
     console.log('Reject Id:', id)
+  }
+
+  const notifyLocalBackend = async (order: OrderItem) => {
+    try {
+      if (!LOCAL_BACKEND) {
+        console.error('LOCAL_BACKEND is not set')
+        return
+      }
+
+      const url = `${LOCAL_BACKEND}/print`
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(order),
+      })
+
+      if (!res.ok) {
+        console.error('Local backend request failed', res.status)
+      }
+    } catch (err) {
+      console.error('Local backend request error', err)
+    }
   }
 
   useEffect(() => {
@@ -410,6 +451,7 @@ export default function Orders() {
                 onToggle={() => toggleRow(it.id ?? '')}
                 onAccept={acceptOrder}
                 onReject={rejectOrder}
+                onLocalNotify={notifyLocalBackend}
               />
             ))}
           </div>
@@ -437,6 +479,7 @@ export default function Orders() {
                     onToggle={() => toggleRow(it.id ?? '')}
                     onAccept={acceptOrder}
                     onReject={rejectOrder}
+                    onLocalNotify={notifyLocalBackend}
                   />
                 ))}
               </TableBody>
