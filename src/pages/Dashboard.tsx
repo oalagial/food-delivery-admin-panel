@@ -227,30 +227,36 @@ export default function Dashboard() {
   useEffect(() => {
     let mounted = true
 
-    fetch(`${API_BASE}/orders`)
-      .then(async (r) => {
+    const refreshTodayOrders = async () => {
+      try {
+        const r = await fetch(`${API_BASE}/orders`)
         if (!r.ok) {
           throw new Error(`Failed to fetch orders (${r.status})`)
         }
-        return r.json()
-      })
-      .then((payload) => {
+
+        const payload = await r.json()
         if (!mounted) return
+
         const orders = normalizeOrders(payload)
         const filtered = orders
           .filter((o) => isToday(o.createdAt))
           .sort((a, b) => new Date(String(b.createdAt ?? '')).getTime() - new Date(String(a.createdAt ?? '')).getTime())
+
         setTodayOrders(filtered)
-      })
-      .catch((e) => {
+        setError(null)
+      } catch (e) {
         if (mounted) setError(String(e))
-      })
-      .finally(() => {
+      } finally {
         if (mounted) setLoading(false)
-      })
+      }
+    }
+
+    refreshTodayOrders()
+    const intervalId = window.setInterval(refreshTodayOrders, 30_000)
 
     return () => {
       mounted = false
+      window.clearInterval(intervalId)
     }
   }, [])
 
