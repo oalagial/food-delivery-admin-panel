@@ -37,9 +37,10 @@ type SidebarProps = {
 export function Sidebar({ isOpen, onNavigate }: SidebarProps) {
   return (
     <aside
-      className={`sidebar fixed inset-y-0 left-0 z-40 w-[280px] max-w-[80%] transform transition-transform duration-200 ease-in-out md:static md:translate-x-0 ${
-        isOpen ? 'translate-x-0' : '-translate-x-full'
+      className={`sidebar fixed inset-y-0 left-0 z-40 w-[280px] max-w-[80%] transform transition-transform duration-200 ease-in-out md:static md:inset-y-auto md:left-auto md:shrink-0 md:max-w-none md:transform-none md:overflow-hidden md:transition-[width] md:duration-200 md:ease-in-out ${
+        isOpen ? 'translate-x-0 md:w-[280px]' : '-translate-x-full md:translate-x-0 md:w-0'
       }`}
+      style={{ width: isOpen ? 'min(280px, 80vw)' : '0px' }}
     >
       <div className="sidebar-header">
         <div className="sidebar-logo">
