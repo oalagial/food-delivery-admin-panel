@@ -273,7 +273,7 @@ html.dark .nav-link.active::before {
 }
 
 /* RESPONSIVE */
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .app-root {
     flex-direction: column;
     height: auto;
