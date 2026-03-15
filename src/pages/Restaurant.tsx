@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import { Button } from '../components/ui/button'
 import { FiPlus, FiEdit, FiTrash, FiRotateCw, FiAlertCircle } from 'react-icons/fi'
@@ -8,6 +9,35 @@ import type { Restaurant as RestaurantType } from '../utils/api'
 import { Skeleton } from '../components/ui/skeleton'
 import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/card'
+
+function HoursTooltip({ hours }: { hours: Array<{ day: string; open: string; close: string }> }) {
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
+  return (
+    <>
+      <span
+        className="text-xs text-gray-500 ml-2 cursor-default"
+        onMouseEnter={(e) => {
+          const rect = e.currentTarget.getBoundingClientRect()
+          setPos({ x: rect.left, y: rect.bottom + 6 })
+        }}
+        onMouseLeave={() => setPos(null)}
+      >
+        +{hours.length - 1} more
+      </span>
+      {pos && createPortal(
+        <div
+          style={{ position: 'fixed', left: pos.x, top: pos.y, zIndex: 9999 }}
+          className="bg-gray-800 text-white text-xs rounded px-3 py-2 shadow-xl pointer-events-none"
+        >
+          {hours.map((h, i) => (
+            <div key={i}>{h.day}: {h.open}-{h.close}</div>
+          ))}
+        </div>,
+        document.body
+      )}
+    </>
+  )
+}
 
 export default function Restaurant() {
   const [restaurants, setRestaurants] = useState<RestaurantType[]>([])
@@ -215,9 +245,7 @@ export default function Restaurant() {
                             <p className="text-xs">
                               Hours: <span className="font-medium">{primaryHours}</span>
                               {Array.isArray(r.openingHours) && r.openingHours.length > 1 && (
-                                <span className="ml-1">
-                                  (+{r.openingHours.length - 1} more)
-                                </span>
+                                <HoursTooltip hours={r.openingHours} />
                               )}
                             </p>
                           ) : (
@@ -293,12 +321,12 @@ export default function Restaurant() {
                           <TableCell>{r.createdAt ? new Date(String(r.createdAt)).toLocaleString() : ''}</TableCell>
                           <TableCell>
                             {Array.isArray(r.openingHours) && r.openingHours.length > 0 ? (
-                              <>
+                              <span>
                                 {`${r.openingHours[0].day}: ${r.openingHours[0].open}-${r.openingHours[0].close}`}
                                 {r.openingHours.length > 1 && (
-                                  <span className="text-xs text-gray-500 ml-2">+{r.openingHours.length - 1} more</span>
+                                  <HoursTooltip hours={r.openingHours} />
                                 )}
-                              </>
+                              </span>
                             ) : (
                               <span className="text-xs text-gray-400">No hours</span>
                             )}
@@ -362,6 +390,9 @@ export default function Restaurant() {
                           {primaryHours ? (
                             <p className="text-xs">
                               Hours: <span className="font-medium">{primaryHours}</span>
+                              {Array.isArray(r.openingHours) && r.openingHours.length > 1 && (
+                                <HoursTooltip hours={r.openingHours} />
+                              )}
                             </p>
                           ) : (
                             <p className="text-xs">No hours</p>
@@ -431,12 +462,12 @@ export default function Restaurant() {
                             <TableCell className="text-gray-600">{r.createdAt ? new Date(String(r.createdAt)).toLocaleString() : ''}</TableCell>
                             <TableCell className="text-gray-600">
                               {Array.isArray(r.openingHours) && r.openingHours.length > 0 ? (
-                                <>
+                                <span>
                                   {`${r.openingHours[0].day}: ${r.openingHours[0].open}-${r.openingHours[0].close}`}
                                   {r.openingHours.length > 1 && (
-                                    <span className="text-xs text-gray-400 ml-2">+{r.openingHours.length - 1} more</span>
+                                    <HoursTooltip hours={r.openingHours} />
                                   )}
-                                </>
+                                </span>
                               ) : (
                                 <span className="text-xs text-gray-400">No hours</span>
                               )}
