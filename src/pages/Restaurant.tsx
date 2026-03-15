@@ -5,12 +5,12 @@ import { Button } from '../components/ui/button'
 import { FiPlus, FiEdit, FiTrash, FiRotateCw, FiAlertCircle } from 'react-icons/fi'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { getRestaurantsList, restoreRestaurant, deleteRestaurant } from '../utils/api'
-import type { Restaurant as RestaurantType } from '../utils/api'
+import type { Restaurant as RestaurantType, OpeningHour } from '../utils/api'
 import { Skeleton } from '../components/ui/skeleton'
 import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/card'
 
-function HoursTooltip({ hours }: { hours: Array<{ day: string; open: string; close: string }> }) {
+function HoursTooltip({ hours }: { hours: OpeningHour[] }) {
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
   return (
     <>
@@ -30,7 +30,7 @@ function HoursTooltip({ hours }: { hours: Array<{ day: string; open: string; clo
           className="bg-gray-800 text-white text-xs rounded px-3 py-2 shadow-xl pointer-events-none"
         >
           {hours.map((h, i) => (
-            <div key={i}>{h.day}: {h.open}-{h.close}</div>
+            <div key={i}>{String(h.day ?? '')}: {String(h.open ?? '')}-{String(h.close ?? '')}</div>
           ))}
         </div>,
         document.body
