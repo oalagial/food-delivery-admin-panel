@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { Button } from '../components/ui/button'
 import { FiCheckCircle, FiSlash } from 'react-icons/fi'
 import { Card, CardContent } from '../components/ui/card'
@@ -211,6 +211,8 @@ export default function Dashboard() {
   const [todayOrders, setTodayOrders] = useState<DashboardOrder[]>([])
   const [error, setError] = useState<string | null>(null)
   const [openRowId, setOpenRowId] = useState<string | null>(null)
+  const previousTodayCountRef = useRef<number | null>(null)
+  const audioCtxRef = useRef<AudioContext | null>(null)
 
   const toggleRow = (id: string | number) => {
     setOpenRowId((prev) => (prev === String(id) ? null : String(id)))
@@ -222,6 +224,57 @@ export default function Dashboard() {
 
   const rejectOrder = (id: string) => {
     console.log('Reject Id:', id)
+  }
+
+  const playNewOrderSound = () => {
+    try {
+      if (typeof window === 'undefined' || !window.AudioContext) return
+
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new window.AudioContext()
+      }
+
+      const ctx = audioCtxRef.current
+      if (ctx.state === 'suspended') {
+        void ctx.resume()
+      }
+
+      const start = ctx.currentTime
+      const ringDuration = 1
+      const ringGap = 0.1
+      const repeatCount = 2
+      const master = ctx.createGain()
+      master.gain.setValueAtTime(1.6, start)
+      master.connect(ctx.destination)
+
+      // Bell-like timbre: layered sine partials with different decay rates.
+      const createPartial = (baseTime: number, frequency: number, peak: number, decaySeconds: number) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+
+        osc.type = 'sine'
+        osc.frequency.setValueAtTime(frequency, baseTime)
+
+        gain.gain.setValueAtTime(0.0001, baseTime)
+        gain.gain.exponentialRampToValueAtTime(peak, baseTime + 0.01)
+        gain.gain.exponentialRampToValueAtTime(0.0001, baseTime + decaySeconds)
+
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+
+        osc.start(baseTime)
+        osc.stop(baseTime + ringDuration)
+      }
+
+      for (let i = 0; i < repeatCount; i++) {
+        const t = start + i * (ringDuration + ringGap)
+        createPartial(t, 880, 0.22, 1.2)
+        createPartial(t, 1320, 0.12, 0.95)
+        createPartial(t, 1760, 0.08, 0.75)
+      }
+    } catch {
+      // Ignore audio errors; polling should continue even if sound fails.
+    }
   }
 
   useEffect(() => {
@@ -242,6 +295,13 @@ export default function Dashboard() {
           .filter((o) => isToday(o.createdAt))
           .sort((a, b) => new Date(String(b.createdAt ?? '')).getTime() - new Date(String(a.createdAt ?? '')).getTime())
 
+        const previousCount = previousTodayCountRef.current
+        const nextCount = filtered.length
+         if (previousCount !== null && nextCount > previousCount) {
+          playNewOrderSound()
+        }
+        previousTodayCountRef.current = nextCount
+
         setTodayOrders(filtered)
         setError(null)
       } catch (e) {
@@ -257,6 +317,10 @@ export default function Dashboard() {
     return () => {
       mounted = false
       window.clearInterval(intervalId)
+      if (audioCtxRef.current) {
+        void audioCtxRef.current.close()
+        audioCtxRef.current = null
+      }
     }
   }, [])
 
