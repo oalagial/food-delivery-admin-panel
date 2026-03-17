@@ -1733,6 +1733,24 @@ export async function updateDeliveryLocation(id: string | number, payload: Creat
   return data
 }
 
+export async function deleteDeliveryLocation(id: string | number) {
+  if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
+  const res = await authFetch(`/delivery-locations/delete/${encodeURIComponent(String(id))}`, {
+    method: 'DELETE',
+  })
+  if (!res.ok) {
+    let bodyText = ''
+    try {
+      const json = await res.json()
+      bodyText = parseErrorJson(json)
+    } catch {
+      try { bodyText = await res.text() } catch { bodyText = '' }
+    }
+    throw new Error(bodyText || `DELETE /delivery-locations/delete/${id} failed (${res.status})`)
+  }
+  return res.json().catch(() => null)
+}
+
 export async function updateRestaurant(token: string, payload: CreateRestaurantPayload) {
   if (!token) throw new Error('token is required')
   const res = await authFetch(`/restaurants/${encodeURIComponent(token)}`, {

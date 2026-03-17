@@ -1,5 +1,5 @@
 import './App.css'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import Header from './components/Header'
 import Login from './pages/Login'
@@ -77,15 +77,57 @@ const routes: RouteConfig[] = [
   { path: '/', element: <Dashboard />, protected: true },
 ]
 
-function App() {
-  const [token, setToken] = useState<string | null>(getToken())
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+function AuthenticatedLayout() {
+  const location = useLocation()
+  // On mobile start closed; on desktop (md+) start open so sidebar is visible
+  const [sidebarOpen, setSidebarOpen] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth >= 768
+  )
 
   const handleSidebarNavigate = () => {
     if (typeof window !== 'undefined' && window.innerWidth < 768) {
       setSidebarOpen(false)
     }
   }
+
+  // On mobile, close sidebar when route changes (e.g. navigation or back button)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setSidebarOpen(false)
+    }
+  }, [location.pathname])
+
+  return (
+    <div className="app-root">
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      <Sidebar isOpen={sidebarOpen} onNavigate={handleSidebarNavigate} />
+
+      <main className="main">
+        <Header onToggleSidebar={() => setSidebarOpen((prev) => !prev)} />
+        <div className="panel">
+          <Routes>
+            {routes.map(({ path, element, protected: isProtected }) => (
+              <Route
+                key={path}
+                path={path}
+                element={isProtected ? <RequireAuth>{element}</RequireAuth> : element}
+              />
+            ))}
+          </Routes>
+        </div>
+      </main>
+    </div>
+  )
+}
+
+function App() {
+  const [token, setToken] = useState<string | null>(getToken())
 
   useEffect(() => {
     const update = () => setToken(getToken())
@@ -97,7 +139,6 @@ function App() {
     }
   }, [])
 
-  // If not authenticated, show only the Login page
   if (!token) {
     return (
       <BrowserRouter>
@@ -112,31 +153,7 @@ function App() {
 
   return (
     <BrowserRouter>
-      <div className="app-root">
-        {sidebarOpen && (
-          <div
-            className="fixed inset-0 z-30 bg-black/40 md:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
-
-        <Sidebar isOpen={sidebarOpen} onNavigate={handleSidebarNavigate} />
-
-        <main className="main">
-          <Header onToggleSidebar={() => setSidebarOpen((prev) => !prev)} />
-          <div className="panel">
-            <Routes>
-              {routes.map(({ path, element, protected: isProtected }) => (
-                <Route
-                  key={path}
-                  path={path}
-                  element={isProtected ? <RequireAuth>{element}</RequireAuth> : element}
-                />
-              ))}
-            </Routes>
-          </div>
-        </main>
-      </div>
+      <AuthenticatedLayout />
     </BrowserRouter>
   )
 }

@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { FiPlus, FiEdit, FiTrash, FiCheckCircle, FiXCircle } from 'react-icons/fi'
+import { FiPlus, FiEdit, FiTrash, FiCheckCircle, FiXCircle, FiAlertCircle } from 'react-icons/fi'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { Button } from '../components/ui/button'
 import { Skeleton } from '../components/ui/skeleton'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/card'
-import { getDeliveryLocationsList, getRestaurantsList, updateDeliveryLocation } from '../utils/api'
+import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert'
+import { getDeliveryLocationsList, getRestaurantsList, updateDeliveryLocation, deleteDeliveryLocation } from '../utils/api'
 import type { CreateDeliveryLocationPayload as DeliveryLocation, Restaurant as RestaurantType } from '../utils/api'
 
 export default function DeliveryLocations() {
@@ -13,6 +14,11 @@ export default function DeliveryLocations() {
   const [restaurantsMap, setRestaurantsMap] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [confirmDialog, setConfirmDialog] = useState<{ show: boolean; id: string | null; name: string | null }>({
+    show: false,
+    id: null,
+    name: null,
+  })
 
   useEffect(() => {
     let mounted = true
@@ -63,6 +69,31 @@ export default function DeliveryLocations() {
     const anyLoc = loc as unknown as Record<string, unknown>
     return anyLoc.deletedBy
   })
+
+  const openConfirmDialog = (loc: Partial<DeliveryLocation>) => {
+    const locId = (loc as any).id
+    if (!locId) return
+    setConfirmDialog({ show: true, id: String(locId), name: loc.name ?? 'this location' })
+  }
+
+  const closeConfirmDialog = () => {
+    setConfirmDialog({ show: false, id: null, name: null })
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!confirmDialog.id) return
+    try {
+      await deleteDeliveryLocation(confirmDialog.id)
+      const locsRaw = await getDeliveryLocationsList()
+      const locsArray = Array.isArray(locsRaw) ? locsRaw : (locsRaw && (locsRaw as any).items) || (locsRaw && (locsRaw as any).data) || []
+      setLocations(locsArray as unknown as Partial<DeliveryLocation>[])
+      setError(null)
+      closeConfirmDialog()
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err) || 'Failed to delete location')
+      closeConfirmDialog()
+    }
+  }
 
   // Function to toggle active status
   const toggleActiveStatus = async (loc: Partial<DeliveryLocation>) => {
@@ -136,6 +167,33 @@ export default function DeliveryLocations() {
 
   return (
     <div className="space-y-6">
+      {confirmDialog.show && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70"
+          onClick={closeConfirmDialog}
+        >
+          <div
+            className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full mx-4 border border-slate-200 dark:border-slate-700"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6">
+              <Alert variant="destructive">
+                <FiAlertCircle className="h-4 w-4" />
+                <AlertTitle>Delete location</AlertTitle>
+                <AlertDescription>
+                  Are you sure you want to delete &quot;{confirmDialog.name}&quot;? This action cannot be undone.
+                </AlertDescription>
+              </Alert>
+              <div className="flex justify-end gap-3 mt-6">
+                <Button variant="ghost" onClick={closeConfirmDialog}>Cancel</Button>
+                <Button variant="danger" onClick={handleConfirmDelete}>
+                  Delete
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -254,6 +312,8 @@ export default function DeliveryLocations() {
                         size="sm"
                         className="p-2 text-xs"
                         icon={<FiTrash className="w-4 h-4" />}
+                        onClick={() => openConfirmDialog(loc)}
+                        title="Delete"
                       />
                     </CardFooter>
                   </Card>
@@ -305,7 +365,7 @@ export default function DeliveryLocations() {
                             onClick={() => toggleActiveStatus(loc)}
                             title={loc.isActive ? "Deactivate" : "Activate"}
                           ></Button>
-                          <Button variant="danger" size="sm" className='p-2' icon={<FiTrash className="w-4 h-4" />}></Button>
+                          <Button variant="danger" size="sm" className='p-2' icon={<FiTrash className="w-4 h-4" />} onClick={() => openConfirmDialog(loc)} title="Delete" />
                         </div>
                       </TableCell>
                     </TableRow>

@@ -71,31 +71,40 @@ function OrderDetails({ order }: OrderDetailsProps) {
               Products ({order.products.length})
             </p>
             <div className="space-y-1">
-              {order.products.map(p => (
-                <div key={p.id} className="text-xs p-2 bg-gray-50 rounded dark:bg-slate-800">
-                  <div className="flex justify-between">
-                    <span>
-                      <strong>{p.name}</strong> ×{p.quantity}
-                    </span>
-                    <span className="font-semibold">€{p.total}</span>
-                  </div>
-                  {p.extras && p.extras.length > 0 && (
-                    <div className="mt-1 ml-2 space-y-0.5">
-                      {p.extras.map((extra: any) => (
-                        <div key={extra.id}>
-                          • {extra.name} ×{extra.quantity}{' '}
-                          <span>(€{extra.price})</span>
-                        </div>
-                      ))}
-                      {p.extrasPrice && Number(p.extrasPrice) > 0 && (
-                        <div className="font-semibold mt-0.5">
-                          Extras Total: €{p.extrasPrice}
-                        </div>
-                      )}
+              {order.products.map(p => {
+                const removed = (p.removedIngredients ?? p.removed_ingredients ?? []) as string[]
+                const hasRemoved = Array.isArray(removed) && removed.length > 0
+                return (
+                  <div key={p.id} className="text-xs p-2 bg-gray-50 rounded dark:bg-slate-800">
+                    <div className="flex justify-between">
+                      <span>
+                        <strong>{p.name}</strong> ×{p.quantity}
+                      </span>
+                      <span className="font-semibold">€{p.total}</span>
                     </div>
-                  )}
-                </div>
-              ))}
+                    {hasRemoved && (
+                      <div className="mt-1 ml-2 text-amber-700 dark:text-amber-400 font-medium">
+                        Without: {removed.join(', ')}
+                      </div>
+                    )}
+                    {p.extras && p.extras.length > 0 && (
+                      <div className="mt-1 ml-2 space-y-0.5">
+                        {p.extras.map((extra: any) => (
+                          <div key={extra.id}>
+                            • {extra.name} ×{extra.quantity}{' '}
+                            <span>(€{extra.price})</span>
+                          </div>
+                        ))}
+                        {p.extrasPrice && Number(p.extrasPrice) > 0 && (
+                          <div className="font-semibold mt-0.5">
+                            Extras Total: €{p.extrasPrice}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </div>
         )}
