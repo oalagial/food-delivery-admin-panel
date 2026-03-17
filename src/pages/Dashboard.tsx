@@ -32,6 +32,8 @@ type DashboardOrder = {
       quantity?: number | string
       price?: number | string
     }>
+    removedIngredients?: string[]
+    removed_ingredients?: string[]
   }>
   offers?: Array<{
     id?: string | number
