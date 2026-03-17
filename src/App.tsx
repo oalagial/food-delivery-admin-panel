@@ -76,7 +76,13 @@ const routes: RouteConfig[] = [
 
 function App() {
   const [token, setToken] = useState<string | null>(getToken())
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+
+  const handleSidebarNavigate = () => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setSidebarOpen(false)
+    }
+  }
 
   useEffect(() => {
     const update = () => setToken(getToken())
@@ -111,10 +117,7 @@ function App() {
           />
         )}
 
-        <Sidebar
-          isOpen={sidebarOpen}
-          onNavigate={() => setSidebarOpen(false)}
-        />
+        <Sidebar isOpen={sidebarOpen} onNavigate={handleSidebarNavigate} />
 
         <main className="main">
           <Header onToggleSidebar={() => setSidebarOpen((prev) => !prev)} />

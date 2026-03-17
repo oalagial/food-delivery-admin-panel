@@ -66,8 +66,9 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
         <div className="flex flex-1 items-center gap-3 min-w-0">
           <button
             type="button"
-            className="inline-flex items-center justify-center rounded-md border border-slate-200 bg-white p-2 text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 md:hidden"
+            className="inline-flex items-center justify-center rounded-md border border-slate-200 bg-white p-2 text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
             onClick={onToggleSidebar}
+            aria-label="Toggle sidebar"
           >
             <FiMenu className="w-5 h-5" />
           </button>
