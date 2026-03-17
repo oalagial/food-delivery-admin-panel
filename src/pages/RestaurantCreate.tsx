@@ -36,6 +36,7 @@ export default function RestaurantCreate() {
     province: '',
     zipCode: '',
     country: '',
+    telephone: '',
     image: '',
     description: '',
     latitude: '',
@@ -62,6 +63,7 @@ export default function RestaurantCreate() {
       province: String(form.province || '').trim(),
       zipCode: String(form.zipCode || '').trim(),
       country: String(form.country || '').trim(),
+      telephone: String(form.telephone || '').trim() || undefined,
       image: String(form.image || '').trim(),
       description: String(form.description || '').trim(),
     }
@@ -162,6 +164,7 @@ export default function RestaurantCreate() {
             province: String(data.province ?? ''),
             zipCode: String(data.zipCode ?? ''),
             country: String(data.country ?? ''),
+            telephone: String(data.telephone ?? ''),
             image: String(data.image ?? ''),
             description: String(data.description ?? ''),
             latitude: data.latitude != null ? String(data.latitude) : '',
@@ -288,6 +291,21 @@ export default function RestaurantCreate() {
                   placeholder="Number"
                 />
               </div>
+            </div>
+
+            <div>
+              <Label htmlFor="telephone">Telephone</Label>
+              <Input
+                id="telephone"
+                type="tel"
+                className="mt-1.5 w-full"
+                name="telephone"
+                value={form.telephone}
+                onChange={(e) =>
+                  setForm((s) => ({ ...s, telephone: e.target.value }))
+                }
+                placeholder="e.g. +30 210 1234567"
+              />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-6 gap-4">

@@ -30,6 +30,7 @@ import Offers from './pages/Offers'
 import OfferCreate from './pages/OfferCreate'
 import CustomerCollection from './pages/CustomerCollection'
 import Coupons from './pages/Coupons'
+import CouponCreate from './pages/CouponCreate'
 
 type RouteConfig = {
   path: string
@@ -71,6 +72,8 @@ const routes: RouteConfig[] = [
   { path: '/offers/creation/:id', element: <OfferCreate />, protected: true },
   { path: '/customers', element: <CustomerCollection />, protected: true },
   { path: '/coupons', element: <Coupons />, protected: true },
+  { path: '/coupons/creation', element: <CouponCreate />, protected: true },
+  { path: '/coupons/creation/:id', element: <CouponCreate />, protected: true },
   { path: '/', element: <Dashboard />, protected: true },
 ]
 
