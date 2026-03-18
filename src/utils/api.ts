@@ -166,6 +166,7 @@ export type Restaurant = {
   image?: string
   zipCode?: string
   country?: string
+  telephone?: string
   description?: string
   latitude?: string | number
   longitude?: string | number
@@ -234,6 +235,7 @@ export type CreateRestaurantPayload = {
   image?: string
   zipCode?: string
   country?: string
+  telephone?: string
   description?: string
   latitude?: string | number
   longitude?: string | number
@@ -1173,6 +1175,144 @@ export async function restoreOffer(id: string | number) {
   return data
 }
 
+// Coupons API
+export type DiscountType = 'PERCENTAGE' | 'FIXED'
+
+export type Coupon = {
+  id: number
+  code: string
+  name: string
+  description?: string | null
+  restaurantId?: number | null
+  customerId?: number | null
+  maxUse?: number | null
+  type: DiscountType
+  value: number | string
+  startsAt: string
+  endsAt?: string | null
+  isActive: boolean
+  restaurant?: { id: number; name?: string } | null
+  customer?: { id: number; name?: string; email?: string } | null
+  deletedBy?: string | number | null
+  [k: string]: unknown
+}
+
+export type CreateCouponPayload = {
+  code: string
+  name: string
+  description?: string
+  restaurantId?: number | null
+  customerId?: number | null
+  maxUse?: number | null
+  type: DiscountType
+  value: number
+  startsAt: string
+  endsAt?: string | null
+  isActive?: boolean
+}
+
+export type CouponsListParams = { page?: number; limit?: number; sortField?: string; sortDir?: 'asc' | 'desc' }
+
+export type CouponsListResponse = { data: Coupon[]; total: number; page: number; limit: number; totalPages: number }
+
+export async function getCouponsList(params?: CouponsListParams): Promise<CouponsListResponse> {
+  const search = new URLSearchParams()
+  if (params?.page != null) search.set('page', String(params.page))
+  if (params?.limit != null) search.set('limit', String(params.limit))
+  if (params?.sortField) search.set('sortField', params.sortField)
+  if (params?.sortDir) search.set('sortDir', params.sortDir)
+  const res = await authFetch(`/coupons?${search}`)
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(text || `GET /coupons failed (${res.status})`)
+  }
+  const json = await res.json().catch(() => null)
+  const data = Array.isArray(json?.data) ? json.data : []
+  return {
+    data,
+    total: Number(json?.total) ?? 0,
+    page: Number(json?.page) ?? 1,
+    limit: Number(json?.limit) ?? 20,
+    totalPages: Number(json?.totalPages) ?? 1,
+  }
+}
+
+export async function getCouponById(id: string | number): Promise<Coupon | null> {
+  if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
+  const res = await authFetch(`/coupons/${encodeURIComponent(String(id))}`)
+  if (res.status === 404) return null
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(text || `GET /coupons/${id} failed (${res.status})`)
+  }
+  return res.json().catch(() => null)
+}
+
+export async function createCoupon(payload: CreateCouponPayload) {
+  const res = await authFetch('/coupons/create', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) {
+    const bodyText = parseErrorJson(await res.json().catch(() => null)) || (await res.text().catch(() => ''))
+    throw new Error(bodyText || `POST /coupons/create failed (${res.status})`)
+  }
+  return res.json().catch(() => null)
+}
+
+export async function updateCoupon(id: string | number, payload: Partial<CreateCouponPayload>) {
+  if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
+  const res = await authFetch(`/coupons/${encodeURIComponent(String(id))}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) {
+    const bodyText = parseErrorJson(await res.json().catch(() => null)) || (await res.text().catch(() => ''))
+    throw new Error(bodyText || `PUT /coupons/${id} failed (${res.status})`)
+  }
+  return res.json().catch(() => null)
+}
+
+export async function deleteCoupon(id: string | number) {
+  if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
+  const res = await authFetch(`/coupons/${encodeURIComponent(String(id))}`, { method: 'DELETE' })
+  if (!res.ok) {
+    const bodyText = parseErrorJson(await res.json().catch(() => null)) || (await res.text().catch(() => ''))
+    throw new Error(bodyText || `DELETE /coupons/${id} failed (${res.status})`)
+  }
+}
+
+export async function restoreCoupon(id: string | number) {
+  if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
+  const res = await authFetch(`/coupons/${encodeURIComponent(String(id))}/restore`, { method: 'POST' })
+  if (!res.ok) {
+    const bodyText = parseErrorJson(await res.json().catch(() => null)) || (await res.text().catch(() => ''))
+    throw new Error(bodyText || `POST /coupons/${id}/restore failed (${res.status})`)
+  }
+  return res.json().catch(() => null)
+}
+
+export type CustomerListItem = { id: number; name?: string; email?: string; phone?: string; [k: string]: unknown }
+
+export async function getCustomersList(params?: { page?: number; limit?: number }): Promise<{ data: CustomerListItem[]; total: number; totalPages: number }> {
+  const search = new URLSearchParams()
+  if (params?.page != null) search.set('page', String(params.page))
+  if (params?.limit != null) search.set('limit', String(params.limit))
+  const res = await authFetch(`/customers?${search}`)
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(text || `GET /customers failed (${res.status})`)
+  }
+  const json = await res.json().catch(() => null)
+  const data = Array.isArray(json?.data) ? json.data : []
+  return {
+    data,
+    total: Number(json?.total) ?? 0,
+    totalPages: Number(json?.totalPages) ?? 1,
+  }
+}
 
 // Opening Hours API
 export type OpeningHourItem = {
@@ -1591,6 +1731,24 @@ export async function updateDeliveryLocation(id: string | number, payload: Creat
 
   const data = await res.json().catch(() => null)
   return data
+}
+
+export async function deleteDeliveryLocation(id: string | number) {
+  if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
+  const res = await authFetch(`/delivery-locations/delete/${encodeURIComponent(String(id))}`, {
+    method: 'DELETE',
+  })
+  if (!res.ok) {
+    let bodyText = ''
+    try {
+      const json = await res.json()
+      bodyText = parseErrorJson(json)
+    } catch {
+      try { bodyText = await res.text() } catch { bodyText = '' }
+    }
+    throw new Error(bodyText || `DELETE /delivery-locations/delete/${id} failed (${res.status})`)
+  }
+  return res.json().catch(() => null)
 }
 
 export async function updateRestaurant(token: string, payload: CreateRestaurantPayload) {

@@ -6,6 +6,7 @@ import type { OrderItem } from '../utils/api'
 import { Skeleton } from '../components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../components/ui/card'
 import { Table, TableBody, TableHead, TableRow, TableCell, TableHeadCell } from '../components/ui/table'
+import { LOCAL_BACKEND } from '../config'
 
 type OrderRowProps = {
   order: OrderItem;
@@ -13,6 +14,7 @@ type OrderRowProps = {
   onToggle: () => void;
   onAccept: (id: string) => void;
   onReject: (id: string) => void;
+  onLocalNotify: (order: OrderItem) => void;
 };
 
 type OrderCardProps = OrderRowProps;
@@ -69,31 +71,40 @@ function OrderDetails({ order }: OrderDetailsProps) {
               Products ({order.products.length})
             </p>
             <div className="space-y-1">
-              {order.products.map(p => (
-                <div key={p.id} className="text-xs p-2 bg-gray-50 rounded dark:bg-slate-800">
-                  <div className="flex justify-between">
-                    <span>
-                      <strong>{p.name}</strong> ×{p.quantity}
-                    </span>
-                    <span className="font-semibold">€{p.total}</span>
-                  </div>
-                  {p.extras && p.extras.length > 0 && (
-                    <div className="mt-1 ml-2 space-y-0.5">
-                      {p.extras.map((extra: any) => (
-                        <div key={extra.id}>
-                          • {extra.name} ×{extra.quantity}{' '}
-                          <span>(€{extra.price})</span>
-                        </div>
-                      ))}
-                      {p.extrasPrice && Number(p.extrasPrice) > 0 && (
-                        <div className="font-semibold mt-0.5">
-                          Extras Total: €{p.extrasPrice}
-                        </div>
-                      )}
+              {order.products.map(p => {
+                const removed = (p.removedIngredients ?? p.removed_ingredients ?? []) as string[]
+                const hasRemoved = Array.isArray(removed) && removed.length > 0
+                return (
+                  <div key={p.id} className="text-xs p-2 bg-gray-50 rounded dark:bg-slate-800">
+                    <div className="flex justify-between">
+                      <span>
+                        <strong>{p.name}</strong> ×{p.quantity}
+                      </span>
+                      <span className="font-semibold">€{p.total}</span>
                     </div>
-                  )}
-                </div>
-              ))}
+                    {hasRemoved && (
+                      <div className="mt-1 ml-2 text-amber-700 dark:text-amber-400 font-medium">
+                        Without: {removed.join(', ')}
+                      </div>
+                    )}
+                    {p.extras && p.extras.length > 0 && (
+                      <div className="mt-1 ml-2 space-y-0.5">
+                        {p.extras.map((extra: any) => (
+                          <div key={extra.id}>
+                            • {extra.name} ×{extra.quantity}{' '}
+                            <span>(€{extra.price})</span>
+                          </div>
+                        ))}
+                        {p.extrasPrice && Number(p.extrasPrice) > 0 && (
+                          <div className="font-semibold mt-0.5">
+                            Extras Total: €{p.extrasPrice}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </div>
         )}
@@ -156,7 +167,7 @@ function OrderDetails({ order }: OrderDetailsProps) {
   );
 }
 
-function OrderRow({ order, isOpen, onToggle, onAccept, onReject }: OrderRowProps) {
+function OrderRow({ order, isOpen, onToggle, onAccept, onReject, onLocalNotify }: OrderRowProps) {
   return (
     <>
       {/* Header Row */}
@@ -199,6 +210,14 @@ function OrderRow({ order, isOpen, onToggle, onAccept, onReject }: OrderRowProps
             </Button>
 
             <Button
+              variant="default"
+              size="sm"
+              onClick={() => onLocalNotify(order)}
+            >
+              Print
+            </Button>
+
+            <Button
               variant="primary"
               size="sm"
               icon={<FiCheckCircle className="w-4 h-4" />}
@@ -229,7 +248,7 @@ function OrderRow({ order, isOpen, onToggle, onAccept, onReject }: OrderRowProps
   );
 }
 
-function OrderCard({ order, isOpen, onToggle, onAccept, onReject }: OrderCardProps) {
+function OrderCard({ order, isOpen, onToggle, onAccept, onReject, onLocalNotify }: OrderCardProps) {
   return (
     <Card className="shadow-sm">
       <CardHeader
@@ -282,6 +301,15 @@ function OrderCard({ order, isOpen, onToggle, onAccept, onReject }: OrderCardPro
         >
           {isOpen ? 'Hide details' : 'Details'}
         </Button>
+
+        <Button
+          variant="default"
+          size="sm"
+          onClick={() => onLocalNotify(order)}
+        >
+          Print
+        </Button>
+
         <div className="flex gap-1">
           <Button
             variant="primary"
@@ -328,6 +356,28 @@ export default function Orders() {
 
   const rejectOrder = (id: string) => {
     console.log('Reject Id:', id)
+  }
+
+  const notifyLocalBackend = async (order: OrderItem) => {
+    try {
+      if (!LOCAL_BACKEND) {
+        console.error('LOCAL_BACKEND is not set')
+        return
+      }
+
+      const url = `${LOCAL_BACKEND}/print`
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(order),
+      })
+
+      if (!res.ok) {
+        console.error('Local backend request failed', res.status)
+      }
+    } catch (err) {
+      console.error('Local backend request error', err)
+    }
   }
 
   useEffect(() => {
@@ -410,6 +460,7 @@ export default function Orders() {
                 onToggle={() => toggleRow(it.id ?? '')}
                 onAccept={acceptOrder}
                 onReject={rejectOrder}
+                onLocalNotify={notifyLocalBackend}
               />
             ))}
           </div>
@@ -437,6 +488,7 @@ export default function Orders() {
                     onToggle={() => toggleRow(it.id ?? '')}
                     onAccept={acceptOrder}
                     onReject={rejectOrder}
+                    onLocalNotify={notifyLocalBackend}
                   />
                 ))}
               </TableBody>
