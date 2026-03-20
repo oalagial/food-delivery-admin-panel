@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '../components/ui/button'
 import { FiCheckCircle, FiSlash } from 'react-icons/fi'
 import { Card, CardContent } from '../components/ui/card'
@@ -6,6 +6,15 @@ import Table, { TableBody, TableHead, TableRow, TableHeadCell, TableCell } from 
 import { Skeleton } from '../components/ui/skeleton'
 
 import { API_BASE } from '../config'
+import { getCurrentUserRole, OrderStatus, updateOrder } from '../utils/api'
+import { UserRole } from '../utils/userRoles'
+import { OrderTableSortHeadCell } from '../components/OrderTableSortHeadCell'
+import {
+  sortOrdersByColumn,
+  toggleOrderTableSort,
+  type OrderTableSortDir,
+  type OrderTableSortKey,
+} from '../utils/orderTableSort'
 
 type DashboardOrder = {
   id?: string | number
@@ -51,132 +60,161 @@ type DashboardOrder = {
   amount?: number | string | null
   status?: string
   createdAt?: string
+  orderNumber?: number
+  orderDate?: string
 }
 
 function OrderDetails({ order }: { order: DashboardOrder }) {
   return (
-    <div className="p-4 space-y-3">
+    <div className="p-4 space-y-4 text-sm text-left">
       <div className="grid grid-cols-2 sm:grid-cols-6 gap-3 pb-3 border-b">
         <div className="text-center">
-          <p className="text-xs uppercase">Payment</p>
-          <p className="text-sm font-semibold">{order.paymentMethod ?? '-'}</p>
+          <p className="text-xs uppercase tracking-wide text-slate-600 dark:text-slate-400">Payment</p>
+          <p className="text-sm font-semibold mt-0.5">{order.paymentMethod ?? '-'}</p>
         </div>
         <div className="text-center">
-          <p className="text-xs uppercase">Payment Status</p>
-          <span className="text-xs font-semibold px-2 py-1 rounded bg-yellow-100 text-yellow-800 inline-block">
+          <p className="text-xs uppercase tracking-wide text-slate-600 dark:text-slate-400">Payment Status</p>
+          <span className="text-xs font-semibold px-2.5 py-1 rounded bg-yellow-100 text-yellow-800 inline-block mt-0.5">
             {order.paymentStatus ?? '-'}
           </span>
         </div>
         <div className="text-center">
-          <p className="text-xs uppercase">Fee</p>
-          <p className="text-sm font-semibold">{formatMoney(order.deliveryFee)}</p>
+          <p className="text-xs uppercase tracking-wide text-slate-600 dark:text-slate-400">Fee</p>
+          <p className="text-sm font-semibold mt-0.5">{formatMoney(order.deliveryFee)}</p>
         </div>
         <div className="text-center">
-          <p className="text-xs uppercase">Discount</p>
-          <p className="text-sm font-semibold text-red-600">{formatMoney(order.discount)}</p>
+          <p className="text-xs uppercase tracking-wide text-slate-600 dark:text-slate-400">Discount</p>
+          <p className="text-sm font-semibold text-red-600 mt-0.5">{formatMoney(order.discount)}</p>
         </div>
-        <div>
-          <p className="text-xs uppercase font-semibold mb-1">Customer</p>
-          <p className="font-semibold">{order.customer?.name ?? order.customerName ?? '-'}</p>
-          <p className="text-xs">{order.customer?.email ?? order.email ?? '-'}</p>
+        <div className="text-left">
+          <p className="text-xs uppercase font-semibold mb-1 tracking-wide text-slate-600 dark:text-slate-400">Customer</p>
+          <p className="font-semibold text-base">{order.customer?.name ?? order.customerName ?? '-'}</p>
+          <p className="text-xs mt-0.5">{order.customer?.email ?? order.email ?? '-'}</p>
           <p className="text-xs">{order.customer?.phone ?? '-'}</p>
         </div>
-        <div>
-          <p className="text-xs uppercase font-semibold mb-1">Delivery</p>
-          <p className="font-semibold">
+        <div className="text-left">
+          <p className="text-xs uppercase font-semibold mb-1 tracking-wide text-slate-600 dark:text-slate-400">Delivery</p>
+          <p className="font-semibold text-sm">
             {order.deliveryTime ? new Date(order.deliveryTime).toLocaleString() : '-'}
           </p>
           {order.notes && <p className="text-xs italic mt-1">Note: {order.notes}</p>}
         </div>
       </div>
 
-      <div className="space-y-2 pb-3 border-b">
-        {order.products && order.products.length > 0 && (
-          <div>
-            <p className="text-xs font-semibold uppercase mb-1">Products ({order.products.length})</p>
-            <div className="space-y-1">
-              {order.products.map((p) => {
-                const removed = (p.removedIngredients ?? p.removed_ingredients ?? []) as string[]
-                const hasRemoved = Array.isArray(removed) && removed.length > 0
-                return (
-                  <div key={String(p.id ?? '')} className="text-xs p-2 bg-gray-50 rounded dark:bg-slate-800">
-                    <div className="flex justify-between">
-                      <span>
-                        <strong>{p.name ?? ''}</strong> x{String(p.quantity ?? '')}
-                      </span>
-                      <span className="font-semibold">{formatMoney(p.total ?? null)}</span>
-                    </div>
-                    {hasRemoved && (
-                      <div className="mt-1 ml-2 text-amber-700 dark:text-amber-400 font-medium">
-                        Without: {removed.join(', ')}
+      <div className="space-y-4 pb-3 border-b text-left">
+        <div className="space-y-3">
+          {order.products && order.products.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold uppercase mb-2 tracking-wide text-slate-600 dark:text-slate-400">
+                Products ({order.products.length})
+              </p>
+              <ul className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3 list-none p-0 m-0">
+                {order.products.map((p) => {
+                  const removed = (p.removedIngredients ?? p.removed_ingredients ?? []) as string[]
+                  const hasRemoved = Array.isArray(removed) && removed.length > 0
+                  return (
+                    <li
+                      key={String(p.id ?? '')}
+                      className="rounded-lg border border-slate-200 bg-gray-50 p-3 dark:border-slate-600 dark:bg-slate-800/80"
+                    >
+                      <div className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 items-start">
+                        <div className="min-w-0">
+                          <p className="text-base sm:text-lg font-semibold leading-snug text-slate-900 dark:text-slate-100">
+                            {p.name ?? ''}
+                          </p>
+                          <p className="mt-2 text-2xl font-bold tabular-nums tracking-tight text-slate-800 dark:text-slate-100">
+                            ×{String(p.quantity ?? '')}
+                          </p>
+                        </div>
+                        <p className="text-base font-semibold tabular-nums text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                          {formatMoney(p.total ?? null)}
+                        </p>
                       </div>
-                    )}
-                    {p.extras && p.extras.length > 0 && (
-                      <div className="mt-1 ml-2 space-y-0.5">
-                        {p.extras.map((extra) => (
-                          <div key={String(extra.id ?? '')}>
-                            • {extra.name ?? ''} x{String(extra.quantity ?? '')}{' '}
-                            <span>({formatMoney(extra.price ?? null)})</span>
+                      {hasRemoved && (
+                        <p className="mt-2 text-xs text-amber-700 dark:text-amber-400 font-medium">
+                          Without: {removed.join(', ')}
+                        </p>
+                      )}
+                      {p.extras && p.extras.length > 0 && (
+                        <div className="mt-2 space-y-1 text-xs leading-relaxed border-t border-slate-200/80 dark:border-slate-600 pt-2">
+                          {p.extras.map((extra) => (
+                            <div key={String(extra.id ?? '')}>
+                              • {extra.name ?? ''}{' '}
+                              <span className="font-semibold tabular-nums">×{String(extra.quantity ?? '')}</span>{' '}
+                              <span>({formatMoney(extra.price ?? null)})</span>
+                            </div>
+                          ))}
+                          {p.extrasPrice != null && Number(p.extrasPrice) > 0 && (
+                            <div className="font-semibold text-sm pt-0.5">Extras Total: {formatMoney(p.extrasPrice)}</div>
+                          )}
+                        </div>
+                      )}
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+          )}
+
+          {order.offers && order.offers.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold uppercase mb-2 tracking-wide text-slate-600 dark:text-slate-400">
+                Offers ({order.offers.length})
+              </p>
+              <ul className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3 list-none p-0 m-0">
+                {order.offers.map((o) => (
+                  <li
+                    key={String(o.id ?? '')}
+                    className="rounded-lg border border-purple-200 bg-purple-50 p-3 dark:border-purple-900 dark:bg-purple-950/30"
+                  >
+                    <div className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 items-start">
+                      <div className="min-w-0">
+                        <p className="text-base sm:text-lg font-semibold leading-snug text-slate-900 dark:text-slate-100">
+                          {o.name ?? ''}
+                        </p>
+                        <p className="mt-2 text-2xl font-bold tabular-nums tracking-tight text-slate-800 dark:text-slate-100">
+                          ×{String(o.quantity ?? '')}
+                        </p>
+                      </div>
+                      <p className="text-base font-semibold tabular-nums text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                        {formatMoney(o.total ?? null)}
+                      </p>
+                    </div>
+                    {o.groups && o.groups.length > 0 && (
+                      <div className="mt-2 text-xs space-y-0.5 leading-relaxed border-t border-purple-200/80 dark:border-purple-900 pt-2">
+                        {o.groups.map((g) => (
+                          <div key={String(g.groupId ?? '')}>
+                            {g.groupName ?? ''}: <strong>{g.selectedItem?.name ?? ''}</strong>
                           </div>
                         ))}
-                        {p.extrasPrice != null && Number(p.extrasPrice) > 0 && (
-                          <div className="font-semibold mt-0.5">Extras Total: {formatMoney(p.extrasPrice)}</div>
-                        )}
                       </div>
                     )}
-                  </div>
-                )
-              })}
+                  </li>
+                ))}
+              </ul>
             </div>
-          </div>
-        )}
-
-        {order.offers && order.offers.length > 0 && (
-          <div>
-            <p className="text-xs font-semibold uppercase mb-1">Offers ({order.offers.length})</p>
-            <div className="space-y-1">
-              {order.offers.map((o) => (
-                <div key={String(o.id ?? '')} className="text-xs p-2 bg-purple-50 rounded border border-purple-200">
-                  <div className="flex justify-between">
-                    <span>
-                      <strong>{o.name ?? ''}</strong> x{String(o.quantity ?? '')}
-                    </span>
-                    <span className="font-semibold">{formatMoney(o.total ?? null)}</span>
-                  </div>
-                  {o.groups && o.groups.length > 0 && (
-                    <div className="mt-1 ml-2">
-                      {o.groups.map((g) => (
-                        <div key={String(g.groupId ?? '')}>
-                          {g.groupName ?? ''}: <strong>{g.selectedItem?.name ?? ''}</strong>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-      <div className="flex justify-end gap-8 text-sm">
-        <div>
-          <p className="text-xs">Subtotal</p>
-          <p className="font-semibold">{formatMoney(order.subtotal)}</p>
+      <div className="flex flex-wrap justify-end gap-6 sm:gap-10 text-sm">
+        <div className="text-right">
+          <p className="text-xs text-slate-600 dark:text-slate-400">Subtotal</p>
+          <p className="font-semibold text-base">{formatMoney(order.subtotal)}</p>
         </div>
-        <div>
-          <p className="text-xs">Fee</p>
-          <p className="font-semibold">{formatMoney(order.deliveryFee)}</p>
+        <div className="text-right">
+          <p className="text-xs text-slate-600 dark:text-slate-400">Fee</p>
+          <p className="font-semibold text-base">{formatMoney(order.deliveryFee)}</p>
         </div>
         {Number(order.discount ?? 0) > 0 && (
-          <div>
-            <p className="text-xs">Discount</p>
-            <p className="font-semibold text-red-600">-{formatMoney(order.discount)}</p>
+          <div className="text-right">
+            <p className="text-xs text-slate-600 dark:text-slate-400">Discount</p>
+            <p className="font-semibold text-base text-red-600">-{formatMoney(order.discount)}</p>
           </div>
         )}
-        <div className="text-right border-l pl-8">
-          <p className="text-xs">Total</p>
-          <p className="text-lg font-bold text-green-600">{formatMoney(order.total ?? order.amount)}</p>
+        <div className="text-right border-l border-slate-200 dark:border-slate-600 pl-6 sm:pl-10">
+          <p className="text-xs text-slate-600 dark:text-slate-400">Total</p>
+          <p className="text-xl font-bold text-green-600">{formatMoney(order.total ?? order.amount)}</p>
         </div>
       </div>
     </div>
@@ -207,7 +245,8 @@ function isToday(value?: string): boolean {
 function statusClass(status?: string): string {
   if (status === 'DELIVERED') return 'bg-green-100 text-green-800'
   if (status === 'PENDING') return 'bg-yellow-100 text-yellow-800'
-  if (status === 'CANCELLED') return 'bg-red-100 text-red-800'
+  if (status === 'CANCELLED' || status === 'REJECTED') return 'bg-red-100 text-red-800'
+  if (status === 'CONFIRMED') return 'bg-blue-100 text-blue-800'
   return 'bg-blue-100 text-blue-800'
 }
 
@@ -217,24 +256,106 @@ function formatMoney(value?: number | string | null): string {
   return Number.isFinite(n) ? `€${n.toFixed(2)}` : '-'
 }
 
+function formatOrderBusinessDate(value: string | number | undefined | null): string {
+  if (value == null || value === '') return '—'
+  const d = new Date(String(value))
+  return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString()
+}
+
 export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [todayOrders, setTodayOrders] = useState<DashboardOrder[]>([])
   const [error, setError] = useState<string | null>(null)
   const [openRowId, setOpenRowId] = useState<string | null>(null)
+  const [sortKey, setSortKey] = useState<OrderTableSortKey>('createdAt')
+  const [sortDir, setSortDir] = useState<OrderTableSortDir>('desc')
+  const [patchingOrderId, setPatchingOrderId] = useState<string | null>(null)
+  const [orderActionError, setOrderActionError] = useState<string | null>(null)
   const previousTodayCountRef = useRef<number | null>(null)
   const audioCtxRef = useRef<AudioContext | null>(null)
+  const refreshTodayOrdersRef = useRef<() => Promise<void>>(() => Promise.resolve())
+
+  const displayedOrders = useMemo(
+    () => sortOrdersByColumn(todayOrders, sortKey, sortDir),
+    [todayOrders, sortKey, sortDir]
+  )
+
+  const onSortColumn = (k: OrderTableSortKey) => {
+    const next = toggleOrderTableSort(sortKey, sortDir, k)
+    setSortKey(next.key)
+    setSortDir(next.dir)
+  }
 
   const toggleRow = (id: string | number) => {
     setOpenRowId((prev) => (prev === String(id) ? null : String(id)))
   }
 
-  const acceptOrder = (id: string) => {
-    console.log('Accept Id:', id)
+  const patchOrderStatus = async (id: string, status: typeof OrderStatus.CONFIRMED | typeof OrderStatus.CANCELLED) => {
+    if (!id || patchingOrderId) return
+    setPatchingOrderId(id)
+    setOrderActionError(null)
+    try {
+      await updateOrder(id, { status })
+      setTodayOrders((prev) => prev.map((o) => (String(o.id) === id ? { ...o, status } : o)))
+    } catch (e) {
+      setOrderActionError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setPatchingOrderId(null)
+    }
   }
 
-  const rejectOrder = (id: string) => {
-    console.log('Reject Id:', id)
+  const markOrderReady = async (id: string) => {
+    if (!id || patchingOrderId) return
+    setPatchingOrderId(id)
+    setOrderActionError(null)
+    try {
+      await updateOrder(id, { status: OrderStatus.READY })
+      await refreshTodayOrdersRef.current()
+    } catch (e) {
+      setOrderActionError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setPatchingOrderId(null)
+    }
+  }
+
+  const patchOrderStatusWithRefresh = async (
+    id: string,
+    status: typeof OrderStatus.ON_THE_WAY | typeof OrderStatus.DELIVERED,
+  ) => {
+    if (!id || patchingOrderId) return
+    setPatchingOrderId(id)
+    setOrderActionError(null)
+    try {
+      await updateOrder(id, { status })
+      await refreshTodayOrdersRef.current()
+    } catch (e) {
+      setOrderActionError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setPatchingOrderId(null)
+    }
+  }
+
+  const confirmOrder = (id: string) => patchOrderStatus(id, OrderStatus.CONFIRMED)
+
+  const cancelOrder = (id: string) => patchOrderStatus(id, OrderStatus.CANCELLED)
+
+  const isChef = getCurrentUserRole() === UserRole.CHEF
+  const isDeliveryMan = getCurrentUserRole() === UserRole.DELIVERY_MAN
+
+  const deliveryCanMarkOnTheWay = (status: string | undefined) => (status ?? '') === OrderStatus.READY
+
+  const deliveryCanMarkDelivered = (status: string | undefined) =>
+    (status ?? '') === OrderStatus.ON_THE_WAY
+
+  const chefCannotMarkReady = (status: string | undefined) => {
+    const s = status ?? ''
+    return (
+      s === OrderStatus.READY ||
+      s === OrderStatus.ON_THE_WAY ||
+      s === OrderStatus.DELIVERED ||
+      s === OrderStatus.CANCELLED ||
+      s === OrderStatus.REJECTED
+    )
   }
 
   const playNewOrderSound = () => {
@@ -302,9 +423,7 @@ export default function Dashboard() {
         if (!mounted) return
 
         const orders = normalizeOrders(payload)
-        const filtered = orders
-          .filter((o) => isToday(o.createdAt))
-          .sort((a, b) => new Date(String(b.createdAt ?? '')).getTime() - new Date(String(a.createdAt ?? '')).getTime())
+        const filtered = orders.filter((o) => isToday(o.createdAt))
 
         const previousCount = previousTodayCountRef.current
         const nextCount = filtered.length
@@ -322,11 +441,13 @@ export default function Dashboard() {
       }
     }
 
+    refreshTodayOrdersRef.current = refreshTodayOrders
     refreshTodayOrders()
-    const intervalId = window.setInterval(refreshTodayOrders, 30_000)
+    const intervalId = window.setInterval(() => void refreshTodayOrdersRef.current(), 30_000)
 
     return () => {
       mounted = false
+      refreshTodayOrdersRef.current = () => Promise.resolve()
       window.clearInterval(intervalId)
       if (audioCtxRef.current) {
         void audioCtxRef.current.close()
@@ -339,12 +460,23 @@ export default function Dashboard() {
     <div className="space-y-4">
       <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100">Today&apos;s Orders</h1>
 
+      {orderActionError ? (
+        <div
+          role="alert"
+          className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/50 dark:text-red-200"
+        >
+          {orderActionError}
+        </div>
+      ) : null}
+
       <div className="bg-white rounded-md border shadow-sm dark:bg-slate-900 dark:border-slate-700 overflow-x-auto md:overflow-visible">
         {loading ? (
           <Table>
             <TableHead>
               <tr>
-                <TableHeadCell>Order</TableHeadCell>
+                <TableHeadCell>Order id</TableHeadCell>
+                <TableHeadCell>Order number</TableHeadCell>
+                <TableHeadCell>Order date</TableHeadCell>
                 <TableHeadCell>Restaurant</TableHeadCell>
                 <TableHeadCell>Delivery Location</TableHeadCell>
                 <TableHeadCell>Customer</TableHeadCell>
@@ -356,7 +488,7 @@ export default function Dashboard() {
             <TableBody>
               {Array.from({ length: 5 }).map((_, r) => (
                 <TableRow key={r} className="animate-pulse">
-                  {Array.from({ length: 7 }).map((__, c) => (
+                  {Array.from({ length: 9 }).map((__, c) => (
                     <TableCell key={c}>
                       <Skeleton className="h-4 w-full bg-gray-200" />
                     </TableCell>
@@ -370,10 +502,10 @@ export default function Dashboard() {
         ) : (
           <>
             <div className="md:hidden divide-y divide-slate-200 dark:divide-slate-800">
-              {todayOrders.length === 0 ? (
+              {displayedOrders.length === 0 ? (
                 <div className="p-4 text-sm text-slate-500 dark:text-slate-400">No orders for today</div>
               ) : (
-                todayOrders.map((o, i) => {
+                displayedOrders.map((o, i) => {
                   const id = String(o.id ?? '')
                   const restaurant = o.restaurant?.name ?? '-'
                   const deliveryLocation = o.deliveryLocation?.name ?? '-'
@@ -389,45 +521,101 @@ export default function Dashboard() {
                       className="rounded-none border-0 border-b last:border-b-0 bg-white dark:bg-slate-900"
                     >
                       <CardContent className="p-4 flex flex-col gap-2">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">#{id || '-'}</div>
-                          {status ? (
-                            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusClass(status)}`}>
-                              {status}
-                            </span>
-                          ) : null}
-                        </div>
-                        <div className="text-xs text-slate-600 dark:text-slate-300">{restaurant} • {deliveryLocation}</div>
-                        <div className="text-sm text-slate-700 dark:text-slate-200 truncate">{customer}</div>
-                        <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                          <span className="font-medium text-slate-900 dark:text-slate-100">{total} <span className="font-normal">(Subtotal {subtotal})</span></span>
-                          <span>{created}</span>
+                        <div
+                          className="flex flex-col gap-2 cursor-pointer rounded-md -m-1 p-1 hover:bg-slate-50 dark:hover:bg-slate-800/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                          onClick={() => toggleRow(o.id ?? '')}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault()
+                              toggleRow(o.id ?? '')
+                            }
+                          }}
+                          tabIndex={0}
+                          role="button"
+                          aria-expanded={openRowId === String(o.id ?? '')}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                              Order id {id || '—'}
+                            </div>
+                            {status ? (
+                              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusClass(status)}`}>
+                                {status}
+                              </span>
+                            ) : null}
+                          </div>
+                          <div className="text-xs text-slate-600 dark:text-slate-300">{restaurant} • {deliveryLocation}</div>
+                          <div className="text-xs text-slate-600 dark:text-slate-400">
+                            Order number {o.orderNumber != null ? o.orderNumber : '—'} · {formatOrderBusinessDate(o.orderDate)}
+                          </div>
+                          <div className="text-sm text-slate-700 dark:text-slate-200 truncate">{customer}</div>
+                          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                            <span className="font-medium text-slate-900 dark:text-slate-100">{total} <span className="font-normal">(Subtotal {subtotal})</span></span>
+                            <span>{created}</span>
+                          </div>
                         </div>
                         <div>
-                          <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => toggleRow(o.id ?? '')}
-                            >
-                              {openRowId === String(o.id ?? '') ? 'Hide' : 'Details'}
-                            </Button>
-                            <Button
-                              variant="primary"
-                              size="sm"
-                              icon={<FiCheckCircle className="w-4 h-4" />}
-                              onClick={() => acceptOrder(String(o.id ?? ''))}
-                            />
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              icon={<FiSlash className="w-4 h-4" />}
-                              onClick={() => rejectOrder(String(o.id ?? ''))}
-                            />
+                          <div className="flex flex-nowrap items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                            {isChef ? (
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                disabled={!!patchingOrderId || chefCannotMarkReady(status)}
+                                aria-label="Ready"
+                                onClick={() => markOrderReady(String(o.id ?? ''))}
+                              >
+                                Ready
+                              </Button>
+                            ) : isDeliveryMan ? (
+                              <>
+                                <Button
+                                  variant="primary"
+                                  size="sm"
+                                  disabled={!!patchingOrderId || !deliveryCanMarkOnTheWay(status)}
+                                  aria-label="On the way"
+                                  onClick={() =>
+                                    patchOrderStatusWithRefresh(String(o.id ?? ''), OrderStatus.ON_THE_WAY)
+                                  }
+                                >
+                                  On the way
+                                </Button>
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  disabled={!!patchingOrderId || !deliveryCanMarkDelivered(status)}
+                                  aria-label="Delivered"
+                                  onClick={() =>
+                                    patchOrderStatusWithRefresh(String(o.id ?? ''), OrderStatus.DELIVERED)
+                                  }
+                                >
+                                  Delivered
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                <Button
+                                  variant="primary"
+                                  size="sm"
+                                  icon={<FiCheckCircle className="w-4 h-4" />}
+                                  disabled={!!patchingOrderId}
+                                  onClick={() => confirmOrder(String(o.id ?? ''))}
+                                />
+                                <Button
+                                  variant="danger"
+                                  size="sm"
+                                  icon={<FiSlash className="w-4 h-4" />}
+                                  disabled={!!patchingOrderId}
+                                  onClick={() => cancelOrder(String(o.id ?? ''))}
+                                />
+                              </>
+                            )}
                           </div>
                         </div>
                         {openRowId === String(o.id ?? '') && (
-                          <div className="border-t border-gray-100 pt-2">
+                          <div
+                            className="border-t border-gray-100 pt-2"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <OrderDetails order={o} />
                           </div>
                         )}
@@ -442,27 +630,96 @@ export default function Dashboard() {
               <Table>
                 <TableHead>
                   <tr>
-                    <TableHeadCell>Order</TableHeadCell>
-                    <TableHeadCell>Restaurant</TableHeadCell>
-                    <TableHeadCell>Delivery Location</TableHeadCell>
-                    <TableHeadCell>Customer</TableHeadCell>
-                    <TableHeadCell>Price</TableHeadCell>
-                    <TableHeadCell>Status</TableHeadCell>
+                    <OrderTableSortHeadCell
+                      label="Order id"
+                      colKey="createdAt"
+                      activeKey={sortKey}
+                      dir={sortDir}
+                      onSort={onSortColumn}
+                    />
+                    <OrderTableSortHeadCell
+                      label="Order number"
+                      colKey="orderNumber"
+                      activeKey={sortKey}
+                      dir={sortDir}
+                      onSort={onSortColumn}
+                    />
+                    <OrderTableSortHeadCell
+                      label="Order date"
+                      colKey="orderDate"
+                      activeKey={sortKey}
+                      dir={sortDir}
+                      onSort={onSortColumn}
+                    />
+                    <OrderTableSortHeadCell
+                      label="Restaurant"
+                      colKey="restaurant"
+                      activeKey={sortKey}
+                      dir={sortDir}
+                      onSort={onSortColumn}
+                    />
+                    <OrderTableSortHeadCell
+                      label="Delivery Location"
+                      colKey="deliveryLocation"
+                      activeKey={sortKey}
+                      dir={sortDir}
+                      onSort={onSortColumn}
+                    />
+                    <OrderTableSortHeadCell
+                      label="Customer"
+                      colKey="customer"
+                      activeKey={sortKey}
+                      dir={sortDir}
+                      onSort={onSortColumn}
+                    />
+                    <OrderTableSortHeadCell
+                      label="Price"
+                      colKey="price"
+                      activeKey={sortKey}
+                      dir={sortDir}
+                      onSort={onSortColumn}
+                    />
+                    <OrderTableSortHeadCell
+                      label="Status"
+                      colKey="status"
+                      activeKey={sortKey}
+                      dir={sortDir}
+                      onSort={onSortColumn}
+                    />
                     <TableHeadCell>Actions</TableHeadCell>
                   </tr>
                 </TableHead>
                 <TableBody>
-                  {todayOrders.length === 0 && (
+                  {displayedOrders.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={7}>No orders for today</TableCell>
+                      <TableCell colSpan={9}>No orders for today</TableCell>
                     </TableRow>
                   )}
-                  {todayOrders.map((o, i) => (
+                  {displayedOrders.map((o, i) => (
                     <Fragment key={String(o.id ?? i)}>
-                      <TableRow>
+                      <TableRow
+                        onClick={() => toggleRow(o.id ?? '')}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            toggleRow(o.id ?? '')
+                          }
+                        }}
+                        tabIndex={0}
+                        aria-expanded={openRowId === String(o.id ?? '')}
+                        className="cursor-pointer hover:bg-blue-50 dark:hover:bg-slate-700/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                      >
                         <TableCell>
-                          <div className="text-sm font-semibold">#{String(o.id ?? '')}</div>
+                          <div className="text-sm font-semibold">{String(o.id ?? '')}</div>
                           <div className="text-xs text-slate-500">{o.createdAt ? new Date(String(o.createdAt)).toLocaleTimeString() : ''}</div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm font-semibold tabular-nums">
+                            {o.orderNumber != null ? o.orderNumber : '—'}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm">{formatOrderBusinessDate(o.orderDate)}</span>
                         </TableCell>
                         <TableCell>{o.restaurant?.name ?? '-'}</TableCell>
                         <TableCell>{o.deliveryLocation?.name ?? '-'}</TableCell>
@@ -477,32 +734,70 @@ export default function Dashboard() {
                           </span>
                         </TableCell>
                         <TableCell>
-                          <div className="flex justify-center gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => toggleRow(o.id ?? '')}
-                            >
-                              {openRowId === String(o.id ?? '') ? 'Hide' : 'Details'}
-                            </Button>
-                            <Button
-                              variant="primary"
-                              size="sm"
-                              icon={<FiCheckCircle className="w-4 h-4" />}
-                              onClick={() => acceptOrder(String(o.id ?? ''))}
-                            />
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              icon={<FiSlash className="w-4 h-4" />}
-                              onClick={() => rejectOrder(String(o.id ?? ''))}
-                            />
+                          <div
+                            className="flex flex-nowrap justify-center items-center gap-1"
+                            onClick={(e) => e.stopPropagation()}
+                            role="presentation"
+                          >
+                            {isChef ? (
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                disabled={!!patchingOrderId || chefCannotMarkReady(o.status)}
+                                aria-label="Ready"
+                                onClick={() => markOrderReady(String(o.id ?? ''))}
+                              >
+                                Ready
+                              </Button>
+                            ) : isDeliveryMan ? (
+                              <>
+                                <Button
+                                  variant="primary"
+                                  size="sm"
+                                  disabled={!!patchingOrderId || !deliveryCanMarkOnTheWay(o.status)}
+                                  aria-label="On the way"
+                                  onClick={() =>
+                                    patchOrderStatusWithRefresh(String(o.id ?? ''), OrderStatus.ON_THE_WAY)
+                                  }
+                                >
+                                  On the way
+                                </Button>
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  disabled={!!patchingOrderId || !deliveryCanMarkDelivered(o.status)}
+                                  aria-label="Delivered"
+                                  onClick={() =>
+                                    patchOrderStatusWithRefresh(String(o.id ?? ''), OrderStatus.DELIVERED)
+                                  }
+                                >
+                                  Delivered
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                <Button
+                                  variant="primary"
+                                  size="sm"
+                                  icon={<FiCheckCircle className="w-4 h-4" />}
+                                  disabled={!!patchingOrderId}
+                                  onClick={() => confirmOrder(String(o.id ?? ''))}
+                                />
+                                <Button
+                                  variant="danger"
+                                  size="sm"
+                                  icon={<FiSlash className="w-4 h-4" />}
+                                  disabled={!!patchingOrderId}
+                                  onClick={() => cancelOrder(String(o.id ?? ''))}
+                                />
+                              </>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
                       {openRowId === String(o.id ?? '') && (
                         <TableRow>
-                          <TableCell colSpan={7}>
+                          <TableCell colSpan={9} className="text-left align-top">
                             <OrderDetails order={o} />
                           </TableCell>
                         </TableRow>

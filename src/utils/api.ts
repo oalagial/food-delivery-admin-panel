@@ -1,4 +1,5 @@
 import { API_BASE } from '../config'
+import { normalizeUserRole, type UserRole } from './userRoles'
 
 type LoginResponse = {
   token?: string
@@ -60,22 +61,69 @@ export function getToken(): string | null {
   try { return localStorage.getItem('access_token') } catch { return null }
 }
 
-/** Returns the current user id from the JWT payload (sub, id, or userId), or null if not available. */
-export function getCurrentUserId(): string | number | null {
+function getJwtPayload(): Record<string, unknown> | null {
   const token = getToken()
   if (!token || typeof token !== 'string') return null
   const parts = token.split('.')
   if (parts.length !== 3) return null
   try {
-    const payload = JSON.parse(
+    return JSON.parse(
       atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'))
     ) as Record<string, unknown>
-    const id = payload.sub ?? payload.id ?? payload.userId ?? payload.user_id
-    if (id === undefined || id === null) return null
-    return typeof id === 'number' ? id : String(id)
   } catch {
     return null
   }
+}
+
+/** Returns the current user id from the JWT payload (sub, id, or userId), or null if not available. */
+export function getCurrentUserId(): string | number | null {
+  const payload = getJwtPayload()
+  if (!payload) return null
+  const id = payload.sub ?? payload.id ?? payload.userId ?? payload.user_id
+  if (id === undefined || id === null) return null
+  return typeof id === 'number' ? id : String(id)
+}
+
+/**
+ * Role from JWT for UI routing (must match backend `Role` enum strings).
+ * Checks `role`, `roles[0]`, nested `user.role` / `user.role.name`.
+ */
+export function getCurrentUserRole(): UserRole | null {
+  const payload = getJwtPayload()
+  if (!payload) return null
+
+  const tryString = (s: unknown): UserRole | null =>
+    typeof s === 'string' ? normalizeUserRole(s) : null
+
+  const direct = tryString(payload.role ?? payload.userRole)
+  if (direct) return direct
+
+  const roles = payload.roles
+  if (Array.isArray(roles) && roles.length > 0) {
+    const first = roles[0]
+    const fromFirst = tryString(first)
+    if (fromFirst) return fromFirst
+    if (first && typeof first === 'object') {
+      const o = first as Record<string, unknown>
+      const fromObj = tryString(o.name ?? o.role)
+      if (fromObj) return fromObj
+    }
+  }
+
+  const user = payload.user
+  if (user && typeof user === 'object') {
+    const u = user as Record<string, unknown>
+    const fromUser = tryString(u.role)
+    if (fromUser) return fromUser
+    const ur = u.role
+    if (ur && typeof ur === 'object') {
+      const o = ur as Record<string, unknown>
+      const fromNested = tryString(o.name)
+      if (fromNested) return fromNested
+    }
+  }
+
+  return null
 }
 
 export function authFetch(input: RequestInfo, init?: RequestInit) {
@@ -1554,6 +1602,8 @@ export type OrderCustomer = {
 
 export type OrderItem = {
   id?: number | string
+  orderNumber?: number
+  orderDate?: string
   restaurantId?: number | string
   deliveryLocationId?: number | string
   status: OrderStatus
@@ -1584,8 +1634,14 @@ export type CreateOrderPayload = {
   [k: string]: unknown
 }
 
-export async function getOrdersList(page = 1, limit = 10): Promise<any> {
+export async function getOrdersList(
+  page = 1,
+  limit = 10,
+  sort?: { sortField?: string; sortDir?: 'asc' | 'desc' },
+): Promise<any> {
   const params = new URLSearchParams({ page: String(page), limit: String(limit) })
+  if (sort?.sortField) params.set('sortField', sort.sortField)
+  if (sort?.sortDir) params.set('sortDir', sort.sortDir)
   const res = await authFetch(`/orders?${params}`)
   if (!res.ok) {
     const text = await res.text().catch(() => '')

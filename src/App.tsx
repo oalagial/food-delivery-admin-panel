@@ -5,6 +5,7 @@ import Header from './components/Header'
 import Login from './pages/Login'
 import SetPassword from './pages/SetPassword'
 import RequireAuth from './components/RequireAuth'
+import RequireRouteAccess from './components/RequireRouteAccess'
 import { getToken } from './utils/api'
 import { Sidebar } from './components/Sidebar'
 import Dashboard from './pages/Dashboard'
@@ -116,7 +117,15 @@ function AuthenticatedLayout() {
               <Route
                 key={path}
                 path={path}
-                element={isProtected ? <RequireAuth>{element}</RequireAuth> : element}
+                element={
+                  isProtected ? (
+                    <RequireAuth>
+                      <RequireRouteAccess>{element}</RequireRouteAccess>
+                    </RequireAuth>
+                  ) : (
+                    element
+                  )
+                }
               />
             ))}
           </Routes>
