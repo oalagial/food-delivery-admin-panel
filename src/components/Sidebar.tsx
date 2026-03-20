@@ -13,6 +13,7 @@ import {
   FiList,
   FiLayers,
   FiBarChart2,
+  FiPercent,
 } from 'react-icons/fi'
 import { getCurrentUserRole } from '../utils/api'
 import { roleHasFullPanelAccess } from '../utils/userRoles'
@@ -47,32 +48,61 @@ type NavItem = {
   fullPanelOnly?: boolean
 }
 
-const MANAGEMENT_LINKS: NavItem[] = [
-  { to: '/dashboard', labelKey: 'nav.dashboard', icon: <FiHome className="w-5 h-5" /> },
-  { to: '/orders', labelKey: 'nav.orders', icon: <FiShoppingCart className="w-5 h-5" />, fullPanelOnly: true },
-  { to: '/stats', labelKey: 'nav.statistics', icon: <FiBarChart2 className="w-5 h-5" />, fullPanelOnly: true },
-  { to: '/restaurant', labelKey: 'nav.restaurant', icon: <FiCoffee className="w-5 h-5" />, fullPanelOnly: true },
+type NavSectionConfig = {
+  titleKey: string
+  items: NavItem[]
+}
+
+const SIDEBAR_SECTIONS: NavSectionConfig[] = [
   {
-    to: '/delivery-locations',
-    labelKey: 'nav.deliveryLocations',
-    icon: <FiMapPin className="w-5 h-5" />,
-    fullPanelOnly: true,
+    titleKey: 'nav.operations',
+    items: [
+      { to: '/dashboard', labelKey: 'nav.dashboard', icon: <FiHome className="w-5 h-5" /> },
+      { to: '/orders', labelKey: 'nav.orders', icon: <FiShoppingCart className="w-5 h-5" />, fullPanelOnly: true },
+      { to: '/stats', labelKey: 'nav.statistics', icon: <FiBarChart2 className="w-5 h-5" />, fullPanelOnly: true },
+    ],
   },
-]
-
-const USER_MGMT_LINKS: NavItem[] = [
-  { to: '/users', labelKey: 'nav.users', icon: <FiUsers className="w-5 h-5" />, fullPanelOnly: true },
-  { to: '/roles', labelKey: 'nav.roles', icon: <FiShield className="w-5 h-5" />, fullPanelOnly: true },
-]
-
-const CONTENT_LINKS: NavItem[] = [
-  { to: '/types', labelKey: 'nav.types', icon: <FiTag className="w-5 h-5" />, fullPanelOnly: true },
-  { to: '/products', labelKey: 'nav.products', icon: <FiBox className="w-5 h-5" />, fullPanelOnly: true },
-  { to: '/menus', labelKey: 'nav.menus', icon: <FiList className="w-5 h-5" />, fullPanelOnly: true },
-  { to: '/sections', labelKey: 'nav.sections', icon: <FiLayers className="w-5 h-5" />, fullPanelOnly: true },
-  { to: '/offers', labelKey: 'nav.offers', icon: <FiHome className="w-5 h-5" />, fullPanelOnly: true },
-  { to: '/coupons', labelKey: 'nav.coupons', icon: <FiTag className="w-5 h-5" />, fullPanelOnly: true },
-  { to: '/customers', labelKey: 'nav.customers', icon: <FiUsers className="w-5 h-5" />, fullPanelOnly: true },
+  {
+    titleKey: 'nav.venue',
+    items: [
+      { to: '/restaurant', labelKey: 'nav.restaurant', icon: <FiCoffee className="w-5 h-5" />, fullPanelOnly: true },
+      {
+        to: '/delivery-locations',
+        labelKey: 'nav.deliveryLocations',
+        icon: <FiMapPin className="w-5 h-5" />,
+        fullPanelOnly: true,
+      },
+    ],
+  },
+  {
+    titleKey: 'nav.catalog',
+    items: [
+      { to: '/types', labelKey: 'nav.types', icon: <FiTag className="w-5 h-5" />, fullPanelOnly: true },
+      { to: '/products', labelKey: 'nav.products', icon: <FiBox className="w-5 h-5" />, fullPanelOnly: true },
+      { to: '/menus', labelKey: 'nav.menus', icon: <FiList className="w-5 h-5" />, fullPanelOnly: true },
+      { to: '/sections', labelKey: 'nav.sections', icon: <FiLayers className="w-5 h-5" />, fullPanelOnly: true },
+    ],
+  },
+  {
+    titleKey: 'nav.promotions',
+    items: [
+      { to: '/offers', labelKey: 'nav.offers', icon: <FiPercent className="w-5 h-5" />, fullPanelOnly: true },
+      { to: '/coupons', labelKey: 'nav.coupons', icon: <FiTag className="w-5 h-5" />, fullPanelOnly: true },
+    ],
+  },
+  {
+    titleKey: 'nav.customersSection',
+    items: [
+      { to: '/customers', labelKey: 'nav.customers', icon: <FiUsers className="w-5 h-5" />, fullPanelOnly: true },
+    ],
+  },
+  {
+    titleKey: 'nav.userManagement',
+    items: [
+      { to: '/users', labelKey: 'nav.users', icon: <FiUsers className="w-5 h-5" />, fullPanelOnly: true },
+      { to: '/roles', labelKey: 'nav.roles', icon: <FiShield className="w-5 h-5" />, fullPanelOnly: true },
+    ],
+  },
 ]
 
 function filterNavItems(items: NavItem[], fullPanel: boolean): NavItem[] {
@@ -116,10 +146,6 @@ export function Sidebar({ isOpen, onNavigate }: SidebarProps) {
     return () => window.removeEventListener('auth', sync)
   }, [])
 
-  const management = filterNavItems(MANAGEMENT_LINKS, fullPanel)
-  const userMgmt = filterNavItems(USER_MGMT_LINKS, fullPanel)
-  const content = filterNavItems(CONTENT_LINKS, fullPanel)
-
   return (
     <aside
       className={`sidebar fixed inset-y-0 left-0 z-40 w-[240px] max-w-[80%] transform transition-transform duration-200 ease-in-out md:static md:inset-y-auto md:left-auto md:shrink-0 md:max-w-none md:transform-none md:overflow-hidden md:transition-[width] md:duration-200 md:ease-in-out ${
@@ -134,21 +160,15 @@ export function Sidebar({ isOpen, onNavigate }: SidebarProps) {
       </div>
 
       <nav className="sidebar-nav">
-        <NavSection titleKey="nav.management">
-          <NavList items={management} onNavigate={onNavigate} />
-        </NavSection>
-
-        {userMgmt.length > 0 && (
-          <NavSection titleKey="nav.userManagement">
-            <NavList items={userMgmt} onNavigate={onNavigate} />
-          </NavSection>
-        )}
-
-        {content.length > 0 && (
-          <NavSection titleKey="nav.content">
-            <NavList items={content} onNavigate={onNavigate} />
-          </NavSection>
-        )}
+        {SIDEBAR_SECTIONS.map((section) => {
+          const items = filterNavItems(section.items, fullPanel)
+          if (items.length === 0) return null
+          return (
+            <NavSection key={section.titleKey} titleKey={section.titleKey}>
+              <NavList items={items} onNavigate={onNavigate} />
+            </NavSection>
+          )
+        })}
       </nav>
     </aside>
   )

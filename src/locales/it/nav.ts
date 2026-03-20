@@ -1,7 +1,10 @@
 export const nav = {
-  management: 'Gestione',
+  operations: 'Operazioni',
+  venue: 'Punto vendita',
+  catalog: 'Catalogo',
+  promotions: 'Promozioni',
+  customersSection: 'Clienti',
   userManagement: 'Gestione utenti',
-  content: 'Contenuti',
   dashboard: 'Dashboard',
   orders: 'Ordini',
   statistics: 'Statistiche',

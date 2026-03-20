@@ -96,6 +96,28 @@ function statusClass(status?: string): string {
   return 'bg-blue-100 text-blue-800'
 }
 
+const DASHBOARD_STATUS_FILTER_ORDER = [
+  OrderStatus.PENDING,
+  OrderStatus.CONFIRMED,
+  OrderStatus.PREPARING,
+  OrderStatus.READY,
+  OrderStatus.ON_THE_WAY,
+  OrderStatus.DELIVERED,
+  OrderStatus.CANCELLED,
+  OrderStatus.REJECTED,
+] as const
+
+const DASHBOARD_STATUS_LABEL_KEY: Record<(typeof DASHBOARD_STATUS_FILTER_ORDER)[number], string> = {
+  [OrderStatus.PENDING]: 'dashboardPage.statusPending',
+  [OrderStatus.CONFIRMED]: 'dashboardPage.statusConfirmed',
+  [OrderStatus.PREPARING]: 'dashboardPage.statusPreparing',
+  [OrderStatus.READY]: 'dashboardPage.statusReady',
+  [OrderStatus.ON_THE_WAY]: 'dashboardPage.statusOnTheWay',
+  [OrderStatus.DELIVERED]: 'dashboardPage.statusDelivered',
+  [OrderStatus.CANCELLED]: 'dashboardPage.statusCancelled',
+  [OrderStatus.REJECTED]: 'dashboardPage.statusRejected',
+}
+
 function formatMoney(value?: number | string | null): string {
   if (value == null) return '-'
   const n = Number(value)
@@ -120,13 +142,19 @@ export default function Dashboard() {
   const [sortDir, setSortDir] = useState<OrderTableSortDir>('desc')
   const [patchingOrderId, setPatchingOrderId] = useState<string | null>(null)
   const [orderActionError, setOrderActionError] = useState<string | null>(null)
+  const [statusFilter, setStatusFilter] = useState<string>('')
   const previousTodayCountRef = useRef<number | null>(null)
   const audioCtxRef = useRef<AudioContext | null>(null)
   const refreshTodayOrdersRef = useRef<() => Promise<void>>(() => Promise.resolve())
 
+  const filteredTodayOrders = useMemo(() => {
+    if (!statusFilter) return todayOrders
+    return todayOrders.filter((o) => String(o.status ?? '') === statusFilter)
+  }, [todayOrders, statusFilter])
+
   const displayedOrders = useMemo(
-    () => sortOrdersByColumn(todayOrders, sortKey, sortDir),
-    [todayOrders, sortKey, sortDir]
+    () => sortOrdersByColumn(filteredTodayOrders, sortKey, sortDir),
+    [filteredTodayOrders, sortKey, sortDir]
   )
 
   const onSortColumn = (k: OrderTableSortKey) => {
@@ -305,9 +333,32 @@ export default function Dashboard() {
     }
   }, [])
 
+  const noOrdersLabel =
+    todayOrders.length === 0 ? t('dashboardPage.noOrdersToday') : t('dashboardPage.noOrdersForStatus')
+
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100">{t('dashboardPage.title')}</h1>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100">{t('dashboardPage.title')}</h1>
+        <div className="flex w-full flex-col gap-1 sm:w-auto sm:min-w-[11rem]">
+          <label htmlFor="dashboard-status-filter" className="text-xs font-medium text-slate-600 dark:text-slate-400">
+            {t('dashboardPage.filterByStatus')}
+          </label>
+          <select
+            id="dashboard-status-filter"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500/60 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+          >
+            <option value="">{t('dashboardPage.statusAll')}</option>
+            {DASHBOARD_STATUS_FILTER_ORDER.map((s) => (
+              <option key={s} value={s}>
+                {t(DASHBOARD_STATUS_LABEL_KEY[s])}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
 
       {orderActionError ? (
         <div
@@ -352,7 +403,7 @@ export default function Dashboard() {
           <>
             <div className="md:hidden divide-y divide-slate-200 dark:divide-slate-800">
               {displayedOrders.length === 0 ? (
-                <div className="p-4 text-sm text-slate-500 dark:text-slate-400">{t('dashboardPage.noOrdersToday')}</div>
+                <div className="p-4 text-sm text-slate-500 dark:text-slate-400">{noOrdersLabel}</div>
               ) : (
                 displayedOrders.map((o, i) => {
                   const id = String(o.id ?? '')
@@ -549,7 +600,7 @@ export default function Dashboard() {
                 <TableBody>
                   {displayedOrders.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={9}>{t('dashboardPage.noOrdersToday')}</TableCell>
+                      <TableCell colSpan={9}>{noOrdersLabel}</TableCell>
                     </TableRow>
                   )}
                   {displayedOrders.map((o, i) => (

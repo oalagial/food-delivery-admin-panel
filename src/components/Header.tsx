@@ -216,26 +216,32 @@ export default function Header({ onToggleSidebar, sidebarOpen = true }: HeaderPr
                 aria-expanded={accountOpen}
                 aria-controls="header-account-panel"
                 onClick={() => setAccountOpen((o) => !o)}
-                className="flex max-w-[min(100vw-8rem,14rem)] items-center gap-2 rounded-xl border border-slate-200/90 bg-white py-1.5 pl-1.5 pr-2 text-left shadow-sm transition hover:border-amber-200/80 hover:bg-amber-50/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/70 focus-visible:ring-offset-2 dark:border-slate-600 dark:bg-slate-800/90 dark:hover:border-slate-500 dark:hover:bg-slate-800"
+                className={`flex h-10 w-10 shrink-0 items-center justify-center gap-0 rounded-full border border-slate-200/90 shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/70 focus-visible:ring-offset-2 max-sm:bg-gradient-to-br max-sm:from-amber-200/90 max-sm:to-orange-300/80 max-sm:text-sm max-sm:font-semibold max-sm:text-amber-950 max-sm:hover:border-amber-300/80 max-sm:hover:shadow-md max-sm:active:scale-[0.97] dark:border-slate-600 dark:max-sm:from-amber-900/55 dark:max-sm:to-orange-950/55 dark:max-sm:text-amber-100 sm:h-auto sm:w-auto sm:max-w-[min(100vw-8rem,14rem)] sm:gap-2.5 sm:rounded-xl sm:bg-white sm:py-1.5 sm:pl-1.5 sm:pr-2.5 sm:text-left sm:hover:border-amber-200/80 sm:hover:bg-amber-50/40 dark:sm:bg-slate-800/90 dark:sm:hover:border-slate-500 dark:sm:hover:bg-slate-800 ${accountOpen ? 'border-amber-300/70 ring-1 ring-amber-200/50 dark:border-amber-700/40 dark:ring-amber-900/30' : ''}`}
               >
                 <span
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-200/90 to-orange-300/80 text-sm font-semibold text-amber-950 dark:from-amber-900/50 dark:to-orange-950/60 dark:text-amber-100"
+                  className="select-none sm:hidden"
+                  aria-hidden
+                >
+                  {sessionLoading ? '…' : userInitials(displayUser)}
+                </span>
+                <span
+                  className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-200/90 to-orange-300/80 text-sm font-semibold text-amber-950 sm:flex dark:from-amber-900/50 dark:to-orange-950/60 dark:text-amber-100"
                   aria-hidden
                 >
                   {userInitials(displayUser)}
                 </span>
-                <span className="min-w-0 flex-1">
+                <span className="hidden min-w-0 flex-1 sm:block">
                   <span className="block truncate text-xs font-semibold text-slate-900 dark:text-slate-100">
                     {sessionLoading ? t('header.loadingUser') : displayName}
                   </span>
                   {displayUser.email && displayName !== displayUser.email ? (
-                    <span className="hidden truncate text-[11px] text-slate-500 sm:block dark:text-slate-400">
+                    <span className="truncate text-[11px] text-slate-500 dark:text-slate-400">
                       {displayUser.email}
                     </span>
                   ) : null}
                 </span>
                 <FiChevronDown
-                  className={`h-4 w-4 shrink-0 text-slate-500 transition dark:text-slate-400 ${accountOpen ? 'rotate-180' : ''}`}
+                  className={`hidden h-4 w-4 shrink-0 text-slate-500 transition sm:block dark:text-slate-400 ${accountOpen ? 'rotate-180' : ''}`}
                   aria-hidden
                 />
               </button>
