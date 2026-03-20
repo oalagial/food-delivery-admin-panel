@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { Table, TableBody, TableHead, TableRow, TableCell, TableHeadCell } from '../components/ui/table'
 import { Button } from '../components/ui/button'
@@ -10,6 +11,7 @@ import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/card'
 
 export default function Sections() {
+  const { t } = useTranslation()
   const [items, setItems] = useState<SectionItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -66,7 +68,7 @@ export default function Sections() {
       loadSections()
       closeConfirmDialog()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete section')
+      setError(err instanceof Error ? err.message : t('common.failedSave'))
       closeConfirmDialog()
     }
   }
@@ -84,20 +86,20 @@ export default function Sections() {
             <div className="p-6">
               <Alert variant="warning">
                 <FiAlertCircle className="h-4 w-4" />
-                <AlertTitle>Delete Section</AlertTitle>
+                <AlertTitle>{t('sectionsPage.deleteTitle')}</AlertTitle>
                 <AlertDescription>
-                  Are you sure you want to delete "{confirmDialog.name}"? This action cannot be undone.
+                  {t('sectionsPage.deleteConfirm', { name: confirmDialog.name ?? '' })}
                 </AlertDescription>
               </Alert>
               <div className="flex justify-end gap-3 mt-6">
                 <Button variant="ghost" onClick={closeConfirmDialog}>
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
                 <Button
                   variant="danger"
                   onClick={handleConfirm}
                 >
-                  Delete
+                  {t('common.delete')}
                 </Button>
               </div>
             </div>
@@ -108,8 +110,8 @@ export default function Sections() {
       <div className="space-y-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Sections</h1>
-            <p className="text-gray-600 mt-1 dark:text-slate-400">Organize products into sections</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{t('sectionsPage.title')}</h1>
+            <p className="text-gray-600 mt-1 dark:text-slate-400">{t('sectionsPage.subtitle')}</p>
           </div>
           <Link to="/sections/creation" className="w-full sm:w-auto">
             <Button
@@ -117,7 +119,7 @@ export default function Sections() {
               icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
               className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
             >
-              <span className="sm:inline">Create Section</span>
+              <span className="sm:inline">{t('sectionsPage.create')}</span>
             </Button>
           </Link>
         </div>
@@ -126,11 +128,11 @@ export default function Sections() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableHeadCell>Name</TableHeadCell>
-                <TableHeadCell>Description</TableHeadCell>
-                <TableHeadCell>Type</TableHeadCell>
-                <TableHeadCell>Products</TableHeadCell>
-                <TableHeadCell>Actions</TableHeadCell>
+                <TableHeadCell>{t('sectionsPage.name')}</TableHeadCell>
+                <TableHeadCell>{t('common.description')}</TableHeadCell>
+                <TableHeadCell>{t('sectionsPage.typeColumn')}</TableHeadCell>
+                <TableHeadCell>{t('sectionsPage.products')}</TableHeadCell>
+                <TableHeadCell>{t('sectionsPage.actions')}</TableHeadCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -148,7 +150,7 @@ export default function Sections() {
             {/* Mobile: cards */}
             <div className="space-y-3 md:hidden">
               {items.length === 0 ? (
-                <p className="text-sm text-gray-500">No sections found.</p>
+                <p className="text-sm text-gray-500">{t('sectionsPage.noSections')}</p>
               ) : (
                 items.map(it => {
                   const rec = it as unknown as Record<string, unknown>
@@ -168,16 +170,16 @@ export default function Sections() {
                       </CardHeader>
                       <CardContent className="px-4 pb-2 pt-0 space-y-1 text-xs text-gray-700">
                         <p>
-                          Type:{' '}
-                          <span className="font-medium">{String(it.typeId ?? '—')}</span>
+                          {t('common.type')}:{' '}
+                          <span className="font-medium">{String(it.typeId ?? t('common.emDash'))}</span>
                         </p>
                         <p>
-                          Products:{' '}
+                          {t('sectionsPage.products')}:{' '}
                           <span className="font-medium">
-                            {productsLabel || '—'}
+                            {productsLabel || t('common.emDash')}
                           </span>
                         </p>
-                        <p>{it.description ?? 'No description'}</p>
+                        <p>{it.description ?? t('common.noDescription')}</p>
                       </CardContent>
                       <CardFooter className="flex justify-end gap-1 px-4 pb-4 pt-0">
                         <Link to={`/sections/creation/${it.id}`}>
@@ -207,17 +209,17 @@ export default function Sections() {
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableHeadCell>Name</TableHeadCell>
-                    <TableHeadCell>Type</TableHeadCell>
-                    <TableHeadCell>Products</TableHeadCell>
-                    <TableHeadCell>Description</TableHeadCell>
-                    <TableHeadCell>Actions</TableHeadCell>
+                    <TableHeadCell>{t('sectionsPage.name')}</TableHeadCell>
+                    <TableHeadCell>{t('sectionsPage.typeColumn')}</TableHeadCell>
+                    <TableHeadCell>{t('sectionsPage.products')}</TableHeadCell>
+                    <TableHeadCell>{t('common.description')}</TableHeadCell>
+                    <TableHeadCell>{t('sectionsPage.actions')}</TableHeadCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {items.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={5}>No sections found.</TableCell>
+                      <TableCell colSpan={5}>{t('sectionsPage.noSections')}</TableCell>
                     </TableRow>
                   )}
                   {items.map(it => (

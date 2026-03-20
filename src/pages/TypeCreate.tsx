@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Input } from '../components/ui/input'
 import { Button } from '../components/ui/button'
@@ -11,6 +12,7 @@ import { createType, getTypeById, updateType } from '../utils/api'
 import type { CreateTypePayload } from '../utils/api'
 
 export default function TypeCreate() {
+  const { t } = useTranslation()
   const { id } = useParams<{ id?: string }>()
   const navigate = useNavigate()
   const editing = !!id
@@ -64,13 +66,13 @@ export default function TypeCreate() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">
-          {editing ? 'Edit Type' : 'Create Type'}
+          {editing ? t('createForms.editType') : t('createForms.createType')}
         </h1>
       </div>
 
       {loading ? (
         <Card className="shadow-md">
-          <CardContent className="pt-6">Loading...</CardContent>
+          <CardContent className="pt-6">{t('createForms.loading')}</CardContent>
         </Card>
       ) : (
         <form
@@ -81,13 +83,13 @@ export default function TypeCreate() {
           <Card className="shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg">
-                {editing ? 'Update Type' : 'New Type'}
+                {editing ? t('createForms.updateType') : t('createForms.newType')}
               </CardTitle>
-              <CardDescription>Create or edit a product type</CardDescription>
+              <CardDescription>{t('common.createEditType')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="name">Type Name *</Label>
+                <Label htmlFor="name">{t('createForms.typeNameStar')}</Label>
                 <Input
                   id="name"
                   className="mt-1.5 w-full"
@@ -95,13 +97,13 @@ export default function TypeCreate() {
                   onChange={(e) =>
                     setForm((s) => ({ ...s, name: e.target.value }))
                   }
-                  placeholder="e.g., Beverages, Desserts"
+                  placeholder={t('common.typeNamePh')}
                   required
                 />
               </div>
 
               <div>
-                <Label htmlFor="tag">Tag</Label>
+                <Label htmlFor="tag">{t('typesPage.tag')}</Label>
                 <Input
                   id="tag"
                   className="mt-1.5 w-full"
@@ -109,7 +111,7 @@ export default function TypeCreate() {
                   onChange={(e) =>
                     setForm((s) => ({ ...s, tag: e.target.value }))
                   }
-                  placeholder="e.g., food, drinks"
+                  placeholder={t('common.typeNamePh')}
                 />
               </div>
             </CardContent>
@@ -118,14 +120,14 @@ export default function TypeCreate() {
           {/* Description & actions */}
           <Card className="shadow-sm lg:col-span-2">
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Description</CardTitle>
+              <CardTitle className="text-lg">{t('common.typeDescTitle')}</CardTitle>
               <CardDescription>
-                Optional details to better describe this type
+                {t('common.typeDescOptionalCard')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">{t('common.typeDescTitle')}</Label>
                 <Textarea
                   id="description"
                   className="mt-1.5 w-full"
@@ -133,7 +135,7 @@ export default function TypeCreate() {
                   onChange={(e) =>
                     setForm((s) => ({ ...s, description: e.target.value }))
                   }
-                  placeholder="Describe this type..."
+                  placeholder={t('common.typeDescPlaceholder')}
                 />
               </div>
 
@@ -150,10 +152,10 @@ export default function TypeCreate() {
                   type="button"
                   onClick={() => navigate('/types')}
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
                 <Button variant="primary" type="submit" disabled={submitting}>
-                  {submitting ? 'Saving...' : editing ? 'Update' : 'Create'}
+                  {submitting ? t('common.saving') : editing ? t('common.update') : t('common.create')}
                 </Button>
               </div>
             </CardContent>

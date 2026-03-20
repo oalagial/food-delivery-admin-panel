@@ -1,0 +1,22 @@
+export const usersPage = {
+  title: 'Users',
+  subtitle: 'Manage system users and accounts',
+  create: 'Create',
+  createUser: 'Create user',
+  email: 'Email',
+  username: 'Username',
+  role: 'Role',
+  created: 'Created',
+  actions: 'Actions',
+  noUsers: 'No users found.',
+  errorTitle: 'Error',
+  deactivateTitle: 'Deactivate user?',
+  deactivateDesc:
+    'Set {{id}} as inactive? They will no longer be able to sign in.',
+  deactivate: 'Deactivate',
+  deactivating: 'Deactivating…',
+  editTitle: 'Edit',
+  deactivateUserTitle: 'Deactivate user',
+  activateUserTitle: 'Activate user',
+  createdLabel: 'Created:',
+} as const

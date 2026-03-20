@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Input } from '../components/ui/input';
@@ -13,6 +14,7 @@ import type { TypeItem, Product } from '../utils/api'
 import { Select } from '../components/ui/select';
 
 export default function SectionCreate(){
+  const { t } = useTranslation()
   const params = useParams<{id?: string}>()
   const navigate = useNavigate()
   const [name, setName] = useState('')
@@ -67,7 +69,7 @@ export default function SectionCreate(){
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">
-          {params.id ? 'Edit Section' : 'Create Section'}
+          {params.id ? t('createForms.editSection') : t('createForms.createSection')}
         </h1>
       </div>
       
@@ -79,48 +81,48 @@ export default function SectionCreate(){
         <Card className="shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">
-              {params.id ? 'Update Section' : 'New Section'}
+              {params.id ? t('createForms.updateSection') : t('createForms.newSection')}
             </CardTitle>
             <CardDescription>
-              Define the section name, type and description
+              {t('createForms.sectionBasicDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="name">Section Name *</Label>
+                <Label htmlFor="name">{t('createForms.sectionNameStar')}</Label>
                 <Input 
                   id="name"
                   className="mt-1.5 w-full"
                   value={name} 
                   onChange={e=>setName(e.target.value)} 
-                  placeholder="Section name"
+                  placeholder={t('common.sectionNamePh')}
                   required
                 />
               </div>
 
               <div>
-                <Label htmlFor="type">Product Type</Label>
+                <Label htmlFor="type">{t('common.productType')}</Label>
                 <Select 
                   id="type"
                   value={String(typeId)} 
                   onChange={e=>setTypeId(Number(e.target.value))} 
                   className="mt-1.5 w-full"
                 >
-                  <option value="">Select a type</option>
+                  <option value="">{t('common.selectType')}</option>
                   {types.map(t=> <option key={t.id} value={t.id}>{t.name}</option>)}
                 </Select>
               </div>
             </div>
 
             <div>
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t('common.description')}</Label>
               <Textarea 
                 id="description"
                 className="mt-1.5 w-full"
                 value={description} 
                 onChange={e=>setDescription(e.target.value)} 
-                placeholder="Describe this section..."
+                placeholder={t('createForms.sectionDescPh')}
               />
             </div>
           </CardContent>
@@ -129,21 +131,21 @@ export default function SectionCreate(){
         {/* Products */}
         <Card className="shadow-sm lg:col-span-2">
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Products</CardTitle>
+            <CardTitle className="text-lg">{t('common.sectionProducts')}</CardTitle>
             <CardDescription>
-              Choose which products belong to this section
+              {t('createForms.chooseProductsSection')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label>Products</Label>
+              <Label>{t('common.sectionProducts')}</Label>
               <div className="flex gap-4 mt-2">
                 {/* Available Products */}
                 <div className="flex-1">
-                  <div className="font-semibold mb-1 text-sm">Available</div>
+                  <div className="font-semibold mb-1 text-sm">{t('common.available')}</div>
                   <div className="border rounded p-2 h-48 overflow-y-auto bg-white dark:bg-slate-900">
                     {products.filter(p => !productsIds.includes(p.id)).length === 0 && (
-                      <div className="text-xs text-gray-400">No more products</div>
+                      <div className="text-xs text-gray-400">{t('createForms.noMoreProducts')}</div>
                     )}
                     {products.filter(p => !productsIds.includes(p.id)).map(p => (
                       <div
@@ -158,7 +160,7 @@ export default function SectionCreate(){
                           className="ml-2 text-green-600 hover:text-green-800 text-xs font-bold opacity-80 group-hover:opacity-100"
                           onClick={() => setProductsIds(ids => [...ids, p.id])}
                         >
-                          Add
+                          {t('common.add')}
                         </Button>
                       </div>
                     ))}
@@ -166,10 +168,10 @@ export default function SectionCreate(){
                 </div>
                 {/* Selected Products */}
                 <div className="flex-1">
-                  <div className="font-semibold mb-1 text-sm">Selected</div>
+                  <div className="font-semibold mb-1 text-sm">{t('common.selected')}</div>
                   <div className="border rounded p-2 h-48 overflow-y-auto bg-white dark:bg-slate-900">
                     {productsIds.length === 0 && (
-                      <div className="text-xs text-gray-400">No products selected</div>
+                      <div className="text-xs text-gray-400">{t('createForms.noProductsSelected')}</div>
                     )}
                     {products.filter(p => productsIds.includes(p.id)).map(p => (
                       <div
@@ -186,7 +188,7 @@ export default function SectionCreate(){
                             setProductsIds(ids => ids.filter(id => id !== p.id))
                           }
                         >
-                          Remove
+                          {t('common.remove')}
                         </Button>
                       </div>
                     ))}
@@ -194,7 +196,7 @@ export default function SectionCreate(){
                 </div>
               </div>
               <p className="mt-1 text-xs text-gray-500">
-                Click &quot;Add&quot; to select, &quot;Remove&quot; to unselect.
+                {t('common.pickerHintAddRemove')}
               </p>
             </div>
 
@@ -206,8 +208,8 @@ export default function SectionCreate(){
             )}
 
             <div className="flex justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
-              <Button type="button" variant="default" onClick={()=>navigate('/sections')}>Cancel</Button>
-              <Button type="submit" variant="primary" disabled={loading}>{loading ? 'Saving...' : params.id ? 'Update' : 'Create'}</Button>
+              <Button type="button" variant="default" onClick={()=>navigate('/sections')}>{t('common.cancel')}</Button>
+              <Button type="submit" variant="primary" disabled={loading}>{loading ? t('common.saving') : params.id ? t('common.update') : t('common.create')}</Button>
             </div>
           </CardContent>
         </Card>

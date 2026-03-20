@@ -1,0 +1,14 @@
+export const login = {
+  welcome: 'Benvenuto',
+  subtitle: 'Accedi al tuo account amministratore per continuare',
+  email: 'Indirizzo email',
+  password: 'Password',
+  emailPh: 'Inserisci la tua email',
+  passwordPh: 'Inserisci la password',
+  signIn: 'Accedi alla dashboard',
+  signingIn: 'Accesso in corso…',
+  loginFailed: 'Accesso non riuscito',
+  noAccount: 'Non hai un account?',
+  contactAdmin: 'Contatta il tuo amministratore',
+  footer: '© 2024 Food Delivery Admin. Tutti i diritti riservati.',
+} as const

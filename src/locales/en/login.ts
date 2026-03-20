@@ -1,0 +1,14 @@
+export const login = {
+  welcome: 'Welcome',
+  subtitle: 'Sign in to your admin account to continue',
+  email: 'Email address',
+  password: 'Password',
+  emailPh: 'Enter your email',
+  passwordPh: 'Enter your password',
+  signIn: 'Sign in to dashboard',
+  signingIn: 'Signing in…',
+  loginFailed: 'Login failed',
+  noAccount: "Don't have an account?",
+  contactAdmin: 'Contact your administrator',
+  footer: '© 2024 Food Delivery Admin. All rights reserved.',
+} as const

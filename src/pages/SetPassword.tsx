@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Input } from '../components/ui/input'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
@@ -9,6 +10,7 @@ import { AlertCircle } from 'lucide-react'
 import { API_BASE } from '../config'
 
 export default function SetPassword() {
+  const { t } = useTranslation()
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token') ?? ''
 
@@ -19,9 +21,9 @@ export default function SetPassword() {
   const [success, setSuccess] = useState(false)
 
   function validatePassword(p: string): string | null {
-    if (p.length < 8) return 'Password must be at least 8 characters'
-    if (!/[A-Z]/.test(p)) return 'Password must contain at least one uppercase letter'
-    if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(p)) return 'Password must contain at least one special character'
+    if (p.length < 8) return t('setPassword.errMinLength')
+    if (!/[A-Z]/.test(p)) return t('setPassword.errUppercase')
+    if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(p)) return t('setPassword.errSpecial')
     return null
   }
 
@@ -29,7 +31,7 @@ export default function SetPassword() {
     e.preventDefault()
     setError(null)
     if (password !== confirm) {
-      setError('Passwords do not match')
+      setError(t('setPassword.errMismatch'))
       return
     }
     const passwordError = validatePassword(password)
@@ -38,7 +40,7 @@ export default function SetPassword() {
       return
     }
     if (!token) {
-      setError('Invalid or missing link')
+      setError(t('setPassword.errInvalidLink'))
       return
     }
     setLoading(true)
@@ -54,7 +56,7 @@ export default function SetPassword() {
       }
       setSuccess(true)
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Something went wrong')
+      setError(err instanceof Error ? err.message : t('setPassword.errGeneric'))
     } finally {
       setLoading(false)
     }
@@ -66,24 +68,22 @@ export default function SetPassword() {
         <div className="w-full max-w-md">
           <div className="flex items-center justify-center mb-2">
             <div className="w-48 h-48">
-              <img src="src/assets/logo.png" alt="Logo" />
+              <img src="src/assets/logo.png" alt={t('common.logoAlt')} />
             </div>
           </div>
-        <Card className="w-full max-w-md shadow-2xl border-0">
-          <CardHeader>
-            <CardTitle className="text-center">Password set</CardTitle>
-            <CardDescription className="text-center">
-              You can now sign in with your new password.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex justify-center">
-            <a href="/login">
-              <Button variant="primary" className="rounded-lg">
-                Go to login
-              </Button>
-            </a>
-          </CardContent>
-        </Card>
+          <Card className="w-full max-w-md shadow-2xl border-0">
+            <CardHeader>
+              <CardTitle className="text-center">{t('setPassword.successTitle')}</CardTitle>
+              <CardDescription className="text-center">{t('setPassword.successDesc')}</CardDescription>
+            </CardHeader>
+            <CardContent className="flex justify-center">
+              <a href="/login">
+                <Button variant="primary" className="rounded-lg">
+                  {t('setPassword.goLogin')}
+                </Button>
+              </a>
+            </CardContent>
+          </Card>
         </div>
       </div>
     )
@@ -94,39 +94,41 @@ export default function SetPassword() {
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center mb-2">
           <div className="w-48 h-48">
-            <img src="src/assets/logo.png" alt="Logo" />
+            <img src="src/assets/logo.png" alt={t('common.logoAlt')} />
           </div>
         </div>
         <Card className="shadow-2xl border-0">
           <CardHeader className="space-y-3">
-            <CardTitle className="text-3xl text-center font-bold text-gray-900">Create password</CardTitle>
-            <CardDescription className="text-center text-gray-600">
-              At least 8 characters, one uppercase letter and one special character.
-            </CardDescription>
+            <CardTitle className="text-3xl text-center font-bold text-gray-900">{t('setPassword.title')}</CardTitle>
+            <CardDescription className="text-center text-gray-600">{t('setPassword.subtitle')}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-lg font-semibold text-gray-700">Password</Label>
+                <Label htmlFor="password" className="text-lg font-semibold text-gray-700">
+                  {t('setPassword.password')}
+                </Label>
                 <Input
                   id="password"
                   type="password"
                   value={password}
-                  onChange={e => setPassword(e.target.value)}
+                  onChange={(e) => setPassword(e.target.value)}
                   required
-                  placeholder="New password"
+                  placeholder={t('setPassword.passwordPh')}
                   className="w-full h-12 border-gray-300 px-4"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="confirm" className="text-lg font-semibold text-gray-700">Confirm password</Label>
+                <Label htmlFor="confirm" className="text-lg font-semibold text-gray-700">
+                  {t('setPassword.confirm')}
+                </Label>
                 <Input
                   id="confirm"
                   type="password"
                   value={confirm}
-                  onChange={e => setConfirm(e.target.value)}
+                  onChange={(e) => setConfirm(e.target.value)}
                   required
-                  placeholder="Confirm new password"
+                  placeholder={t('setPassword.confirmPh')}
                   className="w-full h-12 border-gray-300 px-4"
                 />
               </div>
@@ -145,10 +147,10 @@ export default function SetPassword() {
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
                     <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Setting password...
+                    {t('setPassword.setting')}
                   </span>
                 ) : (
-                  'Set password'
+                  t('setPassword.submit')
                 )}
               </Button>
             </form>

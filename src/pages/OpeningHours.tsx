@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { Table, TableBody, TableHead, TableRow, TableCell, TableHeadCell } from '../components/ui/table'
 import { Button } from '../components/ui/button'
@@ -7,6 +8,7 @@ import { getOpeningHoursList } from '../utils/api'
 import { Skeleton } from '../components/ui/skeleton'
 
 export default function OpeningHours() {
+  const { t } = useTranslation()
   const [items, setItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -23,18 +25,18 @@ export default function OpeningHours() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Opening Hours</h1>
-        <Link to="/opening-hours/creation"><Button variant="primary" icon={<FiPlus className="w-4 h-4" />}>Create</Button></Link>
+        <h1 className="text-2xl font-semibold">{t('common.openingHours')}</h1>
+        <Link to="/opening-hours/creation"><Button variant="primary" icon={<FiPlus className="w-4 h-4" />}>{t('common.create')}</Button></Link>
       </div>
 
       {loading ? (
         <Table>
           <TableHead>
             <TableRow>
-              <TableHeadCell>Day</TableHeadCell>
-              <TableHeadCell>Open</TableHeadCell>
-              <TableHeadCell>Close</TableHeadCell>
-              <TableHeadCell>Actions</TableHeadCell>
+              <TableHeadCell>{t('common.day')}</TableHeadCell>
+              <TableHeadCell>{t('common.open')}</TableHeadCell>
+              <TableHeadCell>{t('common.closeHours')}</TableHeadCell>
+              <TableHeadCell>{t('common.actions')}</TableHeadCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -51,10 +53,10 @@ export default function OpeningHours() {
         <Table>
           <TableHead>
             <TableRow>
-              <TableHeadCell>Day</TableHeadCell>
-              <TableHeadCell>Open</TableHeadCell>
-              <TableHeadCell>Close</TableHeadCell>
-              <TableHeadCell>Actions</TableHeadCell>
+              <TableHeadCell>{t('common.day')}</TableHeadCell>
+              <TableHeadCell>{t('common.open')}</TableHeadCell>
+              <TableHeadCell>{t('common.closeHours')}</TableHeadCell>
+              <TableHeadCell>{t('common.actions')}</TableHeadCell>
             </TableRow>
           </TableHead>
           <TableBody>

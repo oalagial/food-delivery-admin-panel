@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '../components/ui/button'
 import { Link } from 'react-router-dom'
 import { Skeleton } from '../components/ui/skeleton'
@@ -20,6 +21,7 @@ import { AlertCircle } from 'lucide-react'
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card'
 
 export default function Users() {
+  const { t } = useTranslation()
   const [users, setUsers] = useState<User[]>([])
   const [rolesMap, setRolesMap] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
@@ -74,17 +76,17 @@ export default function Users() {
     return (
       <div>
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">Users</h1>
-          <Link to="/users/creation"><Button variant="primary" icon={<FiPlus className="w-4 h-4" />}>Create</Button></Link>
+          <h1 className="text-2xl font-semibold">{t('usersPage.title')}</h1>
+          <Link to="/users/creation"><Button variant="primary" icon={<FiPlus className="w-4 h-4" />}>{t('usersPage.create')}</Button></Link>
         </div>
         <Table>
           <TableHead>
             <tr>
-              <TableHeadCell>Email</TableHeadCell>
-              <TableHeadCell>Username</TableHeadCell>
-              <TableHeadCell>Role</TableHeadCell>
-              <TableHeadCell>Created</TableHeadCell>
-              <TableHeadCell>Actions</TableHeadCell>
+              <TableHeadCell>{t('usersPage.email')}</TableHeadCell>
+              <TableHeadCell>{t('usersPage.username')}</TableHeadCell>
+              <TableHeadCell>{t('usersPage.role')}</TableHeadCell>
+              <TableHeadCell>{t('usersPage.created')}</TableHeadCell>
+              <TableHeadCell>{t('common.actions')}</TableHeadCell>
             </tr>
           </TableHead>
           <TableBody>
@@ -154,8 +156,8 @@ export default function Users() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Users</h1>
-          <p className="text-gray-600 mt-1 dark:text-slate-400">Manage system users and accounts</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{t('usersPage.title')}</h1>
+          <p className="text-gray-600 mt-1 dark:text-slate-400">{t('usersPage.subtitle')}</p>
         </div>
         <Link to="/users/creation" className="w-full sm:w-auto">
           <Button
@@ -163,7 +165,7 @@ export default function Users() {
             icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
             className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
           >
-            <span className="sm:inline">Create User</span>
+            <span className="sm:inline">{t('usersPage.createUser')}</span>
           </Button>
         </Link>
       </div>
@@ -171,7 +173,7 @@ export default function Users() {
       {error && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
+          <AlertTitle>{t('usersPage.errorTitle')}</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
@@ -186,17 +188,17 @@ export default function Users() {
         >
           <Card className="w-full max-w-md shadow-xl" onClick={(e) => e.stopPropagation()}>
             <CardHeader>
-              <CardTitle id="deactivate-user-title">Deactivate user?</CardTitle>
+              <CardTitle id="deactivate-user-title">{t('usersPage.deactivateTitle')}</CardTitle>
               <CardDescription>
-                Set <strong>{userToDeactivate.email ?? userToDeactivate.username ?? userToDeactivate.id}</strong> as inactive? They will no longer be able to sign in.
+                {t('usersPage.deactivateDesc', { id: userToDeactivate.email ?? userToDeactivate.username ?? userToDeactivate.id })}
               </CardDescription>
             </CardHeader>
             <CardFooter className="flex justify-end gap-3">
               <Button variant="default" onClick={cancelDeactivate} disabled={deactivating}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button variant="danger" onClick={confirmDeactivate} disabled={deactivating}>
-                {deactivating ? 'Deactivating...' : 'Deactivate'}
+                {deactivating ? t('usersPage.deactivating') : t('usersPage.deactivate')}
               </Button>
             </CardFooter>
           </Card>
@@ -206,7 +208,7 @@ export default function Users() {
       {/* Mobile: cards */}
       <div className="space-y-3 md:hidden">
         {users.length === 0 ? (
-          <p className="text-sm text-gray-500">No users found.</p>
+          <p className="text-sm text-gray-500">{t('usersPage.noUsers')}</p>
         ) : (
           users.map((u) => {
             const active = isUserActive(u)
@@ -238,17 +240,17 @@ export default function Users() {
                       className={`inline-flex flex-shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${active ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-700'
                         }`}
                     >
-                      {active ? 'Active' : 'Inactive'}
+                      {active ? t('common.active') : t('common.inactive')}
                     </span>
                   </CardTitle>
                   <p className="text-xs">
-                    {u.username && u.username !== u.email ? u.username : roleLabel || '—'}
+                    {u.username && u.username !== u.email ? u.username : roleLabel || t('common.emDash')}
                   </p>
                 </CardHeader>
                 <CardFooter className="flex justify-between items-center px-4 pb-4 pt-0 gap-2">
                   <div className="text-[11px]">
                     {u.createdAt && (
-                      <span>Created: {new Date(String(u.createdAt)).toLocaleDateString()}</span>
+                      <span>{t('usersPage.createdLabel')} {new Date(String(u.createdAt)).toLocaleDateString()}</span>
                     )}
                   </div>
                   <div className="flex gap-1">
@@ -258,7 +260,7 @@ export default function Users() {
                         size="sm"
                         className="p-2 text-xs"
                         icon={<FiEdit className="w-4 h-4" />}
-                        title="Edit"
+                        title={t('usersPage.editTitle')}
                       />
                     </Link>
                     {isCurrent ? null : active ? (
@@ -269,7 +271,7 @@ export default function Users() {
                         icon={<FiUserMinus className="w-4 h-4" />}
                         onClick={() => askDeactivate(u)}
                         type="button"
-                        title="Deactivate user"
+                        title={t('usersPage.deactivateUserTitle')}
                       />
                     ) : (
                       <Button
@@ -280,7 +282,7 @@ export default function Users() {
                         onClick={() => handleActivate(u)}
                         type="button"
                         disabled={activatingId === u.id}
-                        title="Activate user"
+                        title={t('usersPage.activateUserTitle')}
                       />
                     )}
                   </div>
@@ -296,18 +298,18 @@ export default function Users() {
         <Table>
           <TableHead>
             <tr>
-              <TableHeadCell>Email</TableHeadCell>
-              <TableHeadCell>Username</TableHeadCell>
-              <TableHeadCell>Role</TableHeadCell>
-              <TableHeadCell>Status</TableHeadCell>
-              <TableHeadCell>Created</TableHeadCell>
-              <TableHeadCell>Actions</TableHeadCell>
+              <TableHeadCell>{t('usersPage.email')}</TableHeadCell>
+              <TableHeadCell>{t('usersPage.username')}</TableHeadCell>
+              <TableHeadCell>{t('usersPage.role')}</TableHeadCell>
+              <TableHeadCell>{t('common.status')}</TableHeadCell>
+              <TableHeadCell>{t('usersPage.created')}</TableHeadCell>
+              <TableHeadCell>{t('common.actions')}</TableHeadCell>
             </tr>
           </TableHead>
           <TableBody>
             {users.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6}>No users found.</TableCell>
+                <TableCell colSpan={6}>{t('usersPage.noUsers')}</TableCell>
               </TableRow>
             )}
             {users.map((u) => {
@@ -332,18 +334,18 @@ export default function Users() {
                   })()}</TableCell>
                   <TableCell>
                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${active ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-700'}`}>
-                      {active ? 'Active' : 'Inactive'}
+                      {active ? t('common.active') : t('common.inactive')}
                     </span>
                   </TableCell>
                   <TableCell>{u.createdAt ? new Date(String(u.createdAt)).toLocaleString() : ''}</TableCell>
                   <TableCell className="flex items-center gap-1">
                     <Link to={`/users/creation/${encodeURIComponent(String(u.id ?? ''))}`}>
-                      <Button variant="ghost" className="p-2" size="sm" icon={<FiEdit className="w-4 h-4" />} title="Edit" />
+                      <Button variant="ghost" className="p-2" size="sm" icon={<FiEdit className="w-4 h-4" />} title={t('usersPage.editTitle')} />
                     </Link>
                     {currentUserId != null && String(u.id) === String(currentUserId) ? null : active ? (
-                      <Button variant="danger" size="sm" className="p-2" icon={<FiUserMinus className="w-4 h-4" />} onClick={() => askDeactivate(u)} type="button" title="Deactivate user" />
+                      <Button variant="danger" size="sm" className="p-2" icon={<FiUserMinus className="w-4 h-4" />} onClick={() => askDeactivate(u)} type="button" title={t('usersPage.deactivateUserTitle')} />
                     ) : (
-                      <Button variant="primary" size="sm" className="p-2" icon={<FiUserPlus className="w-4 h-4" />} onClick={() => handleActivate(u)} type="button" disabled={activatingId === u.id} title="Activate user" />
+                      <Button variant="primary" size="sm" className="p-2" icon={<FiUserPlus className="w-4 h-4" />} onClick={() => handleActivate(u)} type="button" disabled={activatingId === u.id} title={t('usersPage.activateUserTitle')} />
                     )}
                   </TableCell>
                 </TableRow>

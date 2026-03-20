@@ -1,0 +1,22 @@
+export const usersPage = {
+  title: 'Utenti',
+  subtitle: 'Gestisci utenti e account di sistema',
+  create: 'Crea',
+  createUser: 'Crea utente',
+  email: 'Email',
+  username: 'Nome utente',
+  role: 'Ruolo',
+  created: 'Creato',
+  actions: 'Azioni',
+  noUsers: 'Nessun utente trovato.',
+  errorTitle: 'Errore',
+  deactivateTitle: 'Disattivare utente?',
+  deactivateDesc:
+    'Impostare {{id}} come inattivo? Non potrà più accedere.',
+  deactivate: 'Disattiva',
+  deactivating: 'Disattivazione…',
+  editTitle: 'Modifica',
+  deactivateUserTitle: 'Disattiva utente',
+  activateUserTitle: 'Attiva utente',
+  createdLabel: 'Creato:',
+} as const

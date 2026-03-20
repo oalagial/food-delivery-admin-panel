@@ -110,7 +110,10 @@ function AuthenticatedLayout() {
       <Sidebar isOpen={sidebarOpen} onNavigate={handleSidebarNavigate} />
 
       <main className="main">
-        <Header onToggleSidebar={() => setSidebarOpen((prev) => !prev)} />
+        <Header
+          sidebarOpen={sidebarOpen}
+          onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
+        />
         <div className="panel">
           <Routes>
             {routes.map(({ path, element, protected: isProtected }) => (

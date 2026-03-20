@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Input } from '../components/ui/input'
 import { Button } from '../components/ui/button'
@@ -28,6 +29,7 @@ function toDatetimeLocal(isoOrDate: string | Date | null | undefined): string {
 }
 
 export default function CouponCreate() {
+  const { t } = useTranslation()
   const { id } = useParams<{ id?: string }>()
   const navigate = useNavigate()
   const editing = !!id
@@ -150,16 +152,16 @@ export default function CouponCreate() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">
-          {editing ? 'Edit coupon' : 'New coupon'}
+          {editing ? t('createForms.editCoupon') : t('createForms.newCoupon')}
         </h1>
         <p className="text-gray-600 mt-1 dark:text-slate-400">
-          General (for everyone) or per customer; optionally per restaurant.
+          {t('createForms.couponSubtitle')}
         </p>
       </div>
 
       {loading ? (
         <Card className="shadow-md">
-          <CardContent className="pt-6">Loading...</CardContent>
+          <CardContent className="pt-6">{t('common.loading')}</CardContent>
         </Card>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6 max-w-5xl">
@@ -174,91 +176,91 @@ export default function CouponCreate() {
             {/* Left: Basic details + Scope */}
             <Card className="shadow-sm">
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Basic details</CardTitle>
-                <CardDescription>Code, name and description</CardDescription>
+                <CardTitle className="text-lg">{t('common.basicDetails')}</CardTitle>
+                <CardDescription>{t('common.basicDetailsDesc')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="code">Coupon code *</Label>
+                  <Label htmlFor="code">{t('common.couponCodeStar')}</Label>
                   <Input
                     id="code"
                     type="text"
                     className="mt-1.5 w-full font-mono"
                     value={form.code}
                     onChange={(e) => setForm((s) => ({ ...s, code: e.target.value.toUpperCase() }))}
-                    placeholder="e.g. WELCOME10"
+                    placeholder={t('common.couponCodePh')}
                     required
                     minLength={2}
                     maxLength={50}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="name">Name (display) *</Label>
+                  <Label htmlFor="name">{t('common.displayNameStar')}</Label>
                   <Input
                     id="name"
                     type="text"
                     className="mt-1.5 w-full"
                     value={form.name}
                     onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
-                    placeholder="e.g. Welcome discount"
+                    placeholder={t('common.displayNamePh')}
                     required
                     minLength={2}
                     maxLength={100}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="description">{t('common.description')}</Label>
                   <Input
                     id="description"
                     type="text"
                     className="mt-1.5 w-full"
                     value={form.description}
                     onChange={(e) => setForm((s) => ({ ...s, description: e.target.value }))}
-                    placeholder="Optional description"
+                    placeholder={t('common.descOptionalPh')}
                     maxLength={255}
                   />
                 </div>
 
                 <div className="pt-3 border-t border-gray-200 dark:border-slate-700 space-y-4">
                   <div>
-                    <h3 className="text-sm font-medium text-gray-900 dark:text-slate-100 mb-2">Scope</h3>
+                    <h3 className="text-sm font-medium text-gray-900 dark:text-slate-100 mb-2">{t('common.scope')}</h3>
                     <p className="text-xs text-gray-500 dark:text-slate-400 mb-3">
-                      Optional: limit to a restaurant and/or a specific customer.
+                      {t('createForms.couponScopeDesc')}
                     </p>
                   </div>
                   <div>
-                    <Label htmlFor="restaurantId">Restaurant</Label>
+                    <Label htmlFor="restaurantId">{t('common.restaurant')}</Label>
                     <Select
                       id="restaurantId"
                       className="mt-1.5 w-full"
                       value={form.restaurantId}
                       onChange={(e) => setForm((s) => ({ ...s, restaurantId: e.target.value }))}
                     >
-                      <option value="">All restaurants</option>
+                      <option value="">{t('common.allRestaurants')}</option>
                       {restaurants.map((r) => (
                         <option key={r.id} value={String(r.id)}>
-                          {r.name ?? `ID ${r.id}`}
+                          {r.name ?? t('common.idDisplay', { id: r.id })}
                         </option>
                       ))}
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="customerId">Customer</Label>
+                    <Label htmlFor="customerId">{t('common.customer')}</Label>
                     <Select
                       id="customerId"
                       className="mt-1.5 w-full"
                       value={form.customerId}
                       onChange={(e) => setForm((s) => ({ ...s, customerId: e.target.value }))}
                     >
-                      <option value="">General (all customers)</option>
+                      <option value="">{t('common.allCustomers')}</option>
                       {customers.map((c) => (
                         <option key={c.id} value={String(c.id)}>
-                          {c.name && c.email ? `${c.name} (${c.email})` : (c.email || c.name || `ID ${c.id}`)}
+                          {c.name && c.email ? `${c.name} (${c.email})` : (c.email || c.name || t('common.idDisplay', { id: c.id }))}
                         </option>
                       ))}
                     </Select>
                     <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
-                      Leave empty for a general coupon; pick a customer for a per-customer coupon.
+                      {t('createForms.couponCustomerHelp')}
                     </p>
                   </div>
                 </div>
@@ -268,25 +270,25 @@ export default function CouponCreate() {
             {/* Right: Discount & validity */}
             <Card className="shadow-sm">
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Discount & validity</CardTitle>
-                <CardDescription>Type, value, dates and usage</CardDescription>
+                <CardTitle className="text-lg">{t('common.discountValidity')}</CardTitle>
+                <CardDescription>{t('common.discountValidityDesc')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="type">Discount type *</Label>
+                    <Label htmlFor="type">{t('common.discountTypeStar')}</Label>
                     <Select
                       id="type"
                       className="mt-1.5 w-full"
                       value={form.type}
                       onChange={(e) => setForm((s) => ({ ...s, type: e.target.value as DiscountType }))}
                     >
-                      <option value="PERCENTAGE">Percentage (%)</option>
-                      <option value="FIXED">Fixed amount (€)</option>
+                      <option value="PERCENTAGE">{t('common.percentageAmount')}</option>
+                      <option value="FIXED">{t('common.fixedAmount')}</option>
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="value">Value *</Label>
+                    <Label htmlFor="value">{t('common.valueStar')}</Label>
                     <div className="mt-1.5 flex items-center gap-2">
                       <Input
                         id="value"
@@ -306,7 +308,7 @@ export default function CouponCreate() {
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="maxUse">Max uses (empty = unlimited)</Label>
+                  <Label htmlFor="maxUse">{t('common.maxUses')}</Label>
                   <Input
                     id="maxUse"
                     type="number"
@@ -314,12 +316,12 @@ export default function CouponCreate() {
                     className="mt-1.5 w-full"
                     value={form.maxUse}
                     onChange={(e) => setForm((s) => ({ ...s, maxUse: e.target.value }))}
-                    placeholder="Unlimited"
+                    placeholder={t('common.unlimited')}
                   />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="startsAt">Valid from *</Label>
+                    <Label htmlFor="startsAt">{t('common.validFromStar')}</Label>
                     <Input
                       id="startsAt"
                       type="datetime-local"
@@ -330,7 +332,7 @@ export default function CouponCreate() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="endsAt">Valid until</Label>
+                    <Label htmlFor="endsAt">{t('common.validUntil')}</Label>
                     <Input
                       id="endsAt"
                       type="datetime-local"
@@ -346,7 +348,7 @@ export default function CouponCreate() {
                     checked={form.isActive}
                     onCheckedChange={(checked) => setForm((s) => ({ ...s, isActive: !!checked }))}
                   />
-                  <Label htmlFor="isActive" className="cursor-pointer">Active coupon</Label>
+                  <Label htmlFor="isActive" className="cursor-pointer">{t('common.activeCoupon')}</Label>
                 </div>
               </CardContent>
             </Card>
@@ -354,10 +356,10 @@ export default function CouponCreate() {
 
           <div className="flex flex-wrap gap-3 pt-2 border-t border-gray-200 dark:border-slate-700">
             <Button type="submit" variant="primary" disabled={submitting}>
-              {submitting ? 'Saving...' : editing ? 'Save changes' : 'Create coupon'}
+              {submitting ? t('common.saving') : editing ? t('common.saveChanges') : t('createForms.createCouponButton')}
             </Button>
             <Button type="button" variant="ghost" onClick={() => navigate('/coupons')}>
-              Cancel
+              {t('common.cancel')}
             </Button>
           </div>
         </form>

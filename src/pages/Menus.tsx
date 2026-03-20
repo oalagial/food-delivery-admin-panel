@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { Table, TableBody, TableHead, TableRow, TableCell, TableHeadCell } from '../components/ui/table'
 import { Button } from '../components/ui/button'
@@ -10,6 +11,7 @@ import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/card'
 
 export default function Menus() {
+  const { t } = useTranslation()
   const [menus, setMenus] = useState<MenuItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -74,7 +76,7 @@ export default function Menus() {
       loadMenus()
       closeConfirmDialog()
     } catch (err) {
-      setError(err instanceof Error ? err.message : `Failed to ${confirmDialog.type} menu`)
+      setError(err instanceof Error ? err.message : t('common.failedSave'))
       closeConfirmDialog()
     }
   }
@@ -107,23 +109,23 @@ export default function Menus() {
               <Alert variant="destructive">
                 <FiAlertCircle className="h-4 w-4" />
                 <AlertTitle>
-                  {confirmDialog.type === 'delete' ? 'Delete Menu' : 'Restore Menu'}
+                  {confirmDialog.type === 'delete' ? t('menusPage.deleteTitle') : t('menusPage.restoreTitle')}
                 </AlertTitle>
                 <AlertDescription>
                   {confirmDialog.type === 'delete'
-                    ? `Are you sure you want to delete "${confirmDialog.name}"?`
-                    : `Are you sure you want to restore "${confirmDialog.name}"?`}
+                    ? t('menusPage.deleteConfirm', { name: confirmDialog.name ?? '' })
+                    : t('menusPage.restoreConfirm', { name: confirmDialog.name ?? '' })}
                 </AlertDescription>
               </Alert>
               <div className="flex justify-end gap-3 mt-6">
                 <Button variant="ghost" onClick={closeConfirmDialog}>
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
                 <Button
                   variant={confirmDialog.type === 'delete' ? 'danger' : 'primary'}
                   onClick={handleConfirm}
                 >
-                  {confirmDialog.type === 'delete' ? 'Delete' : 'Restore'}
+                  {confirmDialog.type === 'delete' ? t('common.delete') : t('common.restore')}
                 </Button>
               </div>
             </div>
@@ -134,8 +136,8 @@ export default function Menus() {
       <div className="space-y-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Menus</h1>
-            <p className="text-gray-600 mt-1 dark:text-slate-400">Organize products into menus</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{t('menusPage.title')}</h1>
+            <p className="text-gray-600 mt-1 dark:text-slate-400">{t('menusPage.subtitle')}</p>
           </div>
           <Link to="/menus/creation" className="w-full sm:w-auto">
             <Button
@@ -143,7 +145,7 @@ export default function Menus() {
               icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
               className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
             >
-              <span className="sm:inline">Create Menu</span>
+              <span className="sm:inline">{t('menusPage.create')}</span>
             </Button>
           </Link>
         </div>
@@ -152,12 +154,12 @@ export default function Menus() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableHeadCell>Name</TableHeadCell>
-                <TableHeadCell>Description</TableHeadCell>
-                <TableHeadCell>Restaurant</TableHeadCell>
-                <TableHeadCell>Sections</TableHeadCell>
-                <TableHeadCell>Created</TableHeadCell>
-                <TableHeadCell>Actions</TableHeadCell>
+                <TableHeadCell>{t('menusPage.name')}</TableHeadCell>
+                <TableHeadCell>{t('common.description')}</TableHeadCell>
+                <TableHeadCell>{t('menusPage.restaurant')}</TableHeadCell>
+                <TableHeadCell>{t('menusPage.sections')}</TableHeadCell>
+                <TableHeadCell>{t('common.created')}</TableHeadCell>
+                <TableHeadCell>{t('menusPage.actions')}</TableHeadCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -173,12 +175,12 @@ export default function Menus() {
         ) : error ? <div className="text-red-600">{error}</div> : (
           <>
             <div>
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">Active Menus</h2>
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4">{t('menusPage.activeHeading')}</h2>
 
               {/* Mobile: cards */}
               <div className="space-y-3 md:hidden">
                 {activeMenus.length === 0 ? (
-                  <p className="text-sm text-gray-500 dark:text-slate-50">No active menus found.</p>
+                  <p className="text-sm text-gray-500 dark:text-slate-50">{t('menusPage.noActive')}</p>
                 ) : (
                   activeMenus.map((m) => {
                     const anyMenu = m as unknown as Record<string, unknown>
@@ -197,23 +199,23 @@ export default function Menus() {
                         </CardHeader>
                         <CardContent className="px-4 pb-2 pt-0 space-y-1 text-xs text-gray-700 dark:text-slate-50">
                           <p>
-                            {m.description || 'No description'}
+                            {m.description || t('common.noDescription')}
                           </p>
                           <p>
-                            Restaurant:{' '}
+                            {t('menusPage.restaurant')}:{' '}
                             <span className="font-medium">
-                              {restaurant?.name || '—'}
+                              {restaurant?.name || t('common.emDash')}
                             </span>
                           </p>
                           <p>
-                            Sections:{' '}
+                            {t('menusPage.sections')}:{' '}
                             <span className="font-medium">
-                              {sectionsLabel || '—'}
+                              {sectionsLabel || t('common.emDash')}
                             </span>
                           </p>
                           {m.createdAt && (
                             <p className="text-[11px]">
-                              Created:{' '}
+                              {t('common.created')}:{' '}
                               {new Date(String(m.createdAt)).toLocaleDateString()}
                             </p>
                           )}
@@ -246,18 +248,18 @@ export default function Menus() {
                 <Table>
                   <TableHead>
                     <TableRow>
-                      <TableHeadCell>Name</TableHeadCell>
-                      <TableHeadCell>Description</TableHeadCell>
-                      <TableHeadCell>Restaurant</TableHeadCell>
-                      <TableHeadCell>Sections</TableHeadCell>
-                      <TableHeadCell>Created</TableHeadCell>
-                      <TableHeadCell>Actions</TableHeadCell>
+                      <TableHeadCell>{t('menusPage.name')}</TableHeadCell>
+                      <TableHeadCell>{t('common.description')}</TableHeadCell>
+                      <TableHeadCell>{t('menusPage.restaurant')}</TableHeadCell>
+                      <TableHeadCell>{t('menusPage.sections')}</TableHeadCell>
+                      <TableHeadCell>{t('common.created')}</TableHeadCell>
+                      <TableHeadCell>{t('menusPage.actions')}</TableHeadCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {activeMenus.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={6}>No active menus found.</TableCell>
+                        <TableCell colSpan={6}>{t('menusPage.noActive')}</TableCell>
                       </TableRow>
                     )}
                     {activeMenus.map((m) => {
@@ -297,17 +299,17 @@ export default function Menus() {
 
             {deletedMenus.length > 0 && (
               <div className="mt-8">
-                <h2 className="text-2xl font-semibold text-gray-600 mb-4">Deleted Menus</h2>
+                <h2 className="text-2xl font-semibold text-gray-600 mb-4">{t('menusPage.deletedHeading')}</h2>
                 <Table>
                   <TableHead>
                     <TableRow className="bg-gray-100 dark:bg-slate-900">
-                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Name</TableHeadCell>
-                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Description</TableHeadCell>
-                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Restaurant</TableHeadCell>
-                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Sections</TableHeadCell>
-                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Created</TableHeadCell>
-                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Deleted By</TableHeadCell>
-                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Actions</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('menusPage.name')}</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('common.description')}</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('menusPage.restaurant')}</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('menusPage.sections')}</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('common.created')}</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('productsPage.deletedBy')}</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('menusPage.actions')}</TableHeadCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
