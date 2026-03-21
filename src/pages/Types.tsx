@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { Button } from '../components/ui/button'
@@ -10,6 +11,7 @@ import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/card'
 
 export default function Types() {
+  const { t: tr } = useTranslation()
   const [types, setTypes] = useState<TypeItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -34,7 +36,7 @@ export default function Types() {
       })
       .catch((err) => {
         if (!mounted) return
-        setError(err?.message || 'Failed to load')
+        setError(err?.message || tr('common.failedToLoad'))
         setTypes([])
       })
       .finally(() => { if (mounted) setLoading(false) })
@@ -65,10 +67,10 @@ export default function Types() {
     try {
       setDeletingId(confirmDialog.id)
       await deleteType(confirmDialog.id)
-      setTypes((prev) => prev.filter((t) => t.id !== confirmDialog.id))
+      setTypes((prev) => prev.filter((ty) => ty.id !== confirmDialog.id))
       setError(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete type')
+      setError(err instanceof Error ? err.message : tr('common.failedSave'))
     } finally {
       setDeletingId(null)
       closeConfirmDialog()
@@ -84,21 +86,21 @@ export default function Types() {
             <div className="p-6">
               <Alert variant="default">
                 <FiAlertCircle className="h-4 w-4" />
-                <AlertTitle>Delete Type</AlertTitle>
+                <AlertTitle>{tr('typesPage.deleteTitle')}</AlertTitle>
                 <AlertDescription>
-                  {`Are you sure you want to delete the type "${confirmDialog.name ?? confirmDialog.id}"?`}
+                  {tr('typesPage.deleteConfirm', { name: String(confirmDialog.name ?? confirmDialog.id ?? '') })}
                 </AlertDescription>
               </Alert>
               <div className="flex justify-end gap-3 mt-6">
                 <Button variant="ghost" onClick={closeConfirmDialog}>
-                  Cancel
+                  {tr('common.cancel')}
                 </Button>
                 <Button
                   variant="danger"
                   onClick={handleConfirm}
                   disabled={deletingId === confirmDialog.id}
                 >
-                  Delete
+                  {tr('common.delete')}
                 </Button>
               </div>
             </div>
@@ -107,8 +109,8 @@ export default function Types() {
       )}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Product Types</h1>
-          <p className="text-gray-600 mt-1 dark:text-slate-400">Manage product categories and types</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{tr('typesPage.title')}</h1>
+          <p className="text-gray-600 mt-1 dark:text-slate-400">{tr('typesPage.subtitle')}</p>
         </div>
         <Link to="/types/creation" className="w-full sm:w-auto">
           <Button
@@ -116,7 +118,7 @@ export default function Types() {
             icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
             className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
           >
-            <span className="sm:inline">Create Type</span>
+            <span className="sm:inline">{tr('typesPage.create')}</span>
           </Button>
         </Link>
       </div>
@@ -125,11 +127,11 @@ export default function Types() {
         <Table>
           <TableHead>
             <tr>
-              <TableHeadCell>Name</TableHeadCell>
-              <TableHeadCell>Tag</TableHeadCell>
-              <TableHeadCell>Description</TableHeadCell>
-              <TableHeadCell>Created</TableHeadCell>
-              <TableHeadCell>Actions</TableHeadCell>
+              <TableHeadCell>{tr('typesPage.name')}</TableHeadCell>
+              <TableHeadCell>{tr('typesPage.tag')}</TableHeadCell>
+              <TableHeadCell>{tr('typesPage.description')}</TableHeadCell>
+              <TableHeadCell>{tr('common.created')}</TableHeadCell>
+              <TableHeadCell>{tr('typesPage.actions')}</TableHeadCell>
             </tr>
           </TableHead>
           <TableBody>
@@ -150,7 +152,7 @@ export default function Types() {
           {/* Mobile: cards */}
           <div className="space-y-3 md:hidden">
             {types.length === 0 ? (
-              <p className="text-sm text-gray-500">No types found.</p>
+              <p className="text-sm text-gray-500">{tr('typesPage.noTypes')}</p>
             ) : (
               types.map((t) => (
                 <Card key={t.id ?? t.name} className="shadow-sm">
@@ -162,11 +164,11 @@ export default function Types() {
                   <CardContent className="px-4 pb-2 pt-0 space-y-1">
 
                     <p className="text-xs">
-                      {t.description || 'No description'}
+                      {t.description || tr('common.noDescription')}
                     </p>
                     {t.createdAt && (
                       <p className="text-[11px]">
-                        Created: {new Date(String(t.createdAt)).toLocaleDateString()}
+                        {tr('common.created')}: {new Date(String(t.createdAt)).toLocaleDateString()}
                       </p>
                     )}
                   </CardContent>
@@ -198,17 +200,17 @@ export default function Types() {
             <Table>
               <TableHead>
                 <tr>
-                  <TableHeadCell>Name</TableHeadCell>
-                  <TableHeadCell>Tag</TableHeadCell>
-                  <TableHeadCell>Description</TableHeadCell>
-                  <TableHeadCell>Created</TableHeadCell>
-                  <TableHeadCell>Actions</TableHeadCell>
+                  <TableHeadCell>{tr('typesPage.name')}</TableHeadCell>
+                  <TableHeadCell>{tr('typesPage.tag')}</TableHeadCell>
+                  <TableHeadCell>{tr('typesPage.description')}</TableHeadCell>
+                  <TableHeadCell>{tr('common.created')}</TableHeadCell>
+                  <TableHeadCell>{tr('typesPage.actions')}</TableHeadCell>
                 </tr>
               </TableHead>
               <TableBody>
                 {types.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6}>No types found.</TableCell>
+                    <TableCell colSpan={6}>{tr('typesPage.noTypes')}</TableCell>
                   </TableRow>
                 )}
 

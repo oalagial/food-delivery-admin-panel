@@ -1,4 +1,6 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import {
   BarChart,
   Bar,
@@ -43,8 +45,9 @@ const PAYMENT_COLORS = {
   ONLINE: '#8b5cf6',
 }
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat('el-GR', {
+function formatCurrency(value: number, locale: string) {
+  const loc = locale.startsWith('it') ? 'it-IT' : 'en-GB'
+  return new Intl.NumberFormat(loc, {
     style: 'currency',
     currency: 'EUR',
     minimumFractionDigits: 2,
@@ -61,42 +64,46 @@ function getDefaultDateRange() {
   }
 }
 
-/** Format period labels for chart axis: "2026-W07" → "Week 7 Feb", "2026-02-15" → "15 Feb" */
-function formatPeriodLabel(period: string): string {
+/** Format period labels for chart axis: "2026-W07" → localized week label, "2026-02-15" → "15 Feb" */
+function formatPeriodLabel(period: string, locale: string, t: TFunction): string {
   if (!period) return period
-  // Week format: 2026-W07
   const weekMatch = period.match(/^(\d{4})-W(\d{1,2})$/)
   if (weekMatch) {
     const [, year, weekNum] = weekMatch
     const week = parseInt(weekNum, 10)
-    // Get Monday of ISO week (week 1 = week containing Jan 4)
     const jan4 = new Date(parseInt(year!, 10), 0, 4)
-    const dayOfWeek = jan4.getDay() || 7 // Mon=1, Sun=7
+    const dayOfWeek = jan4.getDay() || 7
     const mondayWeek1 = new Date(jan4)
     mondayWeek1.setDate(jan4.getDate() - dayOfWeek + 1)
     const weekStart = new Date(mondayWeek1)
     weekStart.setDate(mondayWeek1.getDate() + (week - 1) * 7)
-    const monthName = weekStart.toLocaleDateString('en-GB', { month: 'short' })
-    return `Week ${week} ${monthName}`
+    const monthName = weekStart.toLocaleDateString(locale, { month: 'short' })
+    return t('common.chartWeek', { week, month: monthName })
   }
-  // Day format: 2026-02-15
   const dayMatch = period.match(/^(\d{4})-(\d{2})-(\d{2})$/)
   if (dayMatch) {
     const [, y, m, d] = dayMatch
     const date = new Date(parseInt(y!, 10), parseInt(m!, 10) - 1, parseInt(d!, 10))
-    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+    return date.toLocaleDateString(locale, { day: 'numeric', month: 'short' })
   }
-  // Month format: 2026-01
   const monthMatch = period.match(/^(\d{4})-(\d{2})$/)
   if (monthMatch) {
     const [, y, m] = monthMatch
     const date = new Date(parseInt(y!, 10), parseInt(m!, 10) - 1, 1)
-    return date.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })
+    return date.toLocaleDateString(locale, { month: 'short', year: 'numeric' })
   }
   return period
 }
 
 export default function Stats() {
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language.startsWith('it') ? 'it-IT' : 'en-GB'
+  const formatPeriod = useCallback(
+    (period: string) => formatPeriodLabel(period, locale, t),
+    [locale, t]
+  )
+  const fmtMoney = useCallback((v: number) => formatCurrency(v, i18n.language), [i18n.language])
+
   const { from: defaultFrom, to: defaultTo } = getDefaultDateRange()
   const [from, setFrom] = useState(defaultFrom)
   const [to, setTo] = useState(defaultTo)
@@ -187,12 +194,12 @@ export default function Stats() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100 tracking-tight">Statistics</h1>
-          <p className="text-xs sm:text-sm text-gray-500 mt-1">Analytics and insights for your business</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100 tracking-tight">{t('common.statistics')}</h1>
+          <p className="text-xs sm:text-sm text-gray-500 mt-1">{t('common.statisticsSubtitle')}</p>
         </div>
         <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-end gap-3 bg-white dark:bg-slate-900/80 p-3 sm:p-4 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm w-full sm:w-auto">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="from" className="text-xs font-semibold text-gray-700 dark:text-slate-100">From</Label>
+            <Label htmlFor="from" className="text-xs font-semibold text-gray-700 dark:text-slate-100">{t('common.from')}</Label>
             <Input
               id="from"
               type="date"
@@ -202,7 +209,7 @@ export default function Stats() {
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="to" className="text-xs font-semibold text-gray-700 dark:text-slate-100">To</Label>
+            <Label htmlFor="to" className="text-xs font-semibold text-gray-700 dark:text-slate-100">{t('common.to')}</Label>
             <Input
               id="to"
               type="date"
@@ -212,14 +219,14 @@ export default function Stats() {
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="restaurant" className="text-xs font-semibold text-gray-700 dark:text-slate-100">Restaurant</Label>
+            <Label htmlFor="restaurant" className="text-xs font-semibold text-gray-700 dark:text-slate-100">{t('common.restaurant')}</Label>
             <Select
               id="restaurant"
               value={restaurantId}
               onChange={(e) => setRestaurantId(e.target.value)}
               className="w-full sm:w-44 text-sm"
             >
-              <option value="">All Restaurants</option>
+              <option value="">{t('common.allRestaurantsFilter')}</option>
               {restaurants.map((r) => (
                 <option key={String(r.id)} value={String(r.id)}>
                   {r.name ?? r.id}
@@ -228,16 +235,16 @@ export default function Stats() {
             </Select>
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="groupBy" className="text-xs font-semibold text-gray-700 dark:text-slate-100">Group by</Label>
+            <Label htmlFor="groupBy" className="text-xs font-semibold text-gray-700 dark:text-slate-100">{t('common.groupBy')}</Label>
             <Select
               id="groupBy"
               value={groupBy}
               onChange={(e) => setGroupBy(e.target.value as 'day' | 'week' | 'month')}
               className="w-full sm:w-28 text-sm"
             >
-              <option value="day">Day</option>
-              <option value="week">Week</option>
-              <option value="month">Month</option>
+              <option value="day">{t('common.groupDay')}</option>
+              <option value="week">{t('common.groupWeek')}</option>
+              <option value="month">{t('common.groupMonth')}</option>
             </Select>
           </div>
         </div>
@@ -271,8 +278,8 @@ export default function Stats() {
                       <FiDollarSign className="w-6 h-6" />
                     </div>
                   </div>
-                  <p className="text-xs sm:text-sm font-medium text-amber-100 mb-1">Total Revenue</p>
-                  <p className="text-2xl sm:text-3xl font-bold">{formatCurrency(overview.totalRevenue)}</p>
+                  <p className="text-xs sm:text-sm font-medium text-amber-100 mb-1">{t('common.totalRevenue')}</p>
+                  <p className="text-2xl sm:text-3xl font-bold">{fmtMoney(overview.totalRevenue)}</p>
                 </CardContent>
               </Card>
               <Card className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow border-0 bg-gradient-to-br from-blue-500 to-blue-600 text-white">
@@ -282,7 +289,7 @@ export default function Stats() {
                       <FiShoppingCart className="w-6 h-6" />
                     </div>
                   </div>
-                  <p className="text-xs sm:text-sm font-medium text-blue-100 mb-1">Total Orders</p>
+                  <p className="text-xs sm:text-sm font-medium text-blue-100 mb-1">{t('common.totalOrders')}</p>
                   <p className="text-2xl sm:text-3xl font-bold">{overview.totalOrders}</p>
                 </CardContent>
               </Card>
@@ -293,8 +300,8 @@ export default function Stats() {
                       <FiTrendingUp className="w-6 h-6" />
                     </div>
                   </div>
-                  <p className="text-xs sm:text-sm font-medium text-emerald-100 mb-1">Avg Order Value</p>
-                  <p className="text-2xl sm:text-3xl font-bold">{formatCurrency(overview.averageOrderValue)}</p>
+                  <p className="text-xs sm:text-sm font-medium text-emerald-100 mb-1">{t('common.avgOrderValue')}</p>
+                  <p className="text-2xl sm:text-3xl font-bold">{fmtMoney(overview.averageOrderValue)}</p>
                 </CardContent>
               </Card>
               <Card className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow border-0 bg-gradient-to-br from-violet-500 to-violet-600 text-white">
@@ -304,7 +311,7 @@ export default function Stats() {
                       <FiUsers className="w-6 h-6" />
                     </div>
                   </div>
-                  <p className="text-xs sm:text-sm font-medium text-violet-100 mb-1">New Customers</p>
+                  <p className="text-xs sm:text-sm font-medium text-violet-100 mb-1">{t('common.newCustomers')}</p>
                   <p className="text-2xl sm:text-3xl font-bold">{overview.newCustomers}</p>
                 </CardContent>
               </Card>
@@ -315,9 +322,9 @@ export default function Stats() {
                       <FiPercent className="w-6 h-6" />
                     </div>
                   </div>
-                  <p className="text-xs sm:text-sm font-medium text-rose-100 mb-1">Delivery Rate</p>
+                  <p className="text-xs sm:text-sm font-medium text-rose-100 mb-1">{t('common.deliveryRate')}</p>
                   <p className="text-xl sm:text-2xl font-bold">{overview.deliveryRate.toFixed(1)}%</p>
-                  <p className="text-[10px] sm:text-xs text-rose-200 mt-1">Cancel: {overview.cancellationRate.toFixed(1)}%</p>
+                  <p className="text-[10px] sm:text-xs text-rose-200 mt-1">{t('common.cancelRate')}: {overview.cancellationRate.toFixed(1)}%</p>
                 </CardContent>
               </Card>
             </>
@@ -329,8 +336,8 @@ export default function Stats() {
       <section>
         <Card className="shadow-lg border-0">
           <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-200">
-            <CardTitle className="text-xl font-bold text-gray-900">Revenue over time</CardTitle>
-            <p className="text-sm text-gray-600 mt-1">Revenue and order count by period</p>
+            <CardTitle className="text-xl font-bold text-gray-900">{t('common.revenueOverTime')}</CardTitle>
+            <p className="text-sm text-gray-600 mt-1">{t('common.revenueOverTimeDesc')}</p>
           </CardHeader>
           <CardContent className="pt-6">
             {loading ? (
@@ -338,8 +345,8 @@ export default function Stats() {
             ) : revenue.length === 0 ? (
               <div className="h-96 flex items-center justify-center text-gray-500 bg-gray-50 rounded-lg">
                 <div className="text-center">
-                  <p className="text-lg font-medium">No revenue data</p>
-                  <p className="text-sm text-gray-400 mt-1">Try adjusting your date range</p>
+                  <p className="text-lg font-medium">{t('common.noRevenueData')}</p>
+                  <p className="text-sm text-gray-400 mt-1">{t('common.tryAdjustDates')}</p>
                 </div>
               </div>
             ) : (
@@ -356,7 +363,7 @@ export default function Stats() {
                   <XAxis
                     dataKey="period"
                     tick={{ fontSize: 12, fill: '#6b7280' }}
-                    tickFormatter={formatPeriodLabel}
+                    tickFormatter={formatPeriod}
                     angle={0}
                     textAnchor="middle"
                     height={50}
@@ -365,7 +372,7 @@ export default function Stats() {
                   <YAxis 
                     yAxisId="left" 
                     tick={{ fontSize: 11, fill: '#6b7280' }} 
-                    tickFormatter={(v) => `€${v}`}
+                    tickFormatter={(v) => fmtMoney(Number(v))}
                     stroke="#9ca3af"
                   />
                   <YAxis 
@@ -384,10 +391,10 @@ export default function Stats() {
                     formatter={(value: any, name: string | undefined) => {
                       const nameStr = name ?? ''
                       return nameStr === 'revenue'
-                        ? [formatCurrency(Number(value ?? 0)), 'Revenue']
-                        : [value ?? 0, 'Orders']
+                        ? [fmtMoney(Number(value ?? 0)), t('statsPage.revenue')]
+                        : [value ?? 0, t('statsPage.orders')]
                     }}
-                    labelFormatter={(label) => `Period: ${formatPeriodLabel(label)}`}
+                    labelFormatter={(label) => t('statsPage.period', { label: formatPeriod(String(label)) })}
                   />
                   <Legend 
                     wrapperStyle={{ paddingTop: '20px' }}
@@ -398,7 +405,7 @@ export default function Stats() {
                       dataKey="revenue" 
                       fill="url(#revenueGradient)" 
                       radius={[8, 8, 0, 0]} 
-                      name="Revenue"
+                      name={t('statsPage.revenue')}
                     />
                     <Line 
                       yAxisId="right" 
@@ -408,7 +415,7 @@ export default function Stats() {
                       strokeWidth={3}
                       dot={{ fill: '#3b82f6', r: 5 }}
                       activeDot={{ r: 7 }}
-                      name="Orders"
+                      name={t('statsPage.orders')}
                     />
                   </ComposedChart>
                 </ResponsiveContainer>
@@ -422,8 +429,8 @@ export default function Stats() {
         {/* Top Products */}
         <Card className="shadow-lg border-0">
           <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-200">
-            <CardTitle className="text-xl font-bold text-gray-900">Top Products</CardTitle>
-            <p className="text-sm text-gray-600 mt-1">Best selling products by quantity sold</p>
+            <CardTitle className="text-xl font-bold text-gray-900">{t('common.topProducts')}</CardTitle>
+            <p className="text-sm text-gray-600 mt-1">{t('common.topProductsDesc')}</p>
           </CardHeader>
           <CardContent className="pt-6">
             {loading ? (
@@ -431,8 +438,8 @@ export default function Stats() {
             ) : productChartData.length === 0 ? (
               <div className="h-96 flex items-center justify-center text-gray-500 bg-gray-50 rounded-lg">
                 <div className="text-center">
-                  <p className="text-lg font-medium">No product data</p>
-                  <p className="text-sm text-gray-400 mt-1">No products sold in this period</p>
+                  <p className="text-lg font-medium">{t('common.noProductData')}</p>
+                  <p className="text-sm text-gray-400 mt-1">{t('common.noProductsSold')}</p>
                 </div>
               </div>
             ) : (
@@ -470,14 +477,14 @@ export default function Stats() {
                       borderRadius: '8px',
                       boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
                     }}
-                    formatter={(value: any) => [value ?? 0, 'Quantity']}
+                    formatter={(value: any) => [value ?? 0, t('statsPage.quantity')]}
                     labelFormatter={(_, payload) => {
                       const data = payload?.[0]?.payload as { fullName?: string; revenue?: number } | undefined
                       return (
                         <div>
                           <p className="font-semibold">{data?.fullName ?? ''}</p>
                           {data?.revenue != null && (
-                            <p className="text-xs text-gray-500">Revenue: {formatCurrency(data.revenue)}</p>
+                            <p className="text-xs text-gray-500">{t('statsPage.revenueLine', { value: fmtMoney(data.revenue) })}</p>
                           )}
                         </div>
                       )
@@ -487,7 +494,7 @@ export default function Stats() {
                       dataKey="quantity" 
                       fill="url(#productGradient)" 
                       radius={[0, 8, 8, 0]} 
-                      name="Quantity"
+                      name={t('statsPage.quantity')}
                     />
                   </BarChart>
                 </ResponsiveContainer>
@@ -499,8 +506,8 @@ export default function Stats() {
         {/* Payment Methods Pie */}
         <Card className="shadow-lg border-0">
           <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-200">
-            <CardTitle className="text-xl font-bold text-gray-900">Payment Methods</CardTitle>
-            <p className="text-sm text-gray-600 mt-1">Revenue distribution by payment type</p>
+            <CardTitle className="text-xl font-bold text-gray-900">{t('common.paymentMethods')}</CardTitle>
+            <p className="text-sm text-gray-600 mt-1">{t('common.paymentMethodsDesc')}</p>
           </CardHeader>
           <CardContent className="pt-6">
             {loading ? (
@@ -508,8 +515,8 @@ export default function Stats() {
             ) : pieData.length === 0 ? (
               <div className="h-96 flex items-center justify-center text-gray-500 bg-gray-50 rounded-lg">
                 <div className="text-center">
-                  <p className="text-lg font-medium">No payment data</p>
-                  <p className="text-sm text-gray-400 mt-1">No payments recorded in this period</p>
+                  <p className="text-lg font-medium">{t('common.noPaymentData')}</p>
+                  <p className="text-sm text-gray-400 mt-1">{t('common.noPaymentsRecorded')}</p>
                 </div>
               </div>
             ) : (
@@ -557,8 +564,8 @@ export default function Stats() {
                         }}
                         formatter={(value: any, name: string | undefined, props: any) => {
                           const count = props?.payload?.count ?? 0
-                          const nameStr = name ?? 'Unknown'
-                          return [formatCurrency(Number(value ?? 0)), `${nameStr} (${count} orders)`]
+                          const nameStr = name ?? t('common.unknown')
+                          return [fmtMoney(Number(value ?? 0)), t('common.paymentOrdersCount', { method: nameStr, count })]
                         }}
                       />
                     </PieChart>
@@ -574,8 +581,8 @@ export default function Stats() {
                         <div className="w-4 h-4 rounded-full" style={{ backgroundColor: itemColor }} />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-gray-900 truncate">{item.name}</p>
-                          <p className="text-xs text-gray-600">{formatCurrency(item.value)}</p>
-                          <p className="text-xs text-gray-500">{percentage}% • {item.count} orders</p>
+                          <p className="text-xs text-gray-600">{fmtMoney(item.value)}</p>
+                          <p className="text-xs text-gray-500">{t('common.pctAndOrders', { pct: percentage, count: item.count })}</p>
                         </div>
                       </div>
                     )
@@ -591,8 +598,8 @@ export default function Stats() {
       <section>
         <Card className="shadow-lg border-0">
           <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-200">
-            <CardTitle className="text-xl font-bold text-gray-900">Top Customers</CardTitle>
-            <p className="text-sm text-gray-600 mt-1">Most valuable customers by total revenue</p>
+            <CardTitle className="text-xl font-bold text-gray-900">{t('common.topCustomers')}</CardTitle>
+            <p className="text-sm text-gray-600 mt-1">{t('common.topCustomersDesc')}</p>
           </CardHeader>
           <CardContent className="pt-6">
             {loading ? (
@@ -604,8 +611,8 @@ export default function Stats() {
             ) : topCustomers.length === 0 ? (
               <div className="h-64 flex items-center justify-center text-gray-500 bg-gray-50 rounded-lg">
                 <div className="text-center">
-                  <p className="text-lg font-medium">No customer data</p>
-                  <p className="text-sm text-gray-400 mt-1">No customers found in this period</p>
+                  <p className="text-lg font-medium">{t('common.noCustomerData')}</p>
+                  <p className="text-sm text-gray-400 mt-1">{t('common.noCustomersFound')}</p>
                 </div>
               </div>
             ) : (
@@ -627,16 +634,16 @@ export default function Stats() {
                         </div>
                         <div className="mt-2 sm:mt-0 flex flex-wrap gap-3 sm:gap-6 text-left sm:text-right justify-between sm:justify-end w-full sm:w-auto">
                           <div className="min-w-[90px]">
-                            <p className="text-[11px] sm:text-xs text-gray-500 mb-0.5">Total Revenue</p>
-                            <p className="text-sm sm:text-lg font-bold text-gray-900">{formatCurrency(customer.totalRevenue)}</p>
+                            <p className="text-[11px] sm:text-xs text-gray-500 mb-0.5">{t('common.totalRevenue')}</p>
+                            <p className="text-sm sm:text-lg font-bold text-gray-900">{fmtMoney(customer.totalRevenue)}</p>
                           </div>
                           <div className="min-w-[70px]">
-                            <p className="text-[11px] sm:text-xs text-gray-500 mb-0.5">Orders</p>
+                            <p className="text-[11px] sm:text-xs text-gray-500 mb-0.5">{t('statsPage.orders')}</p>
                             <p className="text-sm sm:text-lg font-bold text-purple-600">{customer.orderCount}</p>
                           </div>
                           <div className="min-w-[90px]">
-                            <p className="text-[11px] sm:text-xs text-gray-500 mb-0.5">Avg Order</p>
-                            <p className="text-sm sm:text-lg font-bold text-emerald-600">{formatCurrency(customer.averageOrderValue)}</p>
+                            <p className="text-[11px] sm:text-xs text-gray-500 mb-0.5">{t('common.avgOrder')}</p>
+                            <p className="text-sm sm:text-lg font-bold text-emerald-600">{fmtMoney(customer.averageOrderValue)}</p>
                           </div>
                         </div>
                       </div>

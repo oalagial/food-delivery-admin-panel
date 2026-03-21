@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button'
@@ -11,6 +12,7 @@ import type { CreateMenuPayload, Restaurant, SectionItem } from '../utils/api'
 import { Select } from '../components/ui/select';
 
 export default function MenuCreate() {
+  const { t } = useTranslation()
   const { id } = useParams<{ id?: string }>()
   const navigate = useNavigate()
   const editing = !!id
@@ -62,7 +64,7 @@ export default function MenuCreate() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
-    if (!name.trim()) { setError('Name is required'); return }
+    if (!name.trim()) { setError(t('common.menuNameRequired')); return }
     const payload: CreateMenuPayload = {
       name: String(name).trim(),
       description: description || undefined,
@@ -88,13 +90,13 @@ export default function MenuCreate() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">
-          {editing ? 'Edit Menu' : 'Create Menu'}
+          {editing ? t('createForms.editMenu') : t('createForms.createMenu')}
         </h1>
       </div>
 
       {loading ? (
         <Card className="shadow-md">
-          <CardContent className="pt-6">Loading...</CardContent>
+          <CardContent className="pt-6">{t('createForms.loading')}</CardContent>
         </Card>
       ) : (
         <form
@@ -105,43 +107,43 @@ export default function MenuCreate() {
           <Card className="shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg">
-                {editing ? 'Update Menu Details' : 'New Menu'}
+                {editing ? t('createForms.updateMenuDetails') : t('createForms.newMenu')}
               </CardTitle>
-              <CardDescription>Fill in the menu information</CardDescription>
+              <CardDescription>{t('common.fillMenuInfo')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="name">Menu Name *</Label>
+                <Label htmlFor="name">{t('createForms.menuNameStar')}</Label>
                 <Input
                   id="name"
                   className="mt-1.5 w-full"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Menu name"
+                  placeholder={t('common.menuNamePh')}
                   required
                 />
               </div>
 
               <div>
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">{t('common.description')}</Label>
                 <Input
                   id="description"
                   className="mt-1.5 w-full"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Brief description"
+                  placeholder={t('common.menuDescPh')}
                 />
               </div>
 
               <div>
-                <Label htmlFor="restaurant">Restaurant *</Label>
+                <Label htmlFor="restaurant">{t('common.restaurant')} *</Label>
                 <Select
                   id="restaurant"
                   value={restaurantId}
                   onChange={(e) => setRestaurantId(e.currentTarget.value)}
                   className="mt-1.5 w-full"
                 >
-                  <option value="">Select restaurant</option>
+                  <option value="">{t('common.selectRestaurant')}</option>
                   {restaurants.map((r) => (
                     <option key={r.id} value={String(r.id)}>
                       {r.name || r.id}
@@ -155,17 +157,17 @@ export default function MenuCreate() {
           {/* Sections selector */}
           <Card className="shadow-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Sections</CardTitle>
-              <CardDescription>Select which sections belong to this menu</CardDescription>
+              <CardTitle className="text-lg">{t('common.sections')}</CardTitle>
+              <CardDescription>{t('common.menuSectionsDesc')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-4">
                 {/* Available Sections */}
                 <div className="flex-1">
-                  <div className="font-semibold mb-1 text-sm">Available</div>
+                  <div className="font-semibold mb-1 text-sm">{t('common.available')}</div>
                   <div className="border rounded p-2 h-40 overflow-y-auto bg-white dark:bg-slate-900">
                     {sections.filter((s) => !sectionIds.includes(Number(s.id))).length === 0 && (
-                      <div className="text-xs text-gray-400">No more sections</div>
+                      <div className="text-xs text-gray-400">{t('common.noMoreSections')}</div>
                     )}
                     {sections
                       .filter((s) => !sectionIds.includes(Number(s.id)))
@@ -184,7 +186,7 @@ export default function MenuCreate() {
                               setSectionIds((ids) => [...ids.map(Number), Number(s.id)])
                             }
                           >
-                            Add
+                            {t('common.add')}
                           </Button>
                         </div>
                       ))}
@@ -192,10 +194,10 @@ export default function MenuCreate() {
                 </div>
                 {/* Selected Sections */}
                 <div className="flex-1">
-                  <div className="font-semibold mb-1 text-sm">Selected</div>
+                  <div className="font-semibold mb-1 text-sm">{t('common.selected')}</div>
                   <div className="border rounded p-2 h-40 overflow-y-auto bg-white dark:bg-slate-900">
                     {sectionIds.length === 0 && (
-                      <div className="text-xs text-gray-400">No sections selected</div>
+                      <div className="text-xs text-gray-400">{t('common.noSectionsSelected')}</div>
                     )}
                     {sections
                       .filter((s) => sectionIds.includes(Number(s.id)))
@@ -216,7 +218,7 @@ export default function MenuCreate() {
                               )
                             }
                           >
-                            Remove
+                            {t('common.remove')}
                           </Button>
                         </div>
                       ))}
@@ -224,7 +226,7 @@ export default function MenuCreate() {
                 </div>
               </div>
               <p className="mt-1 text-xs text-gray-500">
-                Click &quot;Add&quot; to select, &quot;Remove&quot; to unselect.
+                {t('common.pickerHintAddRemove')}
               </p>
 
               {error && (
@@ -240,10 +242,10 @@ export default function MenuCreate() {
                   type="button"
                   onClick={() => navigate(-1)}
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
                 <Button type="submit" variant="primary" disabled={saving}>
-                  {saving ? 'Saving...' : editing ? 'Update' : 'Create'}
+                  {saving ? t('common.saving') : editing ? t('common.update') : t('common.create')}
                 </Button>
               </div>
             </CardContent>

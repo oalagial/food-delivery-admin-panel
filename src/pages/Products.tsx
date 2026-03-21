@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { Button } from '../components/ui/button'
@@ -21,14 +22,14 @@ type ProductRowProps = {
   onToggleAvailability?: (product: Product) => void;
 };
 
-function productRowDetails(product: Product) {
+function ProductRowDetails({ product }: { product: Product }) {
+  const { t } = useTranslation()
   return (
     <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {/* Ingredients */}
       <Card className="shadow-md">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold">Ingredients</CardTitle>
-          <CardDescription>List of ingredients for this product</CardDescription>
+          <CardTitle className="text-base font-semibold">{t('common.ingredients')}</CardTitle>
+          <CardDescription>{t('common.ingredientsListDesc')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-1">
           {product.ingredients && product.ingredients.length > 0 ? (
@@ -40,15 +41,14 @@ function productRowDetails(product: Product) {
               </ul>
             ))
           ) : (
-            <h3 className="text-sm text-gray-500 dark:text-slate-400">No ingredients listed.</h3>
+            <h3 className="text-sm text-gray-500 dark:text-slate-400">{t('common.noIngredients')}</h3>
           )}
         </CardContent>
       </Card>
-      {/* Allergies */}
       <Card className="shadow-md">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold">Allergies</CardTitle>
-          <CardDescription>Allergens present in this product</CardDescription>
+          <CardTitle className="text-base font-semibold">{t('common.allergies')}</CardTitle>
+          <CardDescription>{t('common.allergensDesc')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-1">
           {product.allergies && product.allergies.length > 0 ? (
@@ -60,15 +60,14 @@ function productRowDetails(product: Product) {
               </ul>
             ))
           ) : (
-            <h3 className="text-sm text-gray-500 dark:text-slate-400">No allergens listed.</h3>
+            <h3 className="text-sm text-gray-500 dark:text-slate-400">{t('common.noAllergens')}</h3>
           )}
         </CardContent>
       </Card>
-      {/* Extras */}
       <Card className="shadow-md">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold">Extras</CardTitle>
-          <CardDescription>Available extras for this product</CardDescription>
+          <CardTitle className="text-base font-semibold">{t('common.extras')}</CardTitle>
+          <CardDescription>{t('common.extrasDesc')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-1">
           {product.extras && product.extras.length > 0 ? (
@@ -78,12 +77,13 @@ function productRowDetails(product: Product) {
                   key={index}
                   className="px-2 py-1 rounded bg-gray-50 border text-sm text-gray-800 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
                 >
-                  {extra.name} {extra.price != null ? `(+${extra.price} €)` : ''}
+                  {extra.name}{' '}
+                  {extra.price != null ? t('common.extraPlusPrice', { price: extra.price }) : ''}
                 </li>
               ))}
             </ul>
           ) : (
-            <h3 className="text-sm text-gray-500 dark:text-slate-400">No extras available.</h3>
+            <h3 className="text-sm text-gray-500 dark:text-slate-400">{t('common.noExtras')}</h3>
           )}
         </CardContent>
       </Card>
@@ -92,6 +92,7 @@ function productRowDetails(product: Product) {
 }
 
 function ProductRow({ product, isOpen, onToggle, isDeleted = false, onRestore, onDelete, onToggleAvailability }: ProductRowProps) {
+  const { t } = useTranslation()
   const anyProduct = product as unknown as Record<string, unknown>
 
   return (
@@ -101,7 +102,7 @@ function ProductRow({ product, isOpen, onToggle, isDeleted = false, onRestore, o
         <TableCell className={isDeleted ? "text-gray-600" : ""}>{product.name ?? ''}</TableCell>
         <TableCell className={isDeleted ? "text-gray-600" : ""}>
           {product.image ? (
-            <img src={API_BASE + "/images/" + product.image} alt={product.name ?? 'product'} className="w-12 h-12 object-cover rounded" />
+            <img src={API_BASE + "/images/" + product.image} alt={product.name ?? t('productsPage.productAlt')} className="w-12 h-12 object-cover rounded" />
           ) : (
             <div className="w-12 h-12 bg-gray-100 rounded" />
           )}
@@ -109,7 +110,7 @@ function ProductRow({ product, isOpen, onToggle, isDeleted = false, onRestore, o
         <TableCell className={isDeleted ? "text-gray-600" : ""}>{product.type?.name ?? ''}</TableCell>
         <TableCell className={isDeleted ? "text-gray-600" : ""}>{product.price != null ? String(product.price) : ''} €</TableCell>
         <TableCell className={isDeleted ? "text-gray-600" : ""}>
-          {product.stockQuantity != null ? String(product.stockQuantity) : '—'}
+          {product.stockQuantity != null ? String(product.stockQuantity) : t('common.emDash')}
         </TableCell>
         <TableCell className={isDeleted ? "text-gray-600" : ""}>
           {product.vatRate ? (
@@ -127,11 +128,11 @@ function ProductRow({ product, isOpen, onToggle, isDeleted = false, onRestore, o
             className="inline-flex items-center justify-center"
             disabled={isDeleted}
             onClick={() => !isDeleted && onToggleAvailability && onToggleAvailability(product)}
-            aria-label={product.isAvailable ? 'Set unavailable' : 'Set available'}
+            aria-label={product.isAvailable ? t('common.setUnavailable') : t('common.setAvailable')}
             icon={
               product.isAvailable
-                ? <FiCheckCircle className="w-5 h-5 text-green-500" aria-label="Available" />
-                : <FiXCircle className="w-5 h-5 text-red-500" aria-label="Not available" />
+                ? <FiCheckCircle className="w-5 h-5 text-green-500" aria-label={t('common.ariaAvailable')} />
+                : <FiXCircle className="w-5 h-5 text-red-500" aria-label={t('common.ariaNotAvailable')} />
             }
           />
         </TableCell>
@@ -160,7 +161,7 @@ function ProductRow({ product, isOpen, onToggle, isDeleted = false, onRestore, o
                 size="sm"
                 onClick={onToggle}
               >
-                {isOpen ? "Hide" : "Details"}
+                {isOpen ? t('productsPage.hide') : t('productsPage.details')}
               </Button>
               <Link to={`/products/creation/${encodeURIComponent(String(product.id ?? ''))}`} ><Button variant="ghost" className='p-2' size="sm" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
               <Button variant="danger" size="sm" icon={<FiTrash className="w-4 h-4" />} onClick={() => onDelete && onDelete(product.id ?? '', product.name ?? '')}></Button>
@@ -172,7 +173,7 @@ function ProductRow({ product, isOpen, onToggle, isDeleted = false, onRestore, o
       {isOpen && !isDeleted && (
         <TableRow className="bg-gray-50 dark:bg-slate-900">
           <TableCell colSpan={8}>
-            {productRowDetails(product)}
+            <ProductRowDetails product={product} />
           </TableCell>
         </TableRow>
       )}
@@ -181,6 +182,7 @@ function ProductRow({ product, isOpen, onToggle, isDeleted = false, onRestore, o
 }
 
 export default function Products() {
+  const { t } = useTranslation()
   const [items, setItems] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -210,7 +212,7 @@ export default function Products() {
         setError(null)
       })
       .catch((err) => {
-        setError(err?.message || 'Failed to load')
+        setError(err?.message || t('common.failedToLoad'))
         setItems([])
       })
       .finally(() => { setLoading(false) })
@@ -251,7 +253,7 @@ export default function Products() {
       loadProducts()
       closeConfirmDialog()
     } catch (err) {
-      setError(err instanceof Error ? err.message : `Failed to ${confirmDialog.type} product`)
+      setError(err instanceof Error ? err.message : (confirmDialog.type === 'delete' ? t('common.failedDeleteProduct') : t('common.failedRestoreProduct')))
       closeConfirmDialog()
     }
   }
@@ -275,7 +277,7 @@ export default function Products() {
       )
       setError(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update availability')
+      setError(err instanceof Error ? err.message : t('common.failedUpdateAvailability'))
     }
   }
 
@@ -316,23 +318,23 @@ export default function Products() {
               <Alert variant="destructive">
                 <FiAlertCircle className="h-4 w-4" />
                 <AlertTitle>
-                  {confirmDialog.type === 'delete' ? 'Delete Product' : 'Restore Product'}
+                  {confirmDialog.type === 'delete' ? t('common.deleteProductTitle') : t('common.restoreProductTitle')}
                 </AlertTitle>
                 <AlertDescription>
                   {confirmDialog.type === 'delete'
-                    ? `Are you sure you want to delete "${confirmDialog.name}"?.`
-                    : `Are you sure you want to restore "${confirmDialog.name}"?`}
+                    ? t('common.deleteProductConfirm', { name: confirmDialog.name ?? '' })
+                    : t('common.restoreProductConfirm', { name: confirmDialog.name ?? '' })}
                 </AlertDescription>
               </Alert>
               <div className="flex justify-end gap-3 mt-6">
                 <Button variant="ghost" onClick={closeConfirmDialog}>
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
                 <Button
                   variant={confirmDialog.type === 'delete' ? 'danger' : 'primary'}
                   onClick={handleConfirm}
                 >
-                  {confirmDialog.type === 'delete' ? 'Delete' : 'Restore'}
+                  {confirmDialog.type === 'delete' ? t('common.delete') : t('common.restore')}
                 </Button>
               </div>
             </div>
@@ -343,13 +345,13 @@ export default function Products() {
       <div className="space-y-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Products</h1>
-            <p className="text-gray-600 mt-1 dark:text-slate-400">Manage your restaurant products</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{t('productsPage.title')}</h1>
+            <p className="text-gray-600 mt-1 dark:text-slate-400">{t('productsPage.subtitle')}</p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
             <div className="w-full sm:w-48">
               <Input
-                placeholder="Search product..."
+                placeholder={t('productsPage.searchPh')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -360,7 +362,7 @@ export default function Products() {
                 icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
                 className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
               >
-                <span className="sm:inline">Create Product</span>
+                <span className="sm:inline">{t('productsPage.createProduct')}</span>
               </Button>
             </Link>
           </div>
@@ -370,17 +372,14 @@ export default function Products() {
           <Table>
             <TableHead>
               <tr>
-                <TableHeadCell>Name</TableHeadCell>
-                <TableHeadCell>Image</TableHeadCell>
-                <TableHeadCell>Type</TableHeadCell>
-                {/* <TableHeadCell>Ingredients</TableHeadCell> */}
-                <TableHeadCell>Price</TableHeadCell>
-                <TableHeadCell>Stock</TableHeadCell>
-                <TableHeadCell>VAT</TableHeadCell>
-                <TableHeadCell>Available</TableHeadCell>
-                {/* <TableHeadCell>Created</TableHeadCell> */}
-                {/* <TableHeadCell>Updated</TableHeadCell> */}
-                <TableHeadCell>Actions</TableHeadCell>
+                <TableHeadCell>{t('productsPage.name')}</TableHeadCell>
+                <TableHeadCell>{t('productsPage.image')}</TableHeadCell>
+                <TableHeadCell>{t('productsPage.type')}</TableHeadCell>
+                <TableHeadCell>{t('productsPage.price')}</TableHeadCell>
+                <TableHeadCell>{t('productsPage.stock')}</TableHeadCell>
+                <TableHeadCell>{t('productsPage.vat')}</TableHeadCell>
+                <TableHeadCell>{t('productsPage.available')}</TableHeadCell>
+                <TableHeadCell>{t('productsPage.actions')}</TableHeadCell>
               </tr>
             </TableHead>
             <TableBody>
@@ -401,12 +400,12 @@ export default function Products() {
         {!loading && (
           <>
             <div>
-              <h2 className="text-2xl font-semibold text-gray-800 dark:text-slate-100 mb-4">Active Products</h2>
+              <h2 className="text-2xl font-semibold text-gray-800 dark:text-slate-100 mb-4">{t('productsPage.activeHeading')}</h2>
 
               {/* Mobile: cards */}
               <div className="space-y-3 md:hidden">
                 {filteredItems.length === 0 ? (
-                  <p className="text-sm text-gray-500 dark:text-slate-400">No active products found.</p>
+                  <p className="text-sm text-gray-500 dark:text-slate-400">{t('productsPage.noActive')}</p>
                 ) : (
                   filteredItems.map((p) => {
                     const vatLabel = p.vatRate
@@ -427,7 +426,7 @@ export default function Products() {
                           {p.image ? (
                             <img
                               src={API_BASE + '/images/' + p.image}
-                              alt={p.name ?? 'product'}
+                              alt={p.name ?? t('productsPage.productAlt')}
                               className="h-12 w-12 flex-shrink-0 rounded object-cover"
                             />
                           ) : (
@@ -447,24 +446,24 @@ export default function Products() {
                                 : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
                               }`}
                           >
-                            {p.isAvailable ? 'Available' : 'Unavailable'}
+                            {p.isAvailable ? t('common.available') : t('common.unavailable')}
                           </span>
                         </CardHeader>
 
                         <CardContent className="px-4 pb-2 pt-0 space-y-1 text-xs text-gray-700 dark:text-slate-300">
                           <p>
-                            Price:{' '}
+                            {t('productsPage.priceLabel')}{' '}
                             <span className="font-semibold">
                               {p.price != null ? `${p.price} €` : '-'}
                             </span>
                             {typeof p.stockQuantity === 'number' && (
                               <span className="ml-2 text-gray-500">
-                                • Stock: {p.stockQuantity}
+                                • {t('productsPage.stockLabel')} {p.stockQuantity}
                               </span>
                             )}
                           </p>
                           <p>
-                            VAT:{' '}
+                            {t('productsPage.vatLabel')}{' '}
                             <span className="font-medium">{vatLabel}</span>
                           </p>
                         </CardContent>
@@ -476,7 +475,7 @@ export default function Products() {
                             className="px-2 text-xs"
                             onClick={() => toggleRow(String(p.id))}
                           >
-                            {openRowId === String(p.id) ? 'Hide details' : 'Details'}
+                            {openRowId === String(p.id) ? t('common.hideDetails') : t('productsPage.details')}
                           </Button>
                           <div className="flex gap-1">
                             <Button
@@ -512,7 +511,7 @@ export default function Products() {
 
                         {openRowId === String(p.id) && (
                           <div className="border-t border-gray-100 dark:border-slate-700">
-                            {productRowDetails(p)}
+                            <ProductRowDetails product={p} />
                           </div>
                         )}
                       </Card>
@@ -526,21 +525,21 @@ export default function Products() {
                 <Table>
                   <TableHead>
                     <tr>
-                      <TableHeadCell>Name</TableHeadCell>
-                      <TableHeadCell>Image</TableHeadCell>
-                      <TableHeadCell>Type</TableHeadCell>
-                      <TableHeadCell>Price</TableHeadCell>
-                      <TableHeadCell>Stock</TableHeadCell>
-                      <TableHeadCell>VAT</TableHeadCell>
-                      <TableHeadCell>Available</TableHeadCell>
-                      <TableHeadCell>Actions</TableHeadCell>
+                      <TableHeadCell>{t('productsPage.name')}</TableHeadCell>
+                      <TableHeadCell>{t('productsPage.image')}</TableHeadCell>
+                      <TableHeadCell>{t('productsPage.type')}</TableHeadCell>
+                      <TableHeadCell>{t('productsPage.price')}</TableHeadCell>
+                      <TableHeadCell>{t('productsPage.stock')}</TableHeadCell>
+                      <TableHeadCell>{t('productsPage.vat')}</TableHeadCell>
+                      <TableHeadCell>{t('productsPage.available')}</TableHeadCell>
+                      <TableHeadCell>{t('productsPage.actions')}</TableHeadCell>
                     </tr>
                   </TableHead>
                   <TableBody>
                     {filteredItems.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={8} className="text-gray-500 dark:text-slate-400">
-                          No active products found.
+                          {t('productsPage.noActive')}
                         </TableCell>
                       </TableRow>
                     )}
@@ -563,20 +562,20 @@ export default function Products() {
             {deletedProducts.length > 0 && (
               <div className="mt-8">
                 <h2 className="text-2xl font-semibold text-gray-600 dark:text-slate-400 mb-4">
-                  Deleted Products
+                  {t('productsPage.deletedHeading')}
                 </h2>
                 <Table>
                   <TableHead>
                     <tr className="bg-gray-100 dark:bg-slate-900">
-                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Name</TableHeadCell>
-                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Image</TableHeadCell>
-                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Type</TableHeadCell>
-                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Price</TableHeadCell>
-                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Stock</TableHeadCell>
-                      <TableHeadCell className="text-gray-600 dark:text-slate-100">VAT</TableHeadCell>
-                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Available</TableHeadCell>
-                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Deleted By</TableHeadCell>
-                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Actions</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('productsPage.name')}</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('productsPage.image')}</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('productsPage.type')}</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('productsPage.price')}</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('productsPage.stock')}</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('productsPage.vat')}</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('productsPage.available')}</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('productsPage.deletedBy')}</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('productsPage.actions')}</TableHeadCell>
                     </tr>
                   </TableHead>
                   <TableBody>

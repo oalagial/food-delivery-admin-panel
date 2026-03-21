@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import { Button } from '../components/ui/button'
@@ -10,7 +11,7 @@ import { Skeleton } from '../components/ui/skeleton'
 import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/card'
 
-function HoursTooltip({ hours }: { hours: OpeningHour[] }) {
+function HoursTooltip({ hours, t }: { hours: OpeningHour[]; t: (key: string, opts?: Record<string, unknown>) => string }) {
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
   return (
     <>
@@ -22,7 +23,7 @@ function HoursTooltip({ hours }: { hours: OpeningHour[] }) {
         }}
         onMouseLeave={() => setPos(null)}
       >
-        +{hours.length - 1} more
+        {t('restaurantPage.moreHours', { count: hours.length - 1 })}
       </span>
       {pos && createPortal(
         <div
@@ -40,6 +41,7 @@ function HoursTooltip({ hours }: { hours: OpeningHour[] }) {
 }
 
 export default function Restaurant() {
+  const { t } = useTranslation()
   const [restaurants, setRestaurants] = useState<RestaurantType[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -64,7 +66,7 @@ export default function Restaurant() {
       })
       .catch((err) => {
         if (!mounted) return
-        setError(err?.message || 'Failed to load')
+        setError(err?.message || t('common.failedToLoad'))
         setRestaurants([])
       })
       .finally(() => {
@@ -113,7 +115,7 @@ export default function Restaurant() {
       setError(null)
       closeConfirmDialog()
     } catch (err) {
-      setError(err instanceof Error ? err.message : `Failed to ${confirmDialog.type} restaurant`)
+      setError(err instanceof Error ? err.message : t('common.failedSave'))
       closeConfirmDialog()
     }
   }
@@ -136,23 +138,23 @@ export default function Restaurant() {
               <Alert variant="default">
                 <FiAlertCircle className="h-4 w-4" />
                 <AlertTitle>
-                  {confirmDialog.type === 'delete' ? 'Delete Restaurant' : 'Restore Restaurant'}
+                  {confirmDialog.type === 'delete' ? t('restaurantPage.deleteTitle') : t('restaurantPage.restoreTitle')}
                 </AlertTitle>
                 <AlertDescription>
                   {confirmDialog.type === 'delete'
-                    ? `Are you sure you want to delete "${confirmDialog.name}"? This action cannot be undone.`
-                    : `Are you sure you want to restore "${confirmDialog.name}"?`}
+                    ? t('restaurantPage.deleteConfirm', { name: confirmDialog.name ?? '' })
+                    : t('restaurantPage.restoreConfirm', { name: confirmDialog.name ?? '' })}
                 </AlertDescription>
               </Alert>
               <div className="flex justify-end gap-3 mt-6">
                 <Button variant="ghost" onClick={closeConfirmDialog}>
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
                 <Button
                   variant={confirmDialog.type === 'delete' ? 'danger' : 'primary'}
                   onClick={handleConfirm}
                 >
-                  {confirmDialog.type === 'delete' ? 'Delete' : 'Restore'}
+                  {confirmDialog.type === 'delete' ? t('common.delete') : t('common.restore')}
                 </Button>
               </div>
             </div>
@@ -163,8 +165,8 @@ export default function Restaurant() {
       <div className="space-y-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Restaurants</h1>
-            <p className="text-gray-600 mt-1 dark:text-slate-400">Manage your restaurant locations</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{t('restaurantPage.title')}</h1>
+            <p className="text-gray-600 mt-1 dark:text-slate-400">{t('restaurantPage.subtitle')}</p>
           </div>
           <Link to="/restaurant/creation" className="w-full sm:w-auto">
             <Button
@@ -172,7 +174,7 @@ export default function Restaurant() {
               icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
               className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
             >
-              <span className="sm:inline">Create Restaurant</span>
+              <span className="sm:inline">{t('restaurantPage.create')}</span>
             </Button>
           </Link>
         </div>
@@ -180,16 +182,16 @@ export default function Restaurant() {
           <Table>
             <TableHead>
               <tr>
-                <TableHeadCell>Name</TableHeadCell>
-                <TableHeadCell>Address</TableHeadCell>
-                <TableHeadCell>City</TableHeadCell>
-                <TableHeadCell>Province</TableHeadCell>
-                <TableHeadCell>Zip</TableHeadCell>
-                <TableHeadCell>Country</TableHeadCell>
-                <TableHeadCell>Active Menu</TableHeadCell>
-                <TableHeadCell>Created</TableHeadCell>
-                <TableHeadCell>Opening Hours</TableHeadCell>
-                <TableHeadCell>Actions</TableHeadCell>
+                <TableHeadCell>{t('restaurantPage.name')}</TableHeadCell>
+                <TableHeadCell>{t('restaurantPage.address')}</TableHeadCell>
+                <TableHeadCell>{t('restaurantPage.city')}</TableHeadCell>
+                <TableHeadCell>{t('common.province')}</TableHeadCell>
+                <TableHeadCell>{t('common.zipCode')}</TableHeadCell>
+                <TableHeadCell>{t('common.country')}</TableHeadCell>
+                <TableHeadCell>{t('restaurantPage.activeMenuColumn')}</TableHeadCell>
+                <TableHeadCell>{t('restaurantPage.created')}</TableHeadCell>
+                <TableHeadCell>{t('restaurantPage.openingHours')}</TableHeadCell>
+                <TableHeadCell>{t('restaurantPage.actions')}</TableHeadCell>
               </tr>
             </TableHead>
             <TableBody>
@@ -207,11 +209,11 @@ export default function Restaurant() {
         {!loading && (
           <>
             <div>
-              <h2 className="text-2xl font-semibold mb-4">Active Restaurants</h2>
+              <h2 className="text-2xl font-semibold mb-4">{t('restaurantPage.activeHeading')}</h2>
               {/* Mobile: cards */}
               <div className="space-y-3 md:hidden">
                 {activeRestaurants.length === 0 ? (
-                  <p className="text-sm">No active restaurants found.</p>
+                  <p className="text-sm">{t('restaurantPage.noActive')}</p>
                 ) : (
                   activeRestaurants.map((r) => {
                     const anyRestaurant = r as unknown as Record<string, unknown>
@@ -237,23 +239,23 @@ export default function Restaurant() {
                           </p>
                           {menu?.name && (
                             <p className="text-xs">
-                              Active menu:{' '}
+                              {t('restaurantPage.activeMenu')}:{' '}
                               <span className="font-medium">{menu.name}</span>
                             </p>
                           )}
                           {primaryHours ? (
                             <p className="text-xs">
-                              Hours: <span className="font-medium">{primaryHours}</span>
+                              {t('restaurantPage.hoursPrefix')}: <span className="font-medium">{primaryHours}</span>
                               {Array.isArray(r.openingHours) && r.openingHours.length > 1 && (
-                                <HoursTooltip hours={r.openingHours} />
+                                <HoursTooltip hours={r.openingHours} t={t} />
                               )}
                             </p>
                           ) : (
-                            <p className="text-xs">No opening hours</p>
+                            <p className="text-xs">{t('restaurantPage.noOpeningHours')}</p>
                           )}
                           {r.createdAt && (
                             <p className="text-[11px]">
-                              Created:{' '}
+                              {t('restaurantPage.created')}:{' '}
                               {new Date(String(r.createdAt)).toLocaleDateString()}
                             </p>
                           )}
@@ -286,22 +288,22 @@ export default function Restaurant() {
                 <Table>
                   <TableHead>
                     <tr>
-                      <TableHeadCell>Name</TableHeadCell>
-                      <TableHeadCell>Address</TableHeadCell>
-                      <TableHeadCell>City</TableHeadCell>
-                      <TableHeadCell>Province</TableHeadCell>
-                      <TableHeadCell>Zip</TableHeadCell>
-                      <TableHeadCell>Country</TableHeadCell>
-                      <TableHeadCell>Active Menu</TableHeadCell>
-                      <TableHeadCell>Created</TableHeadCell>
-                      <TableHeadCell>Opening Hours</TableHeadCell>
-                      <TableHeadCell>Actions</TableHeadCell>
+                      <TableHeadCell>{t('restaurantPage.name')}</TableHeadCell>
+                      <TableHeadCell>{t('restaurantPage.address')}</TableHeadCell>
+                      <TableHeadCell>{t('restaurantPage.city')}</TableHeadCell>
+                      <TableHeadCell>{t('common.province')}</TableHeadCell>
+                      <TableHeadCell>{t('common.zipCode')}</TableHeadCell>
+                      <TableHeadCell>{t('common.country')}</TableHeadCell>
+                      <TableHeadCell>{t('restaurantPage.activeMenuColumn')}</TableHeadCell>
+                      <TableHeadCell>{t('restaurantPage.created')}</TableHeadCell>
+                      <TableHeadCell>{t('restaurantPage.openingHours')}</TableHeadCell>
+                      <TableHeadCell>{t('restaurantPage.actions')}</TableHeadCell>
                     </tr>
                   </TableHead>
                   <TableBody>
                     {activeRestaurants.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={10}>No active restaurants found.</TableCell>
+                        <TableCell colSpan={10}>{t('restaurantPage.noActive')}</TableCell>
                       </TableRow>
                     )}
                     {activeRestaurants.map((r) => {
@@ -324,11 +326,11 @@ export default function Restaurant() {
                               <span>
                                 {`${r.openingHours[0].day}: ${r.openingHours[0].open}-${r.openingHours[0].close}`}
                                 {r.openingHours.length > 1 && (
-                                  <HoursTooltip hours={r.openingHours} />
+                                  <HoursTooltip hours={r.openingHours} t={t} />
                                 )}
                               </span>
                             ) : (
-                              <span className="text-xs text-gray-400">No hours</span>
+                              <span className="text-xs text-gray-400">{t('restaurantPage.noHours')}</span>
                             )}
                           </TableCell>
                           <TableCell>
@@ -347,7 +349,7 @@ export default function Restaurant() {
 
             {deletedRestaurants.length > 0 && (
               <div className="mt-8">
-                <h2 className="text-2xl font-semibold mb-4">Deleted Restaurants</h2>
+                <h2 className="text-2xl font-semibold mb-4">{t('restaurantPage.deletedHeading')}</h2>
 
                 {/* Mobile: cards for deleted */}
                 <div className="space-y-3 md:hidden">
@@ -376,7 +378,7 @@ export default function Restaurant() {
                           </p>
                           {activeMenus.length > 0 ? (
                             <p className="text-xs">
-                              Active menus:{' '}
+                              {t('restaurantPage.activeMenus')}:{' '}
                               {activeMenus.map((menu: any, index: number) => (
                                 <span key={menu?.id || index}>
                                   {menu?.name || ''}
@@ -385,20 +387,20 @@ export default function Restaurant() {
                               ))}
                             </p>
                           ) : (
-                            <p className="text-xs">No active menu</p>
+                            <p className="text-xs">{t('restaurantPage.noActiveMenu')}</p>
                           )}
                           {primaryHours ? (
                             <p className="text-xs">
-                              Hours: <span className="font-medium">{primaryHours}</span>
+                              {t('restaurantPage.hoursPrefix')}: <span className="font-medium">{primaryHours}</span>
                               {Array.isArray(r.openingHours) && r.openingHours.length > 1 && (
-                                <HoursTooltip hours={r.openingHours} />
+                                <HoursTooltip hours={r.openingHours} t={t} />
                               )}
                             </p>
                           ) : (
-                            <p className="text-xs">No hours</p>
+                            <p className="text-xs">{t('restaurantPage.noHours')}</p>
                           )}
                           <p className="text-[11px] text-gray-400">
-                            Deleted by: <span className="font-medium">{String(r.deletedBy ?? '')}</span>
+                            {t('productsPage.deletedBy')}: <span className="font-medium">{String(r.deletedBy ?? '')}</span>
                           </p>
                         </CardContent>
                         <CardFooter className="flex justify-end gap-1 px-4 pb-4 pt-0">
@@ -408,7 +410,7 @@ export default function Restaurant() {
                             className="p-2 text-xs"
                             icon={<FiRotateCw className="w-4 h-4" />}
                             onClick={() => handleRestore(r.id ?? '', r.name ?? '')}
-                            title="Restore"
+                            title={t('common.restore')}
                           />
                         </CardFooter>
                       </Card>
@@ -421,17 +423,17 @@ export default function Restaurant() {
                   <Table>
                     <TableHead>
                       <tr className="bg-gray-100 dark:bg-slate-900">
-                        <TableHeadCell className="text-gray-600 dark:text-slate-100">Name</TableHeadCell>
-                        <TableHeadCell className="text-gray-600 dark:text-slate-100">Address</TableHeadCell>
-                        <TableHeadCell className="text-gray-600 dark:text-slate-100">City</TableHeadCell>
-                        <TableHeadCell className="text-gray-600 dark:text-slate-100">Province</TableHeadCell>
-                        <TableHeadCell className="text-gray-600 dark:text-slate-100">Zip</TableHeadCell>
-                        <TableHeadCell className="text-gray-600 dark:text-slate-100">Country</TableHeadCell>
-                        <TableHeadCell className="text-gray-600 dark:text-slate-100">Active Menu</TableHeadCell>
-                        <TableHeadCell className="text-gray-600 dark:text-slate-100">Created</TableHeadCell>
-                        <TableHeadCell className="text-gray-600 dark:text-slate-100">Opening Hours</TableHeadCell>
-                        <TableHeadCell className="text-gray-600 dark:text-slate-100">Deleted By</TableHeadCell>
-                        <TableHeadCell className="text-gray-600 dark:text-slate-100">Actions</TableHeadCell>
+                        <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('restaurantPage.name')}</TableHeadCell>
+                        <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('restaurantPage.address')}</TableHeadCell>
+                        <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('restaurantPage.city')}</TableHeadCell>
+                        <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('common.province')}</TableHeadCell>
+                        <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('common.zipCode')}</TableHeadCell>
+                        <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('common.country')}</TableHeadCell>
+                        <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('restaurantPage.activeMenuColumn')}</TableHeadCell>
+                        <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('restaurantPage.created')}</TableHeadCell>
+                        <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('restaurantPage.openingHours')}</TableHeadCell>
+                        <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('productsPage.deletedBy')}</TableHeadCell>
+                        <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('restaurantPage.actions')}</TableHeadCell>
                       </tr>
                     </TableHead>
                     <TableBody>
@@ -456,7 +458,7 @@ export default function Restaurant() {
                                   </span>
                                 ))
                               ) : (
-                                <span className="text-xs text-gray-400">No active menu</span>
+                                <span className="text-xs text-gray-400">{t('restaurantPage.noActiveMenu')}</span>
                               )}
                             </TableCell>
                             <TableCell className="text-gray-600">{r.createdAt ? new Date(String(r.createdAt)).toLocaleString() : ''}</TableCell>
@@ -465,11 +467,11 @@ export default function Restaurant() {
                                 <span>
                                   {`${r.openingHours[0].day}: ${r.openingHours[0].open}-${r.openingHours[0].close}`}
                                   {r.openingHours.length > 1 && (
-                                    <HoursTooltip hours={r.openingHours} />
+                                    <HoursTooltip hours={r.openingHours} t={t} />
                                   )}
                                 </span>
                               ) : (
-                                <span className="text-xs text-gray-400">No hours</span>
+                                <span className="text-xs text-gray-400">{t('restaurantPage.noHours')}</span>
                               )}
                             </TableCell>
                             <TableCell className="text-gray-500 text-sm">{String(r.deletedBy ?? '')}</TableCell>

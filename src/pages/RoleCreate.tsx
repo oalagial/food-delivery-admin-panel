@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Input } from '../components/ui/input'
 import { Button } from '../components/ui/button'
@@ -11,6 +12,7 @@ import { getRoleById } from '../utils/api'
 import { API_BASE } from '../config'
 
 export default function RoleCreate() {
+  const { t } = useTranslation()
   const { id } = useParams<{ id?: string }>()
   const navigate = useNavigate()
 
@@ -32,11 +34,11 @@ export default function RoleCreate() {
 
           })
         )} else {
-          setError('Role not found')
+          setError(t('common.roleNotFound'))
         }
       })
       .catch((err) => {
-        setError(err?.message || 'Failed to load role')
+        setError(err?.message || t('common.failedLoadRole'))
       })
     // ;(async () => {
     //   try {
@@ -62,7 +64,7 @@ export default function RoleCreate() {
     try {
       const payload = { name: String(form.name).trim(), description: String(form.description).trim() }
       if (!payload.name) {
-        setError('Name is required')
+        setError(t('common.validationNameRequired'))
         setSaving(false)
         return
       }
@@ -90,13 +92,13 @@ export default function RoleCreate() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">{id ? 'Edit Role' : 'Create Role'}</h1>
+        <h1 className="text-3xl font-bold">{id ? t('createForms.editRole') : t('createForms.createRole')}</h1>
       </div>
 
       <Card className="shadow-md">
         <CardHeader>
-          <CardTitle>{id ? 'Update Role' : 'New Role'}</CardTitle>
-          <CardDescription>Define role details and permissions</CardDescription>
+          <CardTitle>{id ? t('createForms.editRole') : t('createForms.newRole')}</CardTitle>
+          <CardDescription>{t('common.roleDetails')}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSave} className="space-y-6">
@@ -108,31 +110,31 @@ export default function RoleCreate() {
             )}
 
             <div>
-              <Label htmlFor="name">Role Name *</Label>
+              <Label htmlFor="name">{t('common.roleName')} *</Label>
               <Input 
                 id="name"
                 className="mt-2 w-full"
                 value={form.name} 
                 onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} 
-                placeholder="e.g., Manager, Editor" 
+                placeholder={t('common.roleNamePh')} 
                 required 
               />
             </div>
 
             <div>
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t('common.description')}</Label>
               <Textarea 
                 id="description"
                 className="mt-2 w-full"
                 value={form.description} 
                 onChange={(e) => setForm((s) => ({ ...s, description: e.target.value }))} 
-                placeholder="Describe what this role can do..."
+                placeholder={t('common.roleDescPh')}
               />
             </div>
 
             <div className="flex justify-end gap-3 pt-4">
-              <Link to="/roles"><Button variant="default" type="button">Cancel</Button></Link>
-              <Button variant="primary" type="submit" disabled={saving}>{saving ? (id ? 'Saving...' : 'Creating...') : (id ? 'Update' : 'Create')}</Button>
+              <Link to="/roles"><Button variant="default" type="button">{t('common.cancel')}</Button></Link>
+              <Button variant="primary" type="submit" disabled={saving}>{saving ? (id ? t('common.saving') : t('common.creating')) : (id ? t('common.update') : t('common.create'))}</Button>
             </div>
           </form>
         </CardContent>

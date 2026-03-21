@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { createOffer, getOfferById, getProductsList, getRestaurantsList, updateOffer, type CreateOfferPayload, type OfferGroup, type Product, type Restaurant } from "../utils/api"
 import { Button } from "../components/ui/button"
@@ -11,6 +12,7 @@ import { Alert, AlertDescription } from "../components/ui/alert"
 import { AlertCircle } from "lucide-react"
 
 export default function OfferCreate () {
+  const { t } = useTranslation()
   const { id } = useParams<{ id?: string }>()
   const editing = !!id;
   const navigate = useNavigate()
@@ -172,12 +174,12 @@ export default function OfferCreate () {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">
-          {editing ? 'Edit Offer' : 'Create Offer'}
+          {editing ? t('createForms.editOffer') : t('createForms.createOffer')}
         </h1>
       </div>
       {loading ? (
         <Card className="shadow-md">
-          <CardContent className="pt-6">Loading...</CardContent>
+          <CardContent className="pt-6">{t('common.loading')}</CardContent>
         </Card>
       ) : (
         <form
@@ -188,13 +190,13 @@ export default function OfferCreate () {
           <Card className="shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg">
-                {editing ? 'Update Offer' : 'New Offer'}
+                {editing ? t('createForms.updateOffer') : t('createForms.newOffer')}
               </CardTitle>
-              <CardDescription>Fill in the offer details</CardDescription>
+              <CardDescription>{t('common.fillOfferDetails')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="name">Offer Name *</Label>
+                <Label htmlFor="name">{t('createForms.offerNameStar')}</Label>
                 <Input
                   id="name"
                   className="mt-1.5 w-full"
@@ -206,13 +208,13 @@ export default function OfferCreate () {
                   onChange={(e) =>
                     setForm((s) => ({ ...s, name: e.target.value }))
                   }
-                  placeholder="Offer name"
+                  placeholder={t('createForms.offerNamePh')}
                   required
                 />
               </div>
 
               <div>
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">{t('common.description')}</Label>
                 <Input
                   id="description"
                   className="mt-1.5 w-full"
@@ -220,13 +222,13 @@ export default function OfferCreate () {
                   onChange={(e) =>
                     setForm((s) => ({ ...s, description: e.target.value }))
                   }
-                  placeholder="Offer description"
+                  placeholder={t('common.offerDescriptionPh')}
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="price">Price (€) *</Label>
+                  <Label htmlFor="price">{t('createForms.offerPriceStar')}</Label>
                   <Input
                     id="price"
                     type="number"
@@ -239,13 +241,13 @@ export default function OfferCreate () {
                         price: Number(e.target.value),
                       }))
                     }
-                    placeholder="Offer price"
+                    placeholder={t('common.offerPricePh')}
                     required
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="restaurant">Restaurant *</Label>
+                  <Label htmlFor="restaurant">{t('common.restaurant')} *</Label>
                   <Select
                     id="restaurant"
                     className="mt-1.5 w-full"
@@ -258,17 +260,17 @@ export default function OfferCreate () {
                     }
                     required
                   >
-                    <option value="">Select a restaurant</option>
+                    <option value="">{t('common.selectRestaurant')}</option>
                     {restaurants.map((r) => (
                       <option key={String(r.id)} value={String(r.id)}>
-                        {r.name ?? String(r.id)}
+                        {r.name ?? t('common.idDisplay', { id: r.id })}
                       </option>
                     ))}
                   </Select>
                 </div>
 
                 <div>
-                  <Label htmlFor="menu">Menu *</Label>
+                  <Label htmlFor="menu">{t('createForms.menuFieldStar')}</Label>
                   <Select
                     id="menu"
                     className="mt-1.5 w-full"
@@ -282,7 +284,7 @@ export default function OfferCreate () {
                     required
                     disabled={!form.restaurantId}
                   >
-                    <option value="">Select a menu</option>
+                    <option value="">{t('common.selectMenu')}</option>
                     {selectedRestaurant?.menu &&
                       (Array.isArray(selectedRestaurant.menu) ? (
                         selectedRestaurant.menu.map((m) => (
@@ -316,7 +318,7 @@ export default function OfferCreate () {
                   htmlFor="available"
                   className="mb-0 cursor-pointer text-sm"
                 >
-                  Active offer
+                  {t('common.activeOffer')}
                 </Label>
               </div>
             </CardContent>
@@ -325,9 +327,9 @@ export default function OfferCreate () {
           {/* Groups & products */}
           <Card className="shadow-sm lg:col-span-2">
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Offer groups</CardTitle>
+              <CardTitle className="text-lg">{t('common.offerGroups')}</CardTitle>
               <CardDescription>
-                Configure groups and assign products to each group
+                {t('common.offerGroupsDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -339,7 +341,7 @@ export default function OfferCreate () {
               )}
 
               <Button type="button" variant="default" size="sm" onClick={addGroup}>
-                Add Group
+                {t('createForms.addGroup')}
               </Button>
 
               <div className="space-y-4">
@@ -351,7 +353,7 @@ export default function OfferCreate () {
                     <div className="p-4 space-y-4">
                       <div className="flex justify-between items-center">
                         <h3 className="text-sm font-semibold">
-                          Group {index + 1}
+                          {t('common.groupNumber', { n: index + 1 })}
                         </h3>
                         <Button
                           type="button"
@@ -360,13 +362,13 @@ export default function OfferCreate () {
                           className="text-red-600 dark:text-red-400 text-xs font-semibold"
                           onClick={() => removeGroup(index)}
                         >
-                          Remove Group
+                          {t('createForms.removeGroup')}
                         </Button>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
-                          <Label htmlFor={`groupName-${index}`}>Group Name</Label>
+                          <Label htmlFor={`groupName-${index}`}>{t('createForms.groupName')}</Label>
                           <Input
                             id={`groupName-${index}`}
                             className="mt-1"
@@ -385,7 +387,7 @@ export default function OfferCreate () {
                         </div>
 
                         <div>
-                          <Label htmlFor={`minItems-${index}`}>Minimum Items</Label>
+                          <Label htmlFor={`minItems-${index}`}>{t('offersPage.minSelected')}</Label>
                           <Input
                             id={`minItems-${index}`}
                             className="mt-1"
@@ -407,7 +409,7 @@ export default function OfferCreate () {
                         </div>
 
                         <div>
-                          <Label htmlFor={`maxItems-${index}`}>Maximum Items</Label>
+                          <Label htmlFor={`maxItems-${index}`}>{t('offersPage.maxSelected')}</Label>
                           <Input
                             id={`maxItems-${index}`}
                             className="mt-1"
@@ -430,19 +432,19 @@ export default function OfferCreate () {
                       </div>
 
                       <div>
-                        <Label>Products</Label>
+                        <Label>{t('common.products')}</Label>
                         <div className="flex gap-4 mt-2">
                           {/* Available */}
                           <div className="flex-1">
                             <div className="font-semibold mb-1 text-sm">
-                              Available
+                              {t('common.available')}
                             </div>
                             <div className="border rounded p-2 h-48 overflow-y-auto bg-white dark:bg-slate-900">
                               {products.filter(
                                 (p) => !g.productsIds.includes(Number(p.id)),
                               ).length === 0 && (
                                 <div className="text-xs text-gray-400">
-                                  No more products
+                                  {t('createForms.noMoreProducts')}
                                 </div>
                               )}
 
@@ -463,7 +465,7 @@ export default function OfferCreate () {
                                       className="text-green-600 text-xs font-bold"
                                       onClick={() => addProductToGroup(index, p.id)}
                                     >
-                                      Add
+                                      {t('common.add')}
                                     </Button>
                                   </div>
                                 ))}
@@ -473,12 +475,12 @@ export default function OfferCreate () {
                           {/* Selected */}
                           <div className="flex-1">
                             <div className="font-semibold mb-1 text-sm">
-                              Selected
+                              {t('common.selected')}
                             </div>
                             <div className="border rounded p-2 h-48 overflow-y-auto bg-white dark:bg-slate-900">
                               {g.productsIds.length === 0 && (
                                 <div className="text-xs text-gray-400">
-                                  No products selected
+                                  {t('createForms.noProductsSelected')}
                                 </div>
                               )}
 
@@ -501,7 +503,7 @@ export default function OfferCreate () {
                                         removeProductFromGroup(index, p.id)
                                       }
                                     >
-                                      Remove
+                                      {t('common.remove')}
                                     </Button>
                                   </div>
                                 ))}
@@ -510,8 +512,7 @@ export default function OfferCreate () {
                         </div>
 
                         <p className="mt-1 text-xs text-gray-500">
-                          Click &quot;Add&quot; to select, &quot;Remove&quot; to
-                          unselect.
+                          {t('common.pickerHintAddRemove')}
                         </p>
                       </div>
                     </div>
@@ -522,7 +523,7 @@ export default function OfferCreate () {
               <div className="flex flex-wrap justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
                 <Link to="/offers">
                   <Button variant="default" type="button">
-                    Cancel
+                    {t('common.cancel')}
                   </Button>
                 </Link>
                 <Button
@@ -532,11 +533,11 @@ export default function OfferCreate () {
                 >
                   {saving
                     ? id
-                      ? 'Saving...'
-                      : 'Creating...'
+                      ? t('common.saving')
+                      : t('common.creating')
                     : id
-                    ? 'Update'
-                    : 'Create'}
+                    ? t('common.update')
+                    : t('common.create')}
                 </Button>
               </div>
             </CardContent>

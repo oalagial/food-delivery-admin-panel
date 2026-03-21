@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { FiPlus, FiEdit, FiTrash, FiCheckCircle, FiXCircle, FiAlertCircle } from 'react-icons/fi'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
@@ -9,7 +10,60 @@ import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert'
 import { getDeliveryLocationsList, getRestaurantsList, updateDeliveryLocation, deleteDeliveryLocation } from '../utils/api'
 import type { CreateDeliveryLocationPayload as DeliveryLocation, Restaurant as RestaurantType } from '../utils/api'
 
+function renderRestaurantsCell(
+  loc: Partial<DeliveryLocation>,
+  restaurantsMap: Record<string, string>,
+  t: (key: string, opts?: Record<string, unknown>) => string
+) {
+  const anyLoc = loc as unknown as Record<string, unknown>
+  const maybeArray = (key: string): unknown[] | null => {
+    const v = anyLoc[key]
+    return Array.isArray(v) ? (v as unknown[]) : null
+  }
+  const list = maybeArray('deliveredBy') ?? maybeArray('deliveredByRestaurants') ?? maybeArray('delivedByRestaurants') ?? []
+
+  if (list.length === 0) return <span className="text-xs text-gray-400">{t('common.noneLinked')}</span>
+
+  return (
+    <div className="flex flex-col gap-1">
+      {list.map((d, idx) => {
+        const item = d as Record<string, unknown>
+        let name = ''
+        if (typeof item.name === 'string' || item.id !== undefined) {
+          name = String(item.name ?? item.id)
+        } else if (item.restaurantId !== undefined) {
+          name = restaurantsMap[String(item.restaurantId ?? '')] ?? String(item.restaurantId ?? '')
+        }
+        const fee =
+          typeof item.deliveryFee === 'number' || typeof item.deliveryFee === 'string'
+            ? t('deliveryLocationsPage.feeBadge', { amount: String(item.deliveryFee) })
+            : ''
+        const min =
+          typeof item.minOrder === 'number' || typeof item.minOrder === 'string'
+            ? t('deliveryLocationsPage.minBadge', { amount: String(item.minOrder) })
+            : ''
+        const minTimeRaw = item.minDeliveryTimeMinutes
+        const minTime =
+          typeof minTimeRaw === 'number' || typeof minTimeRaw === 'string'
+            ? t('deliveryLocationsPage.minTimeBadge', { minutes: String(minTimeRaw) })
+            : ''
+        const inactive = item.isActive === false
+        return (
+          <span key={idx} className={inactive ? 'opacity-60' : ''}>
+            <span className="font-medium">{name}</span>
+            {fee && <span className="ml-2 bg-gray-100 text-gray-800 rounded px-2 py-0.5 text-xs">{fee}</span>}
+            {min && <span className="ml-2 bg-gray-100 text-gray-800 rounded px-2 py-0.5 text-xs">{min}</span>}
+            {minTime && <span className="ml-2 bg-gray-100 text-gray-800 rounded px-2 py-0.5 text-xs">{minTime}</span>}
+            {inactive && <span className="ml-2 bg-red-200 text-red-800 rounded px-2 py-0.5 text-xs">{t('common.inactive')}</span>}
+          </span>
+        )
+      })}
+    </div>
+  )
+}
+
 export default function DeliveryLocations() {
+  const { t } = useTranslation()
   const [locations, setLocations] = useState<Partial<DeliveryLocation>[]>([])
   const [restaurantsMap, setRestaurantsMap] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
@@ -46,7 +100,7 @@ export default function DeliveryLocations() {
         setError(null)
       } catch (err: unknown) {
         if (!mounted) return
-        setError(err instanceof Error ? err.message : String(err) || 'Failed to load')
+        setError(err instanceof Error ? err.message : String(err) || t('common.failedToLoad'))
         setLocations([])
       } finally {
         if (mounted) setLoading(false)
@@ -73,7 +127,7 @@ export default function DeliveryLocations() {
   const openConfirmDialog = (loc: Partial<DeliveryLocation>) => {
     const locId = (loc as any).id
     if (!locId) return
-    setConfirmDialog({ show: true, id: String(locId), name: loc.name ?? 'this location' })
+    setConfirmDialog({ show: true, id: String(locId), name: loc.name ?? t('deliveryLocationsPage.defaultLocationName') })
   }
 
   const closeConfirmDialog = () => {
@@ -90,7 +144,7 @@ export default function DeliveryLocations() {
       setError(null)
       closeConfirmDialog()
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : String(err) || 'Failed to delete location')
+      setError(err instanceof Error ? err.message : String(err) || t('common.failedSave'))
       closeConfirmDialog()
     }
   }
@@ -123,47 +177,9 @@ export default function DeliveryLocations() {
       setLocations(locsArray as unknown as Partial<DeliveryLocation>[])
       setError(null)
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : String(err) || 'Failed to update location')
+      setError(err instanceof Error ? err.message : String(err) || t('common.failedSave'))
     }
   }
-
-  // Helper function to render restaurants cell
-  const renderRestaurantsCell = (loc: Partial<DeliveryLocation>) => {
-    const anyLoc = loc as unknown as Record<string, unknown>
-    // Try several possible shapes returned by different API versions
-    const maybeArray = (key: string): unknown[] | null => {
-      const v = anyLoc[key]
-      return Array.isArray(v) ? (v as unknown[]) : null
-    }
-    const list = maybeArray('deliveredBy') ?? maybeArray('deliveredByRestaurants') ?? maybeArray('delivedByRestaurants') ?? []
-
-    if (list.length === 0) return <span className="text-xs text-gray-400">None</span>;
-
-    return (
-      <div className="flex flex-col gap-1">
-        {list.map((d, idx) => {
-          const item = d as Record<string, unknown>
-          let name = ''
-          if (typeof item.name === 'string' || item.id !== undefined) {
-            name = String(item.name ?? item.id)
-          } else if (item.restaurantId !== undefined) {
-            name = restaurantsMap[String(item.restaurantId ?? '')] ?? String(item.restaurantId ?? '')
-          }
-          const fee = (typeof item.deliveryFee === 'number' || typeof item.deliveryFee === 'string') ? `Fee: €${String(item.deliveryFee)}` : ''
-          const min = (typeof item.minOrder === 'number' || typeof item.minOrder === 'string') ? `Min: €${String(item.minOrder)}` : ''
-          const inactive = item.isActive === false
-          return (
-            <span key={idx} className={inactive ? 'opacity-60' : ''}>
-              <span className="font-medium">{name}</span>
-              {fee && <span className="ml-2 bg-gray-100 text-gray-800 rounded px-2 py-0.5 text-xs">{fee}</span>}
-              {min && <span className="ml-2 bg-gray-100 text-gray-800 rounded px-2 py-0.5 text-xs">{min}</span>}
-              {inactive && <span className="ml-2 bg-red-200 text-red-800 rounded px-2 py-0.5 text-xs">Inactive</span>}
-            </span>
-          )
-        })}
-      </div>
-    );
-  };
 
   return (
     <div className="space-y-6">
@@ -179,15 +195,15 @@ export default function DeliveryLocations() {
             <div className="p-6">
               <Alert variant="destructive">
                 <FiAlertCircle className="h-4 w-4" />
-                <AlertTitle>Delete location</AlertTitle>
+                <AlertTitle>{t('deliveryLocationsPage.deleteTitle')}</AlertTitle>
                 <AlertDescription>
-                  Are you sure you want to delete &quot;{confirmDialog.name}&quot;? This action cannot be undone.
+                  {t('deliveryLocationsPage.deletePermanent', { name: confirmDialog.name ?? '' })}
                 </AlertDescription>
               </Alert>
               <div className="flex justify-end gap-3 mt-6">
-                <Button variant="ghost" onClick={closeConfirmDialog}>Cancel</Button>
+                <Button variant="ghost" onClick={closeConfirmDialog}>{t('common.cancel')}</Button>
                 <Button variant="danger" onClick={handleConfirmDelete}>
-                  Delete
+                  {t('common.delete')}
                 </Button>
               </div>
             </div>
@@ -197,8 +213,8 @@ export default function DeliveryLocations() {
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Delivery Locations</h1>
-          <p className="text-gray-600 mt-1 dark:text-slate-400">Manage delivery zones and locations</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{t('deliveryLocationsPage.title')}</h1>
+          <p className="text-gray-600 mt-1 dark:text-slate-400">{t('deliveryLocationsPage.subtitle')}</p>
         </div>
         <Link to="/delivery-locations/creation" className="w-full sm:w-auto">
           <Button
@@ -206,7 +222,7 @@ export default function DeliveryLocations() {
             icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
             className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
           >
-            <span className="sm:inline">Create Location</span>
+            <span className="sm:inline">{t('deliveryLocationsPage.create')}</span>
           </Button>
         </Link>
       </div>
@@ -218,15 +234,15 @@ export default function DeliveryLocations() {
           <Table>
             <TableHead>
               <tr>
-                <TableHeadCell>Name</TableHeadCell>
-                <TableHeadCell>Address</TableHeadCell>
-                <TableHeadCell>City</TableHeadCell>
-                <TableHeadCell>Province</TableHeadCell>
-                <TableHeadCell>Zip</TableHeadCell>
-                <TableHeadCell>Country</TableHeadCell>
-                <TableHeadCell>Active</TableHeadCell>
-                <TableHeadCell>Restaurants</TableHeadCell>
-                <TableHeadCell>Actions</TableHeadCell>
+                <TableHeadCell>{t('deliveryLocationsPage.name')}</TableHeadCell>
+                <TableHeadCell>{t('deliveryLocationsPage.address')}</TableHeadCell>
+                <TableHeadCell>{t('deliveryLocationsPage.city')}</TableHeadCell>
+                <TableHeadCell>{t('common.province')}</TableHeadCell>
+                <TableHeadCell>{t('common.zipCode')}</TableHeadCell>
+                <TableHeadCell>{t('common.country')}</TableHeadCell>
+                <TableHeadCell>{t('deliveryLocationsPage.active')}</TableHeadCell>
+                <TableHeadCell>{t('deliveryLocationsPage.restaurantsLabel')}</TableHeadCell>
+                <TableHeadCell>{t('deliveryLocationsPage.actions')}</TableHeadCell>
               </tr>
             </TableHead>
             <TableBody>
@@ -243,13 +259,13 @@ export default function DeliveryLocations() {
       ) : (
         <>
           <div className="mt-4">
-            <h2 className="text-2xl font-semibold mb-4">Active Delivery Locations</h2>
+            <h2 className="text-2xl font-semibold mb-4">{t('deliveryLocationsPage.activeHeading')}</h2>
 
             {/* Mobile: cards */}
             <div className="space-y-3 md:hidden">
               {activeLocations.length === 0 ? (
                 <p className="text-sm">
-                  No active delivery locations found.
+                  {t('deliveryLocationsPage.noActive')}
                 </p>
               ) : (
                 activeLocations.map((loc) => (
@@ -276,12 +292,12 @@ export default function DeliveryLocations() {
                             : 'bg-red-100 text-red-700'
                             }`}
                         >
-                          {loc.isActive ? 'Active' : 'Inactive'}
+                          {loc.isActive ? t('common.active') : t('common.inactive')}
                         </span>
                       </p>
                       <div className="text-xs">
-                        <span className="font-semibold">Restaurants:</span>{' '}
-                        {renderRestaurantsCell(loc)}
+                        <span className="font-semibold">{t('deliveryLocationsPage.restaurantsLabel')}:</span>{' '}
+                        {renderRestaurantsCell(loc, restaurantsMap, t)}
                       </div>
                     </CardContent>
                     <CardFooter className="flex justify-end gap-1 px-4 pb-4 pt-0">
@@ -305,7 +321,7 @@ export default function DeliveryLocations() {
                           )
                         }
                         onClick={() => toggleActiveStatus(loc)}
-                        title={loc.isActive ? 'Deactivate' : 'Activate'}
+                        title={loc.isActive ? t('common.deactivate') : t('common.activate')}
                       />
                       <Button
                         variant="danger"
@@ -313,7 +329,7 @@ export default function DeliveryLocations() {
                         className="p-2 text-xs"
                         icon={<FiTrash className="w-4 h-4" />}
                         onClick={() => openConfirmDialog(loc)}
-                        title="Delete"
+                        title={t('common.delete')}
                       />
                     </CardFooter>
                   </Card>
@@ -326,21 +342,21 @@ export default function DeliveryLocations() {
               <Table>
                 <TableHead>
                   <tr>
-                    <TableHeadCell>Name</TableHeadCell>
-                    <TableHeadCell>Address</TableHeadCell>
-                    <TableHeadCell>City</TableHeadCell>
-                    <TableHeadCell>Province</TableHeadCell>
-                    <TableHeadCell>Zip</TableHeadCell>
-                    <TableHeadCell>Country</TableHeadCell>
-                    <TableHeadCell>Active</TableHeadCell>
-                    <TableHeadCell>Restaurants</TableHeadCell>
-                    <TableHeadCell>Actions</TableHeadCell>
+                    <TableHeadCell>{t('deliveryLocationsPage.name')}</TableHeadCell>
+                    <TableHeadCell>{t('deliveryLocationsPage.address')}</TableHeadCell>
+                    <TableHeadCell>{t('deliveryLocationsPage.city')}</TableHeadCell>
+                    <TableHeadCell>{t('common.province')}</TableHeadCell>
+                    <TableHeadCell>{t('common.zipCode')}</TableHeadCell>
+                    <TableHeadCell>{t('common.country')}</TableHeadCell>
+                    <TableHeadCell>{t('deliveryLocationsPage.active')}</TableHeadCell>
+                    <TableHeadCell>{t('deliveryLocationsPage.restaurantsLabel')}</TableHeadCell>
+                    <TableHeadCell>{t('deliveryLocationsPage.actions')}</TableHeadCell>
                   </tr>
                 </TableHead>
                 <TableBody>
                   {activeLocations.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={11}>No active delivery locations found.</TableCell>
+                      <TableCell colSpan={9}>{t('deliveryLocationsPage.noActive')}</TableCell>
                     </TableRow>
                   )}
 
@@ -352,8 +368,8 @@ export default function DeliveryLocations() {
                       <TableCell>{loc.province ?? ''}</TableCell>
                       <TableCell>{loc.zipCode ?? ''}</TableCell>
                       <TableCell>{loc.country ?? ''}</TableCell>
-                      <TableCell>{loc.isActive ? 'Yes' : 'No'}</TableCell>
-                      <TableCell>{renderRestaurantsCell(loc)}</TableCell>
+                      <TableCell>{loc.isActive ? t('deliveryLocationsPage.yes') : t('deliveryLocationsPage.no')}</TableCell>
+                      <TableCell>{renderRestaurantsCell(loc, restaurantsMap, t)}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <Link to={`/delivery-locations/creation/${encodeURIComponent(String(loc.id ?? ''))}`}><Button variant="ghost" className='p-2' size="sm" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
@@ -363,9 +379,9 @@ export default function DeliveryLocations() {
                             className='p-2'
                             icon={loc.isActive ? <FiCheckCircle className="w-4 h-4 text-green-600" /> : <FiXCircle className="w-4 h-4 text-red-600" />}
                             onClick={() => toggleActiveStatus(loc)}
-                            title={loc.isActive ? "Deactivate" : "Activate"}
+                            title={loc.isActive ? t('common.deactivate') : t('common.activate')}
                           ></Button>
-                          <Button variant="danger" size="sm" className='p-2' icon={<FiTrash className="w-4 h-4" />} onClick={() => openConfirmDialog(loc)} title="Delete" />
+                          <Button variant="danger" size="sm" className='p-2' icon={<FiTrash className="w-4 h-4" />} onClick={() => openConfirmDialog(loc)} title={t('common.delete')} />
                         </div>
                       </TableCell>
                     </TableRow>
@@ -377,7 +393,7 @@ export default function DeliveryLocations() {
 
           {deletedLocations.length > 0 && (
             <div className="mt-8">
-              <h2 className="text-2xl font-semibold mb-4">Deleted Delivery Locations</h2>
+              <h2 className="text-2xl font-semibold mb-4">{t('deliveryLocationsPage.deletedHeading')}</h2>
 
               {/* Mobile: cards for deleted */}
               <div className="space-y-3 md:hidden">
@@ -407,15 +423,15 @@ export default function DeliveryLocations() {
                               : 'bg-red-100 text-red-700'
                               }`}
                           >
-                            {loc.isActive ? 'Active' : 'Inactive'}
+                            {loc.isActive ? t('common.active') : t('common.inactive')}
                           </span>
                         </p>
                         <div className="text-xs">
-                          <span className="font-semibold">Restaurants:</span>{' '}
-                          {renderRestaurantsCell(loc)}
+                          <span className="font-semibold">{t('deliveryLocationsPage.restaurantsLabel')}:</span>{' '}
+                          {renderRestaurantsCell(loc, restaurantsMap, t)}
                         </div>
                         <p className="text-[11px]">
-                          Deleted by:{' '}
+                          {t('productsPage.deletedBy')}:{' '}
                           <span className="font-medium">
                             {String(anyLoc.deletedBy ?? '')}
                           </span>
@@ -431,15 +447,15 @@ export default function DeliveryLocations() {
                 <Table>
                   <TableHead>
                     <tr className="bg-gray-100 dark:bg-slate-900">
-                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Name</TableHeadCell>
-                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Address</TableHeadCell>
-                      <TableHeadCell className="text-gray-600 dark:text-slate-100">City</TableHeadCell>
-                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Province</TableHeadCell>
-                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Zip</TableHeadCell>
-                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Country</TableHeadCell>
-                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Active</TableHeadCell>
-                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Restaurants</TableHeadCell>
-                      <TableHeadCell className="text-gray-600 dark:text-slate-100">Deleted By</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('deliveryLocationsPage.name')}</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('deliveryLocationsPage.address')}</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('deliveryLocationsPage.city')}</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('common.province')}</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('common.zipCode')}</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('common.country')}</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('deliveryLocationsPage.active')}</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('deliveryLocationsPage.restaurantsLabel')}</TableHeadCell>
+                      <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('productsPage.deletedBy')}</TableHeadCell>
                     </tr>
                   </TableHead>
                   <TableBody>
@@ -453,8 +469,8 @@ export default function DeliveryLocations() {
                           <TableCell className="text-gray-600">{loc.province ?? ''}</TableCell>
                           <TableCell className="text-gray-600">{loc.zipCode ?? ''}</TableCell>
                           <TableCell className="text-gray-600">{loc.country ?? ''}</TableCell>
-                          <TableCell className="text-gray-600">{loc.isActive ? 'Yes' : 'No'}</TableCell>
-                          <TableCell className="text-gray-600">{renderRestaurantsCell(loc)}</TableCell>
+                          <TableCell className="text-gray-600">{loc.isActive ? t('deliveryLocationsPage.yes') : t('deliveryLocationsPage.no')}</TableCell>
+                          <TableCell className="text-gray-600">{renderRestaurantsCell(loc, restaurantsMap, t)}</TableCell>
                           <TableCell className="text-gray-500 text-sm">{String(anyLoc.deletedBy ?? '')}</TableCell>
                         </TableRow>
                       )

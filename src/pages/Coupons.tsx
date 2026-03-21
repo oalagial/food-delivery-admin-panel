@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { Button } from '../components/ui/button'
@@ -21,11 +22,6 @@ function formatDiscount(coupon: Coupon): string {
   return `${val} €`
 }
 
-function scopeLabel(coupon: Coupon): string {
-  if (coupon.customerId != null) return 'Per customer'
-  return 'General'
-}
-
 type CouponRowProps = {
   coupon: Coupon
   onDelete?: (id: number, name: string) => void
@@ -36,8 +32,10 @@ type CouponRowProps = {
 }
 
 function CouponRow({ coupon, onDelete, onRestore, onToggleActive, isDeleted = false, isDeleting = false }: CouponRowProps) {
+  const { t } = useTranslation()
   const anyCoupon = coupon as unknown as Record<string, unknown>
   const deletedBy = anyCoupon.deletedBy
+  const scope = coupon.customerId != null ? t('couponsPage.scopePerCustomer') : t('common.general')
 
   return (
     <TableRow className={isDeleted ? 'bg-gray-50 opacity-75 dark:bg-slate-800' : ''}>
@@ -45,28 +43,28 @@ function CouponRow({ coupon, onDelete, onRestore, onToggleActive, isDeleted = fa
         <span className="font-mono font-medium">{coupon.code}</span>
       </TableCell>
       <TableCell className={isDeleted ? 'text-gray-600 dark:text-slate-400' : ''}>{coupon.name}</TableCell>
-      <TableCell className={isDeleted ? 'text-gray-600 dark:text-slate-400' : ''}>{scopeLabel(coupon)}</TableCell>
+      <TableCell className={isDeleted ? 'text-gray-600 dark:text-slate-400' : ''}>{scope}</TableCell>
       <TableCell className={isDeleted ? 'text-gray-600 dark:text-slate-400' : ''}>
-        {coupon.restaurantId == null ? '—' : coupon.restaurant?.name ?? `ID ${coupon.restaurantId}`}
+        {coupon.restaurantId == null ? t('common.emDash') : coupon.restaurant?.name ?? t('common.idDisplay', { id: coupon.restaurantId })}
       </TableCell>
       <TableCell className={isDeleted ? 'text-gray-600 dark:text-slate-400' : ''}>
         {coupon.customerId == null ? '—' : (() => {
           const c = coupon.customer
-          if (!c) return `ID ${coupon.customerId}`
+          if (!c) return t('common.idDisplay', { id: coupon.customerId })
           const name = c.name?.trim()
           const email = c.email?.trim()
           if (name && email) return `${name} (${email})`
-          return email || name || `ID ${coupon.customerId}`
+          return email || name || t('common.idDisplay', { id: coupon.customerId })
         })()}
       </TableCell>
       <TableCell className={isDeleted ? 'text-gray-600 dark:text-slate-400' : ''}>
         {formatDiscount(coupon)}
       </TableCell>
       <TableCell className={isDeleted ? 'text-gray-600 dark:text-slate-400' : ''}>
-        {coupon.startsAt ? new Date(coupon.startsAt).toLocaleDateString() : '—'}
+        {coupon.startsAt ? new Date(coupon.startsAt).toLocaleDateString() : t('common.emDash')}
       </TableCell>
       <TableCell className={isDeleted ? 'text-gray-600 dark:text-slate-400' : ''}>
-        {coupon.endsAt ? new Date(coupon.endsAt).toLocaleDateString() : '—'}
+        {coupon.endsAt ? new Date(coupon.endsAt).toLocaleDateString() : t('common.emDash')}
       </TableCell>
       {!isDeleted && (
         <TableCell className="text-center">
@@ -76,11 +74,11 @@ function CouponRow({ coupon, onDelete, onRestore, onToggleActive, isDeleted = fa
             size="sm"
             className="inline-flex items-center justify-center"
             onClick={() => onToggleActive?.(coupon)}
-            aria-label={coupon.isActive ? 'Deactivate' : 'Activate'}
+            aria-label={coupon.isActive ? t('common.deactivate') : t('common.activate')}
             icon={
               coupon.isActive
-                ? <FiCheckCircle className="w-5 h-5 text-green-500" aria-label="Active" />
-                : <FiXCircle className="w-5 h-5 text-red-500" aria-label="Inactive" />
+                ? <FiCheckCircle className="w-5 h-5 text-green-500" aria-label={t('common.active')} />
+                : <FiXCircle className="w-5 h-5 text-red-500" aria-label={t('common.inactive')} />
             }
           />
         </TableCell>
@@ -121,6 +119,7 @@ function CouponRow({ coupon, onDelete, onRestore, onToggleActive, isDeleted = fa
 }
 
 export default function Coupons() {
+  const { t } = useTranslation()
   const [response, setResponse] = useState<{ data: Coupon[]; total: number; page: number; limit: number; totalPages: number } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -144,7 +143,7 @@ export default function Coupons() {
         setError(null)
       })
       .catch((err) => {
-        setError(err?.message || 'Failed to load')
+        setError(err?.message || t('common.failedToLoad'))
         setResponse(null)
       })
       .finally(() => setLoading(false))
@@ -174,7 +173,7 @@ export default function Coupons() {
       loadCoupons()
       closeConfirm()
     } catch (err) {
-      setError(err instanceof Error ? err.message : `Failed to ${confirmDialog.type}`)
+      setError(err instanceof Error ? err.message : t('common.failedSave'))
       closeConfirm()
     } finally {
       setDeletingId(null)
@@ -195,7 +194,7 @@ export default function Coupons() {
       })
       setError(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update')
+      setError(err instanceof Error ? err.message : t('common.failedSave'))
     }
   }
 
@@ -233,21 +232,21 @@ export default function Coupons() {
               <Alert variant="destructive">
                 <FiAlertCircle className="h-4 w-4" />
                 <AlertTitle>
-                  {confirmDialog.type === 'delete' ? 'Delete coupon' : 'Restore coupon'}
+                  {confirmDialog.type === 'delete' ? t('couponsPage.deleteTitle') : t('couponsPage.restoreTitle')}
                 </AlertTitle>
                 <AlertDescription>
                   {confirmDialog.type === 'delete'
-                    ? `Are you sure you want to delete "${confirmDialog.name}"?`
-                    : `Are you sure you want to restore "${confirmDialog.name}"?`}
+                    ? t('couponsPage.deleteConfirm', { name: confirmDialog.name ?? '' })
+                    : t('couponsPage.restoreConfirm', { name: confirmDialog.name ?? '' })}
                 </AlertDescription>
               </Alert>
               <div className="flex justify-end gap-3 mt-6">
-                <Button variant="ghost" onClick={closeConfirm}>Cancel</Button>
+                <Button variant="ghost" onClick={closeConfirm}>{t('common.cancel')}</Button>
                 <Button
                   variant={confirmDialog.type === 'delete' ? 'danger' : 'primary'}
                   onClick={handleConfirm}
                 >
-                  {confirmDialog.type === 'delete' ? 'Delete' : 'Restore'}
+                  {confirmDialog.type === 'delete' ? t('common.delete') : t('common.restore')}
                 </Button>
               </div>
             </div>
@@ -257,15 +256,15 @@ export default function Coupons() {
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Coupons</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{t('couponsPage.title')}</h1>
           <p className="text-gray-600 mt-1 dark:text-slate-400">
-            General or per-customer coupons
+            {t('createForms.couponSubtitle')}
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
           <div className="w-full sm:w-48">
             <Input
-              placeholder="Search (code/name)..."
+              placeholder={t('couponsPage.searchPh')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -276,7 +275,7 @@ export default function Coupons() {
               icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
               className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
             >
-              <span className="sm:inline">New coupon</span>
+              <span className="sm:inline">{t('createForms.newCoupon')}</span>
             </Button>
           </Link>
         </div>
@@ -295,7 +294,7 @@ export default function Coupons() {
                 : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200'
             }`}
           >
-            General
+            {t('common.general')}
             <span className="ml-1.5 text-xs opacity-80">({generalActive.length})</span>
           </button>
           <button
@@ -307,7 +306,7 @@ export default function Coupons() {
                 : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200'
             }`}
           >
-            Per customer
+            {t('couponsPage.tabPerCustomer')}
             <span className="ml-1.5 text-xs opacity-80">({perCustomerActive.length})</span>
           </button>
         </div>
@@ -317,16 +316,16 @@ export default function Coupons() {
         <Table>
           <TableHead>
             <tr>
-              <TableHeadCell>Code</TableHeadCell>
-              <TableHeadCell>Name</TableHeadCell>
-              <TableHeadCell>Scope</TableHeadCell>
-              <TableHeadCell>Restaurant</TableHeadCell>
-              <TableHeadCell>Customer</TableHeadCell>
-              <TableHeadCell>Discount</TableHeadCell>
-              <TableHeadCell>From</TableHeadCell>
-              <TableHeadCell>To</TableHeadCell>
-              <TableHeadCell>Active</TableHeadCell>
-              <TableHeadCell>Actions</TableHeadCell>
+              <TableHeadCell>{t('couponsPage.code')}</TableHeadCell>
+              <TableHeadCell>{t('couponsPage.name')}</TableHeadCell>
+              <TableHeadCell>{t('common.scope')}</TableHeadCell>
+              <TableHeadCell>{t('common.restaurant')}</TableHeadCell>
+              <TableHeadCell>{t('couponsPage.customerColumn')}</TableHeadCell>
+              <TableHeadCell>{t('couponsPage.discountColumn')}</TableHeadCell>
+              <TableHeadCell>{t('couponsPage.validFrom')}</TableHeadCell>
+              <TableHeadCell>{t('couponsPage.validTo')}</TableHeadCell>
+              <TableHeadCell>{t('common.status')}</TableHeadCell>
+              <TableHeadCell>{t('couponsPage.actions')}</TableHeadCell>
             </tr>
           </TableHead>
           <TableBody>
@@ -347,13 +346,13 @@ export default function Coupons() {
         <>
           <div>
             <h2 className="text-2xl font-semibold text-gray-800 dark:text-slate-100 mb-4">
-              {activeTab === 'general' ? 'General coupons' : 'Per-customer coupons'}
+              {activeTab === 'general' ? t('couponsPage.headingGeneral') : t('couponsPage.headingPerCustomer')}
             </h2>
 
             <div className="space-y-3 md:hidden">
               {filteredActive.length === 0 ? (
                 <p className="text-sm text-gray-500 dark:text-slate-400">
-                  {activeTab === 'general' ? 'No general coupons found.' : 'No per-customer coupons found.'}
+                  {activeTab === 'general' ? t('couponsPage.noGeneral') : t('couponsPage.noPerCustomer')}
                 </p>
               ) : (
                 filteredActive.map((c) => (
@@ -368,20 +367,20 @@ export default function Coupons() {
                           c.isActive ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
                         }`}
                       >
-                        {c.isActive ? 'Active' : 'Inactive'}
+                        {c.isActive ? t('common.active') : t('common.inactive')}
                       </span>
                     </CardHeader>
                     <CardContent className="px-4 pb-4 pt-0 text-xs text-gray-700 dark:text-slate-300 space-y-1">
-                      <p><span className="font-medium">Scope:</span> {scopeLabel(c)} · {formatDiscount(c)}</p>
+                      <p><span className="font-medium">{t('common.scope')}:</span> {(c.customerId != null ? t('couponsPage.scopePerCustomer') : t('common.general'))} · {formatDiscount(c)}</p>
                       {(c.restaurantId != null || c.customerId != null) && (
                         <p>
-                          {c.restaurantId != null && (c.restaurant?.name ?? `Restaurant ${c.restaurantId}`)}
+                          {c.restaurantId != null && (c.restaurant?.name ?? t('common.restaurantWithId', { id: c.restaurantId }))}
                           {c.customerId != null && (() => {
                           const cust = c.customer
-                          if (!cust) return ` · ID ${c.customerId}`
+                          if (!cust) return ` · ${t('common.idDisplay', { id: c.customerId })}`
                           const name = cust.name?.trim()
                           const email = cust.email?.trim()
-                          return ` · ${name && email ? `${name} (${email})` : (email || name || `ID ${c.customerId}`)}`
+                          return ` · ${name && email ? `${name} (${email})` : (email || name || t('common.idDisplay', { id: c.customerId }))}`
                         })()}
                         </p>
                       )}
@@ -400,23 +399,23 @@ export default function Coupons() {
               <Table>
                 <TableHead>
                   <tr>
-                    <TableHeadCell>Code</TableHeadCell>
-                    <TableHeadCell>Name</TableHeadCell>
-                    <TableHeadCell>Scope</TableHeadCell>
-                    <TableHeadCell>Restaurant</TableHeadCell>
-                    <TableHeadCell>Customer</TableHeadCell>
-                    <TableHeadCell>Discount</TableHeadCell>
-                    <TableHeadCell>From</TableHeadCell>
-                    <TableHeadCell>To</TableHeadCell>
-                    <TableHeadCell>Active</TableHeadCell>
-                    <TableHeadCell>Actions</TableHeadCell>
+                    <TableHeadCell>{t('couponsPage.code')}</TableHeadCell>
+                    <TableHeadCell>{t('couponsPage.name')}</TableHeadCell>
+                    <TableHeadCell>{t('common.scope')}</TableHeadCell>
+                    <TableHeadCell>{t('common.restaurant')}</TableHeadCell>
+                    <TableHeadCell>{t('couponsPage.customerColumn')}</TableHeadCell>
+                    <TableHeadCell>{t('couponsPage.discountColumn')}</TableHeadCell>
+                    <TableHeadCell>{t('couponsPage.validFrom')}</TableHeadCell>
+                    <TableHeadCell>{t('couponsPage.validTo')}</TableHeadCell>
+                    <TableHeadCell>{t('common.status')}</TableHeadCell>
+                    <TableHeadCell>{t('couponsPage.actions')}</TableHeadCell>
                   </tr>
                 </TableHead>
                 <TableBody>
                   {filteredActive.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={10} className="text-gray-500 dark:text-slate-400">
-                        {activeTab === 'general' ? 'No general coupons found.' : 'No per-customer coupons found.'}
+                        {activeTab === 'general' ? t('couponsPage.noGeneral') : t('couponsPage.noPerCustomer')}
                       </TableCell>
                     </TableRow>
                   )}
@@ -436,11 +435,11 @@ export default function Coupons() {
             {response && response.totalPages > 1 && (
               <div className="flex items-center justify-between mt-4">
                 <p className="text-sm text-gray-600 dark:text-slate-400">
-                  Page {response.page} of {response.totalPages} ({response.total} total)
+                  {t('common.page')} {response.page} {t('common.of')} {response.totalPages} · {t('common.totalCount')}: {response.total}
                 </p>
                 <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" disabled={response.page <= 1} onClick={() => setPage((p) => p - 1)}>Prev</Button>
-                  <Button variant="ghost" size="sm" disabled={response.page >= response.totalPages} onClick={() => setPage((p) => p + 1)}>Next</Button>
+                  <Button variant="ghost" size="sm" disabled={response.page <= 1} onClick={() => setPage((p) => p - 1)}>{t('common.prev')}</Button>
+                  <Button variant="ghost" size="sm" disabled={response.page >= response.totalPages} onClick={() => setPage((p) => p + 1)}>{t('common.next')}</Button>
                 </div>
               </div>
             )}
@@ -449,21 +448,21 @@ export default function Coupons() {
           {deletedForTab.length > 0 && (
             <div className="mt-8">
               <h2 className="text-2xl font-semibold text-gray-600 dark:text-slate-400 mb-4">
-                Deleted {activeTab === 'general' ? 'general' : 'per-customer'} coupons
+                {activeTab === 'general' ? t('couponsPage.deletedGeneral') : t('couponsPage.deletedPerCustomer')}
               </h2>
               <Table>
                 <TableHead>
                   <tr className="bg-gray-100 dark:bg-slate-900">
-                    <TableHeadCell className="text-gray-600 dark:text-slate-100">Code</TableHeadCell>
-                    <TableHeadCell className="text-gray-600 dark:text-slate-100">Name</TableHeadCell>
-                    <TableHeadCell className="text-gray-600 dark:text-slate-100">Scope</TableHeadCell>
-                    <TableHeadCell className="text-gray-600 dark:text-slate-100">Restaurant</TableHeadCell>
-                    <TableHeadCell className="text-gray-600 dark:text-slate-100">Customer</TableHeadCell>
-                    <TableHeadCell className="text-gray-600 dark:text-slate-100">Discount</TableHeadCell>
-                    <TableHeadCell className="text-gray-600 dark:text-slate-100">From</TableHeadCell>
-                    <TableHeadCell className="text-gray-600 dark:text-slate-100">To</TableHeadCell>
-                    <TableHeadCell className="text-gray-600 dark:text-slate-100">Deleted by</TableHeadCell>
-                    <TableHeadCell className="text-gray-600 dark:text-slate-100">Actions</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('couponsPage.code')}</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('couponsPage.name')}</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('common.scope')}</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('common.restaurant')}</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('couponsPage.customerColumn')}</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('couponsPage.discountColumn')}</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('couponsPage.validFrom')}</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('couponsPage.validTo')}</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('couponsPage.deletedByLower')}</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">{t('couponsPage.actions')}</TableHeadCell>
                   </tr>
                 </TableHead>
                 <TableBody>

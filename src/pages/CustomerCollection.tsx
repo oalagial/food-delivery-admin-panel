@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { Skeleton } from '../components/ui/skeleton'
 import { authFetch } from '../utils/api'
@@ -18,6 +19,7 @@ type Customer = {
 
 
 export default function CustomerCollection() {
+  const { t } = useTranslation()
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -78,13 +80,13 @@ export default function CustomerCollection() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Customer Collection</h1>
-          <p className="text-gray-600 mt-1 dark:text-slate-400">View and manage customers</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{t('common.customersTitle')}</h1>
+          <p className="text-gray-600 mt-1 dark:text-slate-400">{t('common.customersSubtitle')}</p>
         </div>
         <div className="w-full sm:w-64">
           <Input
             type="text"
-            placeholder="Search customers..."
+            placeholder={t('common.searchCustomersPh')}
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="w-full"
@@ -94,7 +96,7 @@ export default function CustomerCollection() {
 
       {error && (
         <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          <strong className="font-semibold">Error:</strong> {error}
+          <strong className="font-semibold">{t('common.error')}:</strong> {error}
         </div>
       )}
 
@@ -103,11 +105,11 @@ export default function CustomerCollection() {
         <Table>
           <TableHead>
             <tr>
-              <TableHeadCell>Name</TableHeadCell>
-              <TableHeadCell>Email</TableHeadCell>
-              <TableHeadCell>Phone</TableHeadCell>
-              <TableHeadCell>Created</TableHeadCell>
-              <TableHeadCell>Actions</TableHeadCell>
+              <TableHeadCell>{t('common.name')}</TableHeadCell>
+              <TableHeadCell>{t('common.email')}</TableHeadCell>
+              <TableHeadCell>{t('common.phone')}</TableHeadCell>
+              <TableHeadCell>{t('common.created')}</TableHeadCell>
+              <TableHeadCell>{t('common.actions')}</TableHeadCell>
             </tr>
           </TableHead>
           <TableBody>
@@ -127,33 +129,33 @@ export default function CustomerCollection() {
           {/* Mobile: cards */}
           <div className="space-y-3 md:hidden">
             {filteredCustomers.length === 0 ? (
-              <p className="text-sm text-gray-500 dark:text-slate-50">No customers found.</p>
+              <p className="text-sm text-gray-500 dark:text-slate-50">{t('common.noCustomers')}</p>
             ) : (
               filteredCustomers.map((customer) => (
                 <Card key={customer.id ?? `${customer.name}-${customer.email}`} className="shadow-sm">
                   <CardHeader className="p-4 pb-2">
                     <CardTitle className="text-base font-semibold">
-                      {customer.name || 'Unnamed customer'}
+                      {customer.name || t('common.unnamedCustomer')}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="px-4 pb-4 pt-0 space-y-1 text-xs">
                     <p>
-                      Email:{' '}
+                      {t('common.email')}:{' '}
                       <span className="font-medium">
-                        {customer.email || '—'}
+                        {customer.email || t('common.emDash')}
                       </span>
                     </p>
                     <p>
-                      Phone:{' '}
+                      {t('common.phone')}:{' '}
                       <span className="font-medium">
-                        {customer.phone || '—'}
+                        {customer.phone || t('common.emDash')}
                       </span>
                     </p>
                     <p className="text-[11px]">
-                      Created:{' '}
+                      {t('common.created')}:{' '}
                       {customer.createdAt
                         ? new Date(String(customer.createdAt)).toLocaleDateString()
-                        : '—'}
+                        : t('common.emDash')}
                     </p>
                   </CardContent>
                 </Card>
@@ -166,25 +168,25 @@ export default function CustomerCollection() {
             <Table>
               <TableHead>
                 <tr>
-                  <TableHeadCell>Name</TableHeadCell>
-                  <TableHeadCell>Email</TableHeadCell>
-                  <TableHeadCell>Phone</TableHeadCell>
-                  <TableHeadCell>Created</TableHeadCell>
-                  <TableHeadCell>Actions</TableHeadCell>
+                  <TableHeadCell>{t('common.name')}</TableHeadCell>
+                  <TableHeadCell>{t('common.email')}</TableHeadCell>
+                  <TableHeadCell>{t('common.phone')}</TableHeadCell>
+                  <TableHeadCell>{t('common.created')}</TableHeadCell>
+                  <TableHeadCell>{t('common.actions')}</TableHeadCell>
                 </tr>
               </TableHead>
               <TableBody>
                 {filteredCustomers.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5}>No customers found.</TableCell>
+                    <TableCell colSpan={5}>{t('common.noCustomers')}</TableCell>
                   </TableRow>
                 )}
                 {filteredCustomers.map((customer) => (
                   <TableRow key={customer.id}>
-                    <TableCell>{String(customer.name ?? '—')}</TableCell>
-                    <TableCell>{String(customer.email ?? '—')}</TableCell>
-                    <TableCell>{String(customer.phone ?? '—')}</TableCell>
-                    <TableCell>{customer.createdAt ? new Date(String(customer.createdAt)).toLocaleString() : '—'}</TableCell>
+                    <TableCell>{String(customer.name ?? t('common.emDash'))}</TableCell>
+                    <TableCell>{String(customer.email ?? t('common.emDash'))}</TableCell>
+                    <TableCell>{String(customer.phone ?? t('common.emDash'))}</TableCell>
+                    <TableCell>{customer.createdAt ? new Date(String(customer.createdAt)).toLocaleString() : t('common.emDash')}</TableCell>
                     <TableCell>
                       {/* Actions can be added here if needed */}
                     </TableCell>
@@ -199,7 +201,7 @@ export default function CustomerCollection() {
       {/* Enhanced Pagination Controls */}
       <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-2">
         <div className="text-gray-600 text-sm mb-2 sm:mb-0">
-          Page {page} of {totalPages} | Total: {total}
+          {t('common.paginationSummary', { page, totalPages, total })}
         </div>
         <div className="flex items-center gap-1 flex-wrap">
           <Button
@@ -207,7 +209,7 @@ export default function CustomerCollection() {
             size="sm"
             onClick={() => setPage(1)}
             disabled={page === 1}
-            aria-label="First page"
+            aria-label={t('common.firstPage')}
           >
             «
           </Button>
@@ -216,7 +218,7 @@ export default function CustomerCollection() {
             size="sm"
             onClick={() => setPage(p => Math.max(1, p - 1))}
             disabled={page === 1}
-            aria-label="Previous page"
+            aria-label={t('common.prevPage')}
           >
             ‹
           </Button>
@@ -253,7 +255,7 @@ export default function CustomerCollection() {
             size="sm"
             onClick={() => setPage(p => Math.min(totalPages, p + 1))}
             disabled={page === totalPages}
-            aria-label="Next page"
+            aria-label={t('common.nextPage')}
           >
             ›
           </Button>
@@ -262,7 +264,7 @@ export default function CustomerCollection() {
             size="sm"
             onClick={() => setPage(totalPages)}
             disabled={page === totalPages}
-            aria-label="Last page"
+            aria-label={t('common.lastPage')}
           >
             »
           </Button>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { createRestaurant, getRestaurantsList, getRestaurantById, updateRestaurant, getMenusList, updateMenu } from '../utils/api'
 import type { CreateRestaurantPayload, MenuItem } from '../utils/api'
@@ -11,17 +12,18 @@ import { Alert, AlertDescription } from '../components/ui/alert'
 import { AlertCircle, CheckCircle } from 'lucide-react'
 import { Select } from '../components/ui/select';
 
-const DAYS = [
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-  'Sunday',
-];
+const OPENING_HOUR_DAYS = [
+  ['Monday', 'weekdayMon'],
+  ['Tuesday', 'weekdayTue'],
+  ['Wednesday', 'weekdayWed'],
+  ['Thursday', 'weekdayThu'],
+  ['Friday', 'weekdayFri'],
+  ['Saturday', 'weekdaySat'],
+  ['Sunday', 'weekdaySun'],
+] as const
 
 export default function RestaurantCreate() {
+  const { t } = useTranslation()
   const { id } = useParams<{ id?: string }>()
   const navigate = useNavigate()
 
@@ -94,12 +96,12 @@ export default function RestaurantCreate() {
     if (latRaw !== '') {
       const latNum = Number(latRaw)
       if (Number.isNaN(latNum)) {
-        setCreateError('Latitude must be a valid number')
+        setCreateError(t('common.geoLatInvalid'))
         setCreating(false)
         return
       }
       if (latNum < -90 || latNum > 90) {
-        setCreateError('Latitude must be between -90 and 90')
+        setCreateError(t('common.geoLatRange'))
         setCreating(false)
         return
       }
@@ -108,12 +110,12 @@ export default function RestaurantCreate() {
     if (lonRaw !== '') {
       const lonNum = Number(lonRaw)
       if (Number.isNaN(lonNum)) {
-        setCreateError('Longitude must be a valid number')
+        setCreateError(t('common.geoLngInvalid'))
         setCreating(false)
         return
       }
       if (lonNum < -180 || lonNum > 180) {
-        setCreateError('Longitude must be between -180 and 180')
+        setCreateError(t('common.geoLngRange'))
         setCreating(false)
         return
       }
@@ -137,7 +139,7 @@ export default function RestaurantCreate() {
       navigate('/restaurant')
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)
-      setCreateError(msg || (id ? 'Update failed' : 'Create failed'))
+      setCreateError(msg || (id ? t('common.updateFailed') : t('common.createFailed')))
     } finally {
       setCreating(false)
     }
@@ -180,12 +182,12 @@ export default function RestaurantCreate() {
             })))
           }
         } else {
-          setCreateError('Restaurant not found')
+          setCreateError(t('common.restaurantNotFound'))
         }
         setMenus(menusData || [])
       })
       .catch((err) => {
-        setCreateError(err?.message || 'Failed to load restaurant')
+        setCreateError(err?.message || t('common.failedLoadRestaurant'))
       })
       .finally(() => {
         if (mounted) setLoadingMenus(false)
@@ -194,7 +196,7 @@ export default function RestaurantCreate() {
     return () => {
       mounted = false
     }
-  }, [id])
+  }, [id, t])
 
   const handleSetActiveMenu = async (menuId: string | number) => {
     try {
@@ -220,7 +222,7 @@ export default function RestaurantCreate() {
         setMenus(updatedMenus || [])
       }
     } catch (err) {
-      setCreateError(err instanceof Error ? err.message : 'Failed to set menu as active')
+      setCreateError(err instanceof Error ? err.message : t('common.failedSetActiveMenu'))
     } finally {
       setLoadingMenus(false)
     }
@@ -230,7 +232,7 @@ export default function RestaurantCreate() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">
-          {id ? 'Edit Restaurant' : 'Create Restaurant'}
+          {id ? t('createForms.editRestaurant') : t('createForms.createRestaurant')}
         </h1>
       </div>
 
@@ -242,15 +244,15 @@ export default function RestaurantCreate() {
         <Card className="shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">
-              {id ? 'Update Details' : 'Restaurant details'}
+              {id ? t('createForms.updateDetails') : t('createForms.restaurantDetails')}
             </CardTitle>
             <CardDescription>
-              Name, address and basic contact information
+              {t('createForms.restaurantDetailsDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="name">Name *</Label>
+              <Label htmlFor="name">{t('common.nameRequired')}</Label>
               <Input
                 id="name"
                 className="mt-1.5 w-full"
@@ -259,14 +261,14 @@ export default function RestaurantCreate() {
                 onChange={(e) =>
                   setForm((s) => ({ ...s, name: e.target.value }))
                 }
-                placeholder="Restaurant name"
+                placeholder={t('common.restaurantNamePh')}
                 required
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-2">
-                <Label htmlFor="address">Address *</Label>
+                <Label htmlFor="address">{t('common.addressRequired')}</Label>
                 <Input
                   id="address"
                   className="mt-1.5 w-full"
@@ -275,11 +277,11 @@ export default function RestaurantCreate() {
                   onChange={(e) =>
                     setForm((s) => ({ ...s, address: e.target.value }))
                   }
-                  placeholder="Street address"
+                  placeholder={t('common.streetAddressPh')}
                 />
               </div>
               <div>
-                <Label htmlFor="streetNumber">House Number</Label>
+                <Label htmlFor="streetNumber">{t('common.houseNumber')}</Label>
                 <Input
                   id="streetNumber"
                   className="mt-1.5 w-full"
@@ -288,13 +290,13 @@ export default function RestaurantCreate() {
                   onChange={(e) =>
                     setForm((s) => ({ ...s, streetNumber: e.target.value }))
                   }
-                  placeholder="Number"
+                  placeholder={t('common.numberPh')}
                 />
               </div>
             </div>
 
             <div>
-              <Label htmlFor="telephone">Telephone</Label>
+              <Label htmlFor="telephone">{t('common.telephone')}</Label>
               <Input
                 id="telephone"
                 type="tel"
@@ -304,13 +306,13 @@ export default function RestaurantCreate() {
                 onChange={(e) =>
                   setForm((s) => ({ ...s, telephone: e.target.value }))
                 }
-                placeholder="e.g. +30 210 1234567"
+                placeholder={t('common.telephonePh')}
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
               <div className="md:col-span-2">
-                <Label htmlFor="city">City</Label>
+                <Label htmlFor="city">{t('common.city')}</Label>
                 <Input
                   id="city"
                   className="mt-1.5 w-full"
@@ -319,11 +321,11 @@ export default function RestaurantCreate() {
                   onChange={(e) =>
                     setForm((s) => ({ ...s, city: e.target.value }))
                   }
-                  placeholder="City"
+                  placeholder={t('common.cityPh')}
                 />
               </div>
               <div className="md:col-span-1">
-                <Label htmlFor="zipCode">ZIP Code</Label>
+                <Label htmlFor="zipCode">{t('common.zipCode')}</Label>
                 <Input
                   id="zipCode"
                   className="mt-1.5 w-full"
@@ -332,11 +334,11 @@ export default function RestaurantCreate() {
                   onChange={(e) =>
                     setForm((s) => ({ ...s, zipCode: e.target.value }))
                   }
-                  placeholder="ZIP"
+                  placeholder={t('common.zipPh')}
                 />
               </div>
               <div className="md:col-span-2">
-                <Label htmlFor="province">Province</Label>
+                <Label htmlFor="province">{t('common.province')}</Label>
                 <Input
                   id="province"
                   className="mt-1.5 w-full"
@@ -345,11 +347,11 @@ export default function RestaurantCreate() {
                   onChange={(e) =>
                     setForm((s) => ({ ...s, province: e.target.value }))
                   }
-                  placeholder="Province"
+                  placeholder={t('common.provincePh')}
                 />
               </div>
               <div className="md:col-span-1">
-                <Label htmlFor="country">Country</Label>
+                <Label htmlFor="country">{t('common.country')}</Label>
                 <Input
                   id="country"
                   className="mt-1.5 w-full"
@@ -358,13 +360,13 @@ export default function RestaurantCreate() {
                   onChange={(e) =>
                     setForm((s) => ({ ...s, country: e.target.value }))
                   }
-                  placeholder="Country"
+                  placeholder={t('common.countryPh')}
                 />
               </div>
             </div>
 
             <div>
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t('common.description')}</Label>
               <Textarea
                 id="description"
                 className="mt-1.5 w-full"
@@ -373,7 +375,7 @@ export default function RestaurantCreate() {
                 onChange={(e) =>
                   setForm((s) => ({ ...s, description: e.target.value }))
                 }
-                placeholder="Tell us about your restaurant..."
+                placeholder={t('common.aboutRestaurantPh')}
               />
             </div>
           </CardContent>
@@ -382,13 +384,13 @@ export default function RestaurantCreate() {
         {/* Location & capacity */}
         <Card className="shadow-sm">
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Location & capacity</CardTitle>
-            <CardDescription>Coordinates and slot configuration</CardDescription>
+            <CardTitle className="text-lg">{t('common.locationCapacity')}</CardTitle>
+            <CardDescription>{t('common.locationCapacityDesc')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="latitude">Latitude</Label>
+                <Label htmlFor="latitude">{t('common.latitude')}</Label>
                 <Input
                   id="latitude"
                   className="mt-1.5 w-full"
@@ -397,13 +399,13 @@ export default function RestaurantCreate() {
                   onChange={(e) =>
                     setForm((s) => ({ ...s, latitude: e.target.value }))
                   }
-                  placeholder="e.g., 40.7128"
+                  placeholder={t('common.latPh')}
                   type="number"
                   step="any"
                 />
               </div>
               <div>
-                <Label htmlFor="longitude">Longitude</Label>
+                <Label htmlFor="longitude">{t('common.longitude')}</Label>
                 <Input
                   id="longitude"
                   className="mt-1.5 w-full"
@@ -412,7 +414,7 @@ export default function RestaurantCreate() {
                   onChange={(e) =>
                     setForm((s) => ({ ...s, longitude: e.target.value }))
                   }
-                  placeholder="e.g., -74.0060"
+                  placeholder={t('common.lngPh')}
                   type="number"
                   step="any"
                 />
@@ -422,7 +424,7 @@ export default function RestaurantCreate() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="timeslotDurationMinutes">
-                  Timeslot Duration (minutes)
+                  {t('common.timeslotDuration')}
                 </Label>
                 <Input
                   id="timeslotDurationMinutes"
@@ -435,13 +437,13 @@ export default function RestaurantCreate() {
                       timeslotDurationMinutes: e.target.value,
                     }))
                   }
-                  placeholder="e.g., 15"
+                  placeholder={t('common.timeslotPh')}
                   type="number"
                   min="1"
                 />
               </div>
               <div>
-                <Label htmlFor="ordersPerTimeslot">Orders Per Timeslot</Label>
+                <Label htmlFor="ordersPerTimeslot">{t('common.ordersPerTimeslot')}</Label>
                 <Input
                   id="ordersPerTimeslot"
                   className="mt-1.5 w-full"
@@ -453,7 +455,7 @@ export default function RestaurantCreate() {
                       ordersPerTimeslot: e.target.value,
                     }))
                   }
-                  placeholder="e.g., 10"
+                  placeholder={t('common.ordersSlotPh')}
                   type="number"
                   min="1"
                 />
@@ -465,8 +467,8 @@ export default function RestaurantCreate() {
         {/* Opening hours */}
         <Card className="shadow-sm lg:col-span-2">
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Opening hours</CardTitle>
-            <CardDescription>Set weekly schedule</CardDescription>
+            <CardTitle className="text-lg">{t('common.openingHoursTitle')}</CardTitle>
+            <CardDescription>{t('common.weeklySchedule')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-2 mt-1">
@@ -483,10 +485,10 @@ export default function RestaurantCreate() {
                       )
                     }
                   >
-                    <option value="">Day</option>
-                    {DAYS.map((day) => (
-                      <option key={day} value={day}>
-                        {day}
+                    <option value="">{t('common.day')}</option>
+                    {OPENING_HOUR_DAYS.map(([value, labelKey]) => (
+                      <option key={value} value={value}>
+                        {t(`common.${labelKey}`)}
                       </option>
                     ))}
                   </Select>
@@ -501,7 +503,7 @@ export default function RestaurantCreate() {
                         ),
                       )
                     }
-                    placeholder="Open"
+                    placeholder={t('common.open')}
                   />
                   <span>-</span>
                   <Input
@@ -515,7 +517,7 @@ export default function RestaurantCreate() {
                         ),
                       )
                     }
-                    placeholder="Close"
+                    placeholder={t('common.closeHours')}
                   />
                   <Button
                     type="button"
@@ -528,7 +530,7 @@ export default function RestaurantCreate() {
                       )
                     }
                   >
-                    Remove
+                    {t('common.remove')}
                   </Button>
                 </div>
               ))}
@@ -543,7 +545,7 @@ export default function RestaurantCreate() {
                   ])
                 }
               >
-                Add Opening Hour
+                {t('common.addOpeningHour')}
               </Button>
             </div>
           </CardContent>
@@ -552,12 +554,12 @@ export default function RestaurantCreate() {
         {/* Images & menus */}
         <Card className="shadow-sm lg:col-span-2">
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Media & menus</CardTitle>
-            <CardDescription>Images and active menu selection</CardDescription>
+            <CardTitle className="text-lg">{t('common.mediaMenus')}</CardTitle>
+            <CardDescription>{t('common.mediaMenusDesc')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="images">Images</Label>
+              <Label htmlFor="images">{t('common.images')}</Label>
               <div className="mt-2 flex items-center gap-4">
                 <input
                   id="images"
@@ -568,13 +570,13 @@ export default function RestaurantCreate() {
                 />
                 <label htmlFor="images">
                   <Button variant="primary" type="button">
-                    Choose Images
+                    {t('common.chooseImages')}
                   </Button>
                 </label>
                 <span className="text-sm text-gray-600 dark:text-slate-400">
                   {files && files.length > 0
-                    ? `${files.length} file(s) selected`
-                    : 'No files selected'}
+                    ? t('common.filesSelectedCount', { count: files.length })
+                    : t('common.noFilesSelected')}
                 </span>
               </div>
             </div>
@@ -582,13 +584,13 @@ export default function RestaurantCreate() {
             {/* Menus Section - Only show when editing */}
             {id && (
               <div>
-                <Label>Menus</Label>
+                <Label>{t('common.menus')}</Label>
                 <div className="mt-2 space-y-3">
                   {loadingMenus ? (
-                    <div className="text-sm text-gray-500">Loading menus...</div>
+                    <div className="text-sm text-gray-500">{t('common.loadingMenus')}</div>
                   ) : menus.length === 0 ? (
                     <div className="text-sm text-gray-500">
-                      No menus found for this restaurant
+                      {t('common.noMenusForRestaurant')}
                     </div>
                   ) : (
                     <>
@@ -611,7 +613,7 @@ export default function RestaurantCreate() {
                                   </p>
                                 )}
                                 <span className="inline-block mt-1 px-2 py-1 text-xs bg-green-200 text-green-800 rounded">
-                                  Active
+                                  {t('common.active')}
                                 </span>
                               </div>
                             </div>
@@ -622,7 +624,7 @@ export default function RestaurantCreate() {
                       {menus.filter((m: any) => m.isActive !== true).length > 0 && (
                         <div className="space-y-2">
                           <div className="text-sm font-medium text-gray-700 mt-3">
-                            Other Menus:
+                            {t('common.otherMenus')}:
                           </div>
                           {menus
                             .filter((m: any) => m.isActive !== true)
@@ -649,7 +651,7 @@ export default function RestaurantCreate() {
                                     onClick={() => handleSetActiveMenu(menu.id!)}
                                     disabled={loadingMenus}
                                   >
-                                    Set as Active
+                                    {t('common.setAsActive')}
                                   </Button>
                                 </div>
                               </div>
@@ -672,11 +674,11 @@ export default function RestaurantCreate() {
             <div className="flex justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
               <Link to="/restaurant">
                 <Button variant="default" type="button">
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
               </Link>
               <Button variant="primary" type="submit" disabled={creating}>
-                {creating ? 'Saving...' : id ? 'Update' : 'Create'}
+                {creating ? t('common.saving') : id ? t('common.update') : t('common.create')}
               </Button>
             </div>
           </CardContent>
@@ -687,7 +689,7 @@ export default function RestaurantCreate() {
         <Alert variant="success">
           <CheckCircle className="h-4 w-4" />
           <AlertDescription>
-            {id ? 'Restaurant updated' : 'Restaurant created'} successfully!
+            {id ? t('common.restaurantUpdatedSuccess') : t('common.restaurantCreatedSuccess')}
           </AlertDescription>
         </Alert>
       )}

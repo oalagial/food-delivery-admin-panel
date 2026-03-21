@@ -1,4 +1,5 @@
 import { API_BASE } from '../config'
+import { normalizeUserRole, type UserRole } from './userRoles'
 
 type LoginResponse = {
   token?: string
@@ -44,12 +45,12 @@ function handleUnauthorized() {
     clearToken()
     if (typeof window !== 'undefined') {
       // notify listeners
-      try { window.dispatchEvent(new Event('auth')) } catch {}
+      try { window.dispatchEvent(new Event('auth')) } catch { }
       // avoid redirect loop if already on /login
       try {
         const current = window.location.pathname || ''
         if (!current.startsWith('/login')) window.location.href = '/login'
-      } catch {}
+      } catch { }
     }
   } catch {
     // ignore
@@ -60,21 +61,114 @@ export function getToken(): string | null {
   try { return localStorage.getItem('access_token') } catch { return null }
 }
 
-/** Returns the current user id from the JWT payload (sub, id, or userId), or null if not available. */
-export function getCurrentUserId(): string | number | null {
+function getJwtPayload(): Record<string, unknown> | null {
   const token = getToken()
   if (!token || typeof token !== 'string') return null
   const parts = token.split('.')
   if (parts.length !== 3) return null
   try {
-    const payload = JSON.parse(
+    return JSON.parse(
       atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'))
     ) as Record<string, unknown>
-    const id = payload.sub ?? payload.id ?? payload.userId ?? payload.user_id
-    if (id === undefined || id === null) return null
-    return typeof id === 'number' ? id : String(id)
   } catch {
     return null
+  }
+}
+
+/** Returns the current user id from the JWT payload (sub, id, or userId), or null if not available. */
+export function getCurrentUserId(): string | number | null {
+  const payload = getJwtPayload()
+  if (!payload) return null
+  const id = payload.sub ?? payload.id ?? payload.userId ?? payload.user_id
+  if (id === undefined || id === null) return null
+  return typeof id === 'number' ? id : String(id)
+}
+
+/**
+ * Role from JWT for UI routing (must match backend `Role` enum strings).
+ * Checks `role`, `roles[0]`, nested `user.role` / `user.role.name`.
+ */
+export function getCurrentUserRole(): UserRole | null {
+  const payload = getJwtPayload()
+  if (!payload) return null
+
+  const tryString = (s: unknown): UserRole | null =>
+    typeof s === 'string' ? normalizeUserRole(s) : null
+
+  const direct = tryString(payload.role ?? payload.userRole)
+  if (direct) return direct
+
+  const roles = payload.roles
+  if (Array.isArray(roles) && roles.length > 0) {
+    const first = roles[0]
+    const fromFirst = tryString(first)
+    if (fromFirst) return fromFirst
+    if (first && typeof first === 'object') {
+      const o = first as Record<string, unknown>
+      const fromObj = tryString(o.name ?? o.role)
+      if (fromObj) return fromObj
+    }
+  }
+
+  const user = payload.user
+  if (user && typeof user === 'object') {
+    const u = user as Record<string, unknown>
+    const fromUser = tryString(u.role)
+    if (fromUser) return fromUser
+    const ur = u.role
+    if (ur && typeof ur === 'object') {
+      const o = ur as Record<string, unknown>
+      const fromNested = tryString(o.name)
+      if (fromNested) return fromNested
+    }
+  }
+
+  return null
+}
+
+/** Best-effort display fields from JWT when user API is unavailable. */
+export function getCurrentUserJwtHints(): { email?: string; username?: string } {
+  const payload = getJwtPayload()
+  if (!payload) return {}
+  const email = typeof payload.email === 'string' ? payload.email : undefined
+  let username: string | undefined
+  if (typeof payload.username === 'string') username = payload.username
+  else if (typeof payload.preferred_username === 'string') username = payload.preferred_username
+  else if (typeof payload.name === 'string') username = payload.name
+  return { email, username }
+}
+
+export type CurrentUserSessionInfo = {
+  email?: string
+  username?: string
+  roleLabel?: string
+}
+
+/** Loads current user row from API (same shape as user edit page). */
+export async function fetchCurrentUserSession(): Promise<CurrentUserSessionInfo | null> {
+  const id = getCurrentUserId()
+  if (id == null) return null
+  const res = await authFetch(`/users?id=${encodeURIComponent(String(id))}`)
+  if (!res.ok) return null
+  const json: unknown = await res.json().catch(() => null)
+  if (!json || typeof json !== 'object') return null
+  const j = json as Record<string, unknown>
+  const raw = j.data
+  const user = Array.isArray(raw) ? raw[0] : raw
+  if (!user || typeof user !== 'object') return null
+  const u = user as Record<string, unknown>
+  let roleLabel: string | undefined
+  if (Array.isArray(u.roles) && u.roles[0] && typeof u.roles[0] === 'object') {
+    roleLabel = String((u.roles[0] as Record<string, unknown>).name ?? '').trim() || undefined
+  } else if (u.role && typeof u.role === 'object') {
+    roleLabel = String((u.role as Record<string, unknown>).name ?? '').trim() || undefined
+  }
+  const roleFallback = getCurrentUserRole()
+  if (!roleLabel && roleFallback) roleLabel = roleFallback.replace(/_/g, ' ')
+  return {
+    email: typeof u.email === 'string' ? u.email : undefined,
+    username: typeof u.username === 'string' ? u.username : undefined,
+    roleLabel,
   }
 }
 
@@ -152,7 +246,7 @@ export function attachAuthToFetch() {
     })
   }
 
-  ;(wrapped as unknown as { __auth_wrapped?: boolean }).__auth_wrapped = true
+    ; (wrapped as unknown as { __auth_wrapped?: boolean }).__auth_wrapped = true
   window.fetch = wrapped as unknown as typeof window.fetch
 }
 
@@ -325,12 +419,12 @@ export async function deleteUser(id: string | number): Promise<void> {
   }
 }
 
-export async function setUserActive(id: string | number, active: boolean): Promise<void> {
+export async function setUserActive(id: string | number, isActive: boolean): Promise<void> {
   if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
   const res = await authFetch(`/users/${encodeURIComponent(String(id))}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ active }),
+    body: JSON.stringify({ isActive }),
   })
   if (!res.ok) {
     const text = await res.text().catch(() => '')
@@ -542,7 +636,7 @@ export async function createProduct(payload: CreateProductPayload, imageFile?: F
     formData.append('name', payload.name)
     if (payload.description) formData.append('description', payload.description)
     formData.append('imageFile', imageFile)
-    
+
     // Append typeId - convert to number and send as string (backend should parse)
     if (payload.typeId !== undefined && payload.typeId !== null && payload.typeId !== '') {
       const typeIdNum = Number(payload.typeId)
@@ -550,21 +644,21 @@ export async function createProduct(payload: CreateProductPayload, imageFile?: F
         formData.append('typeId', typeIdNum.toString())
       }
     }
-    
+
     // Append ingredients array
     if (payload.ingredients && payload.ingredients.length > 0) {
       payload.ingredients.forEach((ingredient, index) => {
         formData.append(`ingredients[${index}]`, ingredient)
       })
     }
-    
+
     // Append allergies array
     if (payload.allergies && payload.allergies.length > 0) {
       payload.allergies.forEach((allergy, index) => {
         formData.append(`allergies[${index}]`, allergy)
       })
     }
-    
+
     // Append price - convert to number and send as string (backend should parse)
     if (payload.price !== undefined && payload.price !== null) {
       const priceNum = Number(payload.price)
@@ -572,16 +666,16 @@ export async function createProduct(payload: CreateProductPayload, imageFile?: F
         formData.append('price', priceNum.toString())
       }
     }
-    
+
     // Append isAvailable - convert boolean to string (backend should parse)
     const isAvailableValue = payload.isAvailable !== undefined ? Boolean(payload.isAvailable) : true
     formData.append('isAvailable', isAvailableValue ? 'true' : 'false')
-    
+
     // Append vatRate if provided
     if (payload.vatRate) {
       formData.append('vatRate', payload.vatRate)
     }
-    
+
     // Append extras as nested FormData fields if provided
     if (payload.extras && payload.extras.length > 0) {
       payload.extras.forEach((extra, index) => {
@@ -596,12 +690,12 @@ export async function createProduct(payload: CreateProductPayload, imageFile?: F
         }
       })
     }
-    
+
     // Append discounts as JSON string if provided
     if (payload.discounts && payload.discounts.length > 0) {
       formData.append('discounts', JSON.stringify(payload.discounts))
     }
-    
+
     body = formData
     // Don't set Content-Type header - browser will set it with boundary for FormData
   } else {
@@ -634,7 +728,7 @@ export async function createProduct(payload: CreateProductPayload, imageFile?: F
 
 export async function updateProduct(id: string | number, payload: Partial<CreateProductPayload>) {
   if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
-  
+
   const res = await authFetch(`/products/${encodeURIComponent(String(id))}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -660,7 +754,7 @@ export async function updateProduct(id: string | number, payload: Partial<Create
 export async function updateProductImage(id: string | number, imageFile: File) {
   if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
   if (!imageFile) throw new Error('imageFile is required')
-  
+
   const formData = new FormData()
   formData.append('imageFile', imageFile)
 
@@ -906,7 +1000,7 @@ export type CreateMenuPayload = {
 }
 
 export async function getMenusList(restaurantId?: string | number): Promise<MenuItem[]> {
-  const url = restaurantId 
+  const url = restaurantId
     ? `/menus?restaurantId=${encodeURIComponent(String(restaurantId))}`
     : '/menus'
   const res = await authFetch(url)
@@ -1294,7 +1388,7 @@ export async function restoreCoupon(id: string | number) {
   return res.json().catch(() => null)
 }
 
-export type CustomerListItem = { id: number; name?: string; email?: string; phone?: string; [k: string]: unknown }
+export type CustomerListItem = { id: number; name?: string; email?: string; phone?: string;[k: string]: unknown }
 
 export async function getCustomersList(params?: { page?: number; limit?: number }): Promise<{ data: CustomerListItem[]; total: number; totalPages: number }> {
   const search = new URLSearchParams()
@@ -1554,6 +1648,8 @@ export type OrderCustomer = {
 
 export type OrderItem = {
   id?: number | string
+  orderNumber?: number
+  orderDate?: string
   restaurantId?: number | string
   deliveryLocationId?: number | string
   status: OrderStatus
@@ -1584,8 +1680,14 @@ export type CreateOrderPayload = {
   [k: string]: unknown
 }
 
-export async function getOrdersList(page = 1, limit = 10): Promise<any> {
+export async function getOrdersList(
+  page = 1,
+  limit = 10,
+  sort?: { sortField?: string; sortDir?: 'asc' | 'desc' },
+): Promise<any> {
   const params = new URLSearchParams({ page: String(page), limit: String(limit) })
+  if (sort?.sortField) params.set('sortField', sort.sortField)
+  if (sort?.sortDir) params.set('sortDir', sort.sortDir)
   const res = await authFetch(`/orders?${params}`)
   if (!res.ok) {
     const text = await res.text().catch(() => '')
@@ -1666,6 +1768,7 @@ export type CreateDeliveryLocationPayload = {
     restaurantId: number | string
     deliveryFee?: number
     minOrder?: number
+    minDeliveryTimeMinutes?: number
     isActive?: boolean
     [k: string]: unknown
   }>

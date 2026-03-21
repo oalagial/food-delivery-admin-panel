@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { Button } from '../components/ui/button'
 import { FiPlus, FiEdit, FiTrash } from 'react-icons/fi'
@@ -18,6 +19,7 @@ type Role = {
 import { API_BASE } from '../config'
 
 export default function Roles() {
+  const { t } = useTranslation()
   const [roles, setRoles] = useState<Role[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -66,8 +68,8 @@ export default function Roles() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Roles</h1>
-          <p className="text-gray-600 mt-1 dark:text-slate-400">Manage user roles and permissions</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{t('rolesPage.title')}</h1>
+          <p className="text-gray-600 mt-1 dark:text-slate-400">{t('rolesPage.subtitle')}</p>
         </div>
         <Link to="/roles/creation" className="w-full sm:w-auto">
           <Button
@@ -75,14 +77,14 @@ export default function Roles() {
             icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
             className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
           >
-            <span className="sm:inline">Create Role</span>
+            <span className="sm:inline">{t('rolesPage.create')}</span>
           </Button>
         </Link>
       </div>
 
       {error && (
         <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          <strong className="font-semibold">Error:</strong> {error}
+          <strong className="font-semibold">{t('common.error')}:</strong> {error}
         </div>
       )}
 
@@ -91,10 +93,10 @@ export default function Roles() {
           <Table>
             <TableHead>
               <tr>
-                <TableHeadCell>Name</TableHeadCell>
-                <TableHeadCell>Description</TableHeadCell>
-                <TableHeadCell>Created</TableHeadCell>
-                <TableHeadCell>Actions</TableHeadCell>
+                <TableHeadCell>{t('rolesPage.name')}</TableHeadCell>
+                <TableHeadCell>{t('rolesPage.description')}</TableHeadCell>
+                <TableHeadCell>{t('common.created')}</TableHeadCell>
+                <TableHeadCell>{t('rolesPage.actions')}</TableHeadCell>
               </tr>
             </TableHead>
             <TableBody>
@@ -114,7 +116,7 @@ export default function Roles() {
             {/* Mobile: cards */}
             <div className="space-y-3 md:hidden">
               {roles.length === 0 ? (
-                <p className="text-sm">No roles found.</p>
+                <p className="text-sm">{t('rolesPage.noRoles')}</p>
               ) : (
                 roles.map((r) => (
                   <Card key={r.id} className="shadow-sm">
@@ -125,11 +127,11 @@ export default function Roles() {
                     </CardHeader>
                     <CardContent className="px-4 pb-2 pt-0 space-y-1">
                       <p className="text-xs">
-                        {r.description || 'No description'}
+                        {r.description || t('common.noDescription')}
                       </p>
                       {r.createdAt && (
                         <p className="text-[11px]">
-                          Created: {new Date(String(r.createdAt)).toLocaleDateString()}
+                          {t('common.created')}: {new Date(String(r.createdAt)).toLocaleDateString()}
                         </p>
                       )}
                     </CardContent>
@@ -159,16 +161,16 @@ export default function Roles() {
               <Table>
                 <TableHead>
                   <tr>
-                    <TableHeadCell>Name</TableHeadCell>
-                    <TableHeadCell>Description</TableHeadCell>
-                    <TableHeadCell>Created</TableHeadCell>
-                    <TableHeadCell>Actions</TableHeadCell>
+                    <TableHeadCell>{t('rolesPage.name')}</TableHeadCell>
+                    <TableHeadCell>{t('rolesPage.description')}</TableHeadCell>
+                    <TableHeadCell>{t('common.created')}</TableHeadCell>
+                    <TableHeadCell>{t('rolesPage.actions')}</TableHeadCell>
                   </tr>
                 </TableHead>
                 <TableBody>
                   {roles.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={5}>No roles found.</TableCell>
+                      <TableCell colSpan={5}>{t('rolesPage.noRoles')}</TableCell>
                     </TableRow>
                   )}
                   {roles.map((r) => (

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { getOfferList, deleteOffer, restoreOffer, updateOffer } from "../utils/api";
 import { FiPlus, FiEdit, FiTrash, FiCheckCircle, FiXCircle, FiRotateCw, FiAlertCircle } from "react-icons/fi";
 import { Link } from "react-router-dom";
@@ -17,34 +18,33 @@ type OfferRowProps = {
   onToggleActive?: (offer: any) => void;
 };
 
-function offerRowDetails(offer: any) {
+function OfferRowDetails({ offer }: { offer: any }) {
+  const { t } = useTranslation();
   return (
     <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
       {offer.groups.map((group: any) => (
         <Card key={group.id} className="h-full">
           <CardContent className="h-full flex flex-col p-4">
 
-            {/* Header */}
             <div className="mb-3 border-b border-slate-200 dark:border-slate-600 pb-2">
               <h3 className="font-semibold text-base text-slate-900 dark:text-slate-100">
-                {group.name || `Group ${group.id}`}
+                {group.name || t("offersPage.groupFallback", { id: group.id })}
               </h3>
 
               <div className="flex gap-4 text-xs text-gray-600 dark:text-slate-400 mt-1">
-                <span>Min Selected: <b>{group.minItems}</b></span>
-                <span>Max Selected: <b>{group.maxItems}</b></span>
+                <span>{t("offersPage.minSelected")}: <b>{group.minItems}</b></span>
+                <span>{t("offersPage.maxSelected")}: <b>{group.maxItems}</b></span>
               </div>
             </div>
 
-            {/* Products */}
             <div className="flex-1">
               <h4 className="text-xs font-semibold text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-wide">
-                Products
+                {t("common.products")}
               </h4>
 
               {group.offerGroupProducts.length === 0 ? (
                 <p className="text-gray-400 dark:text-slate-500 text-sm">
-                  No items in this group
+                  {t("offersPage.noItemsInGroup")}
                 </p>
               ) : (
                 <ul className="space-y-1">
@@ -64,10 +64,11 @@ function offerRowDetails(offer: any) {
         </Card>
       ))}
     </div>
-  )
+  );
 }
 
 function OfferRow({ offer, isOpen, onToggle, onDelete, isDeleting = false, onToggleActive }: OfferRowProps) {
+  const { t } = useTranslation();
   return (
     <>
       {/* MAIN ROW */}
@@ -82,11 +83,11 @@ function OfferRow({ offer, isOpen, onToggle, onDelete, isDeleting = false, onTog
             size="sm"
             className="inline-flex items-center justify-center"
             onClick={() => onToggleActive && onToggleActive(offer)}
-            aria-label={offer.isActive ? 'Set inactive' : 'Set active'}
+            aria-label={offer.isActive ? t("common.deactivate") : t("common.activate")}
             icon={
               offer.isActive
-                ? <FiCheckCircle className="w-5 h-5 text-green-500" aria-label="Active" />
-                : <FiXCircle className="w-5 h-5 text-red-500" aria-label="Inactive" />
+                ? <FiCheckCircle className="w-5 h-5 text-green-500" aria-label={t("common.active")} />
+                : <FiXCircle className="w-5 h-5 text-red-500" aria-label={t("common.inactive")} />
             }
           />
         </TableCell>
@@ -97,7 +98,7 @@ function OfferRow({ offer, isOpen, onToggle, onDelete, isDeleting = false, onTog
               size="sm"
               onClick={onToggle}
             >
-              {isOpen ? "Hide" : "Details"}
+              {isOpen ? t("common.hide") : t("common.details")}
             </Button>
 
             <Link to={`/offers/creation/${offer.id}`}>
@@ -120,10 +121,10 @@ function OfferRow({ offer, isOpen, onToggle, onDelete, isDeleting = false, onTog
         <TableRow className="bg-gray-50 dark:bg-slate-800/60">
           <TableCell colSpan={5} className="!p-0">
             {offer.groups.length === 0 ? (
-              <div className="p-4 text-sm text-gray-500 dark:text-slate-400">No groups in this offer.</div>
+              <div className="p-4 text-sm text-gray-500 dark:text-slate-400">{t("offersPage.noGroupsInOffer")}</div>
             ) : (
               <div className="border-t border-gray-200 dark:border-slate-700">
-                {offerRowDetails(offer)}
+                <OfferRowDetails offer={offer} />
               </div>
             )}
           </TableCell>
@@ -135,6 +136,7 @@ function OfferRow({ offer, isOpen, onToggle, onDelete, isDeleting = false, onTog
 
 
 export default function Offers() {
+  const { t } = useTranslation();
   const [offers, setOffers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null)
@@ -164,7 +166,7 @@ export default function Offers() {
         setError(null);
       })
       .catch((err) => {
-        setError(err?.message || 'Failed to load');
+        setError(err?.message || t("common.failedToLoad"));
         setOffers([]);
       })
       .finally(() => {
@@ -216,7 +218,7 @@ export default function Offers() {
       loadOffers();
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : `Failed to ${confirmDialog.type} offer`);
+      setError(err instanceof Error ? err.message : t("common.failedSave"));
     } finally {
       setDeletingId(null);
       closeConfirmDialog();
@@ -244,7 +246,7 @@ export default function Offers() {
       );
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update offer status');
+      setError(err instanceof Error ? err.message : t("common.failedSave"));
     }
   };
 
@@ -264,23 +266,23 @@ export default function Offers() {
               <Alert variant="destructive">
                 <FiAlertCircle className="h-4 w-4" />
                 <AlertTitle>
-                  {confirmDialog.type === 'delete' ? 'Delete Offer' : 'Restore Offer'}
+                  {confirmDialog.type === 'delete' ? t("offersPage.deleteTitle") : t("offersPage.restoreTitle")}
                 </AlertTitle>
                 <AlertDescription>
                   {confirmDialog.type === 'delete'
-                    ? `Are you sure you want to delete "${confirmDialog.name}"?`
-                    : `Are you sure you want to restore "${confirmDialog.name}"?`}
+                    ? t("offersPage.deleteConfirm", { name: confirmDialog.name ?? "" })
+                    : t("offersPage.restoreConfirm", { name: confirmDialog.name ?? "" })}
                 </AlertDescription>
               </Alert>
               <div className="flex justify-end gap-3 mt-6">
                 <Button variant="ghost" onClick={closeConfirmDialog}>
-                  Cancel
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   variant={confirmDialog.type === 'delete' ? 'danger' : 'primary'}
                   onClick={handleConfirm}
                 >
-                  {confirmDialog.type === 'delete' ? 'Delete' : 'Restore'}
+                  {confirmDialog.type === 'delete' ? t("common.delete") : t("common.restore")}
                 </Button>
               </div>
             </div>
@@ -290,8 +292,8 @@ export default function Offers() {
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Offers</h1>
-          <p className="text-gray-600 mt-1 dark:text-slate-400">Manage your offers</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{t("offersPage.title")}</h1>
+          <p className="text-gray-600 mt-1 dark:text-slate-400">{t("offersPage.subtitle")}</p>
         </div>
         <Link to="/offers/creation" className="w-full sm:w-auto">
           <Button
@@ -299,7 +301,7 @@ export default function Offers() {
             icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
             className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
           >
-            <span className="sm:inline">Create Offer</span>
+            <span className="sm:inline">{t("offersPage.create")}</span>
           </Button>
         </Link>
       </div>
@@ -307,10 +309,10 @@ export default function Offers() {
         <Table>
           <TableHead>
             <tr>
-              <TableHeadCell>Name</TableHeadCell>
-              <TableHeadCell>Description</TableHeadCell>
-              <TableHeadCell>Price</TableHeadCell>
-              <TableHeadCell>Actions</TableHeadCell>
+              <TableHeadCell>{t("offersPage.name")}</TableHeadCell>
+              <TableHeadCell>{t("offersPage.description")}</TableHeadCell>
+              <TableHeadCell>{t("offersPage.price")}</TableHeadCell>
+              <TableHeadCell>{t("offersPage.actions")}</TableHeadCell>
             </tr>
           </TableHead>
           <TableBody>
@@ -328,12 +330,12 @@ export default function Offers() {
       {!loading && (
         <div className="space-y-8">
           <div>
-            <h2 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-slate-100">Active Offers</h2>
+            <h2 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-slate-100">{t("offersPage.activeHeading")}</h2>
 
             {/* Mobile: cards */}
             <div className="space-y-3 md:hidden">
               {activeOffers.length === 0 ? (
-                <p className="text-sm text-gray-600 dark:text-slate-400">No active offers found.</p>
+                <p className="text-sm text-gray-600 dark:text-slate-400">{t("offersPage.noActive")}</p>
               ) : (
                 activeOffers.map((o) => (
                   <Card key={o.id} className="shadow-sm">
@@ -344,7 +346,7 @@ export default function Offers() {
                             {o.name}
                           </CardTitle>
                           <p className="text-xs text-gray-600 dark:text-slate-400">
-                            {o.description || 'No description'}
+                            {o.description || t("common.noDescription")}
                           </p>
                         </div>
                         <span
@@ -353,13 +355,13 @@ export default function Offers() {
                             : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
                             }`}
                         >
-                          {o.isActive ? 'Active' : 'Inactive'}
+                          {o.isActive ? t("common.active") : t("common.inactive")}
                         </span>
                       </div>
                     </CardHeader>
                     <CardContent className="px-4 pb-4 pt-0 space-y-2 text-xs text-gray-700 dark:text-slate-300">
                       <p>
-                        Price:{' '}
+                        {t("offersPage.price")}:{' '}
                         <span className="font-semibold">
                           {o.price != null ? `${o.price} €` : '-'}
                         </span>
@@ -371,7 +373,7 @@ export default function Offers() {
                           className="px-2 text-xs"
                           onClick={() => toggleRow(String(o.id))}
                         >
-                          {openRowId === String(o.id) ? 'Hide details' : 'Details'}
+                          {openRowId === String(o.id) ? t("common.hideDetails") : t("common.details")}
                         </Button>
                         <div className="flex gap-1">
                           <Button
@@ -409,10 +411,10 @@ export default function Offers() {
                       {openRowId === String(o.id) && (
                         <div className="mt-2 border-t border-gray-200 dark:border-slate-700 pt-2">
                           {o.groups && o.groups.length > 0 ? (
-                            offerRowDetails(o)
+                            <OfferRowDetails offer={o} />
                           ) : (
                             <p className="text-xs">
-                              No groups in this offer.
+                              {t("offersPage.noGroupsInOffer")}
                             </p>
                           )}
                         </div>
@@ -428,17 +430,17 @@ export default function Offers() {
               <Table>
                 <TableHead>
                   <tr>
-                    <TableHeadCell>Name</TableHeadCell>
-                    <TableHeadCell>Description</TableHeadCell>
-                    <TableHeadCell>Price</TableHeadCell>
-                    <TableHeadCell>Active</TableHeadCell>
-                    <TableHeadCell>Actions</TableHeadCell>
+                    <TableHeadCell>{t("offersPage.name")}</TableHeadCell>
+                    <TableHeadCell>{t("offersPage.description")}</TableHeadCell>
+                    <TableHeadCell>{t("offersPage.price")}</TableHeadCell>
+                    <TableHeadCell>{t("common.status")}</TableHeadCell>
+                    <TableHeadCell>{t("offersPage.actions")}</TableHeadCell>
                   </tr>
                 </TableHead>
                 <TableBody>
                   {activeOffers.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-gray-500 dark:text-slate-400">No active offers found.</TableCell>
+                      <TableCell colSpan={5} className="text-gray-500 dark:text-slate-400">{t("offersPage.noActive")}</TableCell>
                     </TableRow>
                   )}
                   {activeOffers.map((o) => (
@@ -459,16 +461,16 @@ export default function Offers() {
 
           {deletedOffers.length > 0 && (
             <div>
-              <h2 className="text-2xl font-semibold text-gray-600 dark:text-slate-400 mb-4">Deleted Offers</h2>
+              <h2 className="text-2xl font-semibold text-gray-600 dark:text-slate-400 mb-4">{t("offersPage.deletedHeading")}</h2>
               <Table>
                 <TableHead>
                   <tr className="bg-gray-100 dark:bg-slate-900">
-                    <TableHeadCell className="text-gray-600 dark:text-slate-100">Name</TableHeadCell>
-                    <TableHeadCell className="text-gray-600 dark:text-slate-100">Description</TableHeadCell>
-                    <TableHeadCell className="text-gray-600 dark:text-slate-100">Price</TableHeadCell>
-                    <TableHeadCell className="text-gray-600 dark:text-slate-100">Active</TableHeadCell>
-                    <TableHeadCell className="text-gray-600 dark:text-slate-100">Deleted By</TableHeadCell>
-                    <TableHeadCell className="text-gray-600 dark:text-slate-100">Actions</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">{t("offersPage.name")}</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">{t("offersPage.description")}</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">{t("offersPage.price")}</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">{t("common.status")}</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">{t("productsPage.deletedBy")}</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">{t("offersPage.actions")}</TableHeadCell>
                   </tr>
                 </TableHead>
                 <TableBody>
@@ -481,8 +483,8 @@ export default function Offers() {
                         <TableCell className="text-gray-600 dark:text-slate-300">{o.price}</TableCell>
                         <TableCell className="text-gray-600 dark:text-slate-300">
                           {o.isActive
-                            ? <FiCheckCircle className="w-5 h-5 text-green-500" aria-label="Available" />
-                            : <FiXCircle className="w-5 h-5 text-red-500" aria-label="Not available" />}
+                            ? <FiCheckCircle className="w-5 h-5 text-green-500" aria-label={t("common.ariaAvailable")} />
+                            : <FiXCircle className="w-5 h-5 text-red-500" aria-label={t("common.ariaNotAvailable")} />}
                         </TableCell>
                         <TableCell className="text-gray-500 dark:text-slate-400 text-sm">
                           {String(anyOffer.deletedBy ?? '')}

@@ -1,11 +1,23 @@
-import { Fragment, useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '../components/ui/button'
 import { FiCheckCircle, FiSlash } from 'react-icons/fi'
 import { Card, CardContent } from '../components/ui/card'
 import Table, { TableBody, TableHead, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { Skeleton } from '../components/ui/skeleton'
+import { OrderDetailsPanel } from '../components/OrderDetailsPanel'
 
 import { API_BASE } from '../config'
+import { getCurrentUserRole, OrderStatus, updateOrder } from '../utils/api'
+import { UserRole } from '../utils/userRoles'
+import { OrderTableSortHeadCell } from '../components/OrderTableSortHeadCell'
+import {
+  sortOrdersByColumn,
+  toggleOrderTableSort,
+  type OrderTableSortDir,
+  type OrderTableSortKey,
+} from '../utils/orderTableSort'
+import i18n from '../i18n'
 
 type DashboardOrder = {
   id?: string | number
@@ -51,136 +63,8 @@ type DashboardOrder = {
   amount?: number | string | null
   status?: string
   createdAt?: string
-}
-
-function OrderDetails({ order }: { order: DashboardOrder }) {
-  return (
-    <div className="p-4 space-y-3">
-      <div className="grid grid-cols-2 sm:grid-cols-6 gap-3 pb-3 border-b">
-        <div className="text-center">
-          <p className="text-xs uppercase">Payment</p>
-          <p className="text-sm font-semibold">{order.paymentMethod ?? '-'}</p>
-        </div>
-        <div className="text-center">
-          <p className="text-xs uppercase">Payment Status</p>
-          <span className="text-xs font-semibold px-2 py-1 rounded bg-yellow-100 text-yellow-800 inline-block">
-            {order.paymentStatus ?? '-'}
-          </span>
-        </div>
-        <div className="text-center">
-          <p className="text-xs uppercase">Fee</p>
-          <p className="text-sm font-semibold">{formatMoney(order.deliveryFee)}</p>
-        </div>
-        <div className="text-center">
-          <p className="text-xs uppercase">Discount</p>
-          <p className="text-sm font-semibold text-red-600">{formatMoney(order.discount)}</p>
-        </div>
-        <div>
-          <p className="text-xs uppercase font-semibold mb-1">Customer</p>
-          <p className="font-semibold">{order.customer?.name ?? order.customerName ?? '-'}</p>
-          <p className="text-xs">{order.customer?.email ?? order.email ?? '-'}</p>
-          <p className="text-xs">{order.customer?.phone ?? '-'}</p>
-        </div>
-        <div>
-          <p className="text-xs uppercase font-semibold mb-1">Delivery</p>
-          <p className="font-semibold">
-            {order.deliveryTime ? new Date(order.deliveryTime).toLocaleString() : '-'}
-          </p>
-          {order.notes && <p className="text-xs italic mt-1">Note: {order.notes}</p>}
-        </div>
-      </div>
-
-      <div className="space-y-2 pb-3 border-b">
-        {order.products && order.products.length > 0 && (
-          <div>
-            <p className="text-xs font-semibold uppercase mb-1">Products ({order.products.length})</p>
-            <div className="space-y-1">
-              {order.products.map((p) => {
-                const removed = (p.removedIngredients ?? p.removed_ingredients ?? []) as string[]
-                const hasRemoved = Array.isArray(removed) && removed.length > 0
-                return (
-                  <div key={String(p.id ?? '')} className="text-xs p-2 bg-gray-50 rounded dark:bg-slate-800">
-                    <div className="flex justify-between">
-                      <span>
-                        <strong>{p.name ?? ''}</strong> x{String(p.quantity ?? '')}
-                      </span>
-                      <span className="font-semibold">{formatMoney(p.total ?? null)}</span>
-                    </div>
-                    {hasRemoved && (
-                      <div className="mt-1 ml-2 text-amber-700 dark:text-amber-400 font-medium">
-                        Without: {removed.join(', ')}
-                      </div>
-                    )}
-                    {p.extras && p.extras.length > 0 && (
-                      <div className="mt-1 ml-2 space-y-0.5">
-                        {p.extras.map((extra) => (
-                          <div key={String(extra.id ?? '')}>
-                            • {extra.name ?? ''} x{String(extra.quantity ?? '')}{' '}
-                            <span>({formatMoney(extra.price ?? null)})</span>
-                          </div>
-                        ))}
-                        {p.extrasPrice != null && Number(p.extrasPrice) > 0 && (
-                          <div className="font-semibold mt-0.5">Extras Total: {formatMoney(p.extrasPrice)}</div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {order.offers && order.offers.length > 0 && (
-          <div>
-            <p className="text-xs font-semibold uppercase mb-1">Offers ({order.offers.length})</p>
-            <div className="space-y-1">
-              {order.offers.map((o) => (
-                <div key={String(o.id ?? '')} className="text-xs p-2 bg-purple-50 rounded border border-purple-200">
-                  <div className="flex justify-between">
-                    <span>
-                      <strong>{o.name ?? ''}</strong> x{String(o.quantity ?? '')}
-                    </span>
-                    <span className="font-semibold">{formatMoney(o.total ?? null)}</span>
-                  </div>
-                  {o.groups && o.groups.length > 0 && (
-                    <div className="mt-1 ml-2">
-                      {o.groups.map((g) => (
-                        <div key={String(g.groupId ?? '')}>
-                          {g.groupName ?? ''}: <strong>{g.selectedItem?.name ?? ''}</strong>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="flex justify-end gap-8 text-sm">
-        <div>
-          <p className="text-xs">Subtotal</p>
-          <p className="font-semibold">{formatMoney(order.subtotal)}</p>
-        </div>
-        <div>
-          <p className="text-xs">Fee</p>
-          <p className="font-semibold">{formatMoney(order.deliveryFee)}</p>
-        </div>
-        {Number(order.discount ?? 0) > 0 && (
-          <div>
-            <p className="text-xs">Discount</p>
-            <p className="font-semibold text-red-600">-{formatMoney(order.discount)}</p>
-          </div>
-        )}
-        <div className="text-right border-l pl-8">
-          <p className="text-xs">Total</p>
-          <p className="text-lg font-bold text-green-600">{formatMoney(order.total ?? order.amount)}</p>
-        </div>
-      </div>
-    </div>
-  )
+  orderNumber?: number
+  orderDate?: string
 }
 
 function normalizeOrders(payload: unknown): DashboardOrder[] {
@@ -207,8 +91,31 @@ function isToday(value?: string): boolean {
 function statusClass(status?: string): string {
   if (status === 'DELIVERED') return 'bg-green-100 text-green-800'
   if (status === 'PENDING') return 'bg-yellow-100 text-yellow-800'
-  if (status === 'CANCELLED') return 'bg-red-100 text-red-800'
+  if (status === 'CANCELLED' || status === 'REJECTED') return 'bg-red-100 text-red-800'
+  if (status === 'CONFIRMED') return 'bg-blue-100 text-blue-800'
   return 'bg-blue-100 text-blue-800'
+}
+
+const DASHBOARD_STATUS_FILTER_ORDER = [
+  OrderStatus.PENDING,
+  OrderStatus.CONFIRMED,
+  OrderStatus.PREPARING,
+  OrderStatus.READY,
+  OrderStatus.ON_THE_WAY,
+  OrderStatus.DELIVERED,
+  OrderStatus.CANCELLED,
+  OrderStatus.REJECTED,
+] as const
+
+const DASHBOARD_STATUS_LABEL_KEY: Record<(typeof DASHBOARD_STATUS_FILTER_ORDER)[number], string> = {
+  [OrderStatus.PENDING]: 'dashboardPage.statusPending',
+  [OrderStatus.CONFIRMED]: 'dashboardPage.statusConfirmed',
+  [OrderStatus.PREPARING]: 'dashboardPage.statusPreparing',
+  [OrderStatus.READY]: 'dashboardPage.statusReady',
+  [OrderStatus.ON_THE_WAY]: 'dashboardPage.statusOnTheWay',
+  [OrderStatus.DELIVERED]: 'dashboardPage.statusDelivered',
+  [OrderStatus.CANCELLED]: 'dashboardPage.statusCancelled',
+  [OrderStatus.REJECTED]: 'dashboardPage.statusRejected',
 }
 
 function formatMoney(value?: number | string | null): string {
@@ -217,24 +124,115 @@ function formatMoney(value?: number | string | null): string {
   return Number.isFinite(n) ? `€${n.toFixed(2)}` : '-'
 }
 
+function formatOrderBusinessDate(value: string | number | undefined | null): string {
+  const dash = i18n.t('common.emDash')
+  if (value == null || value === '') return dash
+  const d = new Date(String(value))
+  return Number.isNaN(d.getTime()) ? dash : d.toLocaleDateString()
+}
+
 export default function Dashboard() {
+  const { t } = useTranslation()
+  const dash = t('common.emDash')
   const [loading, setLoading] = useState(true)
   const [todayOrders, setTodayOrders] = useState<DashboardOrder[]>([])
   const [error, setError] = useState<string | null>(null)
   const [openRowId, setOpenRowId] = useState<string | null>(null)
+  const [sortKey, setSortKey] = useState<OrderTableSortKey>('createdAt')
+  const [sortDir, setSortDir] = useState<OrderTableSortDir>('desc')
+  const [patchingOrderId, setPatchingOrderId] = useState<string | null>(null)
+  const [orderActionError, setOrderActionError] = useState<string | null>(null)
+  const [statusFilter, setStatusFilter] = useState<string>('')
   const previousTodayCountRef = useRef<number | null>(null)
   const audioCtxRef = useRef<AudioContext | null>(null)
+  const refreshTodayOrdersRef = useRef<() => Promise<void>>(() => Promise.resolve())
+
+  const filteredTodayOrders = useMemo(() => {
+    if (!statusFilter) return todayOrders
+    return todayOrders.filter((o) => String(o.status ?? '') === statusFilter)
+  }, [todayOrders, statusFilter])
+
+  const displayedOrders = useMemo(
+    () => sortOrdersByColumn(filteredTodayOrders, sortKey, sortDir),
+    [filteredTodayOrders, sortKey, sortDir]
+  )
+
+  const onSortColumn = (k: OrderTableSortKey) => {
+    const next = toggleOrderTableSort(sortKey, sortDir, k)
+    setSortKey(next.key)
+    setSortDir(next.dir)
+  }
 
   const toggleRow = (id: string | number) => {
     setOpenRowId((prev) => (prev === String(id) ? null : String(id)))
   }
 
-  const acceptOrder = (id: string) => {
-    console.log('Accept Id:', id)
+  const patchOrderStatus = async (id: string, status: typeof OrderStatus.CONFIRMED | typeof OrderStatus.CANCELLED) => {
+    if (!id || patchingOrderId) return
+    setPatchingOrderId(id)
+    setOrderActionError(null)
+    try {
+      await updateOrder(id, { status })
+      setTodayOrders((prev) => prev.map((o) => (String(o.id) === id ? { ...o, status } : o)))
+    } catch (e) {
+      setOrderActionError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setPatchingOrderId(null)
+    }
   }
 
-  const rejectOrder = (id: string) => {
-    console.log('Reject Id:', id)
+  const markOrderReady = async (id: string) => {
+    if (!id || patchingOrderId) return
+    setPatchingOrderId(id)
+    setOrderActionError(null)
+    try {
+      await updateOrder(id, { status: OrderStatus.READY })
+      await refreshTodayOrdersRef.current()
+    } catch (e) {
+      setOrderActionError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setPatchingOrderId(null)
+    }
+  }
+
+  const patchOrderStatusWithRefresh = async (
+    id: string,
+    status: typeof OrderStatus.ON_THE_WAY | typeof OrderStatus.DELIVERED,
+  ) => {
+    if (!id || patchingOrderId) return
+    setPatchingOrderId(id)
+    setOrderActionError(null)
+    try {
+      await updateOrder(id, { status })
+      await refreshTodayOrdersRef.current()
+    } catch (e) {
+      setOrderActionError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setPatchingOrderId(null)
+    }
+  }
+
+  const confirmOrder = (id: string) => patchOrderStatus(id, OrderStatus.CONFIRMED)
+
+  const cancelOrder = (id: string) => patchOrderStatus(id, OrderStatus.CANCELLED)
+
+  const isChef = getCurrentUserRole() === UserRole.CHEF
+  const isDeliveryMan = getCurrentUserRole() === UserRole.DELIVERY_MAN
+
+  const deliveryCanMarkOnTheWay = (status: string | undefined) => (status ?? '') === OrderStatus.READY
+
+  const deliveryCanMarkDelivered = (status: string | undefined) =>
+    (status ?? '') === OrderStatus.ON_THE_WAY
+
+  const chefCannotMarkReady = (status: string | undefined) => {
+    const s = status ?? ''
+    return (
+      s === OrderStatus.READY ||
+      s === OrderStatus.ON_THE_WAY ||
+      s === OrderStatus.DELIVERED ||
+      s === OrderStatus.CANCELLED ||
+      s === OrderStatus.REJECTED
+    )
   }
 
   const playNewOrderSound = () => {
@@ -295,16 +293,14 @@ export default function Dashboard() {
       try {
         const r = await fetch(`${API_BASE}/orders`)
         if (!r.ok) {
-          throw new Error(`Failed to fetch orders (${r.status})`)
+          throw new Error(i18n.t('dashboardPage.fetchFailed', { status: r.status }))
         }
 
         const payload = await r.json()
         if (!mounted) return
 
         const orders = normalizeOrders(payload)
-        const filtered = orders
-          .filter((o) => isToday(o.createdAt))
-          .sort((a, b) => new Date(String(b.createdAt ?? '')).getTime() - new Date(String(a.createdAt ?? '')).getTime())
+        const filtered = orders.filter((o) => isToday(o.createdAt))
 
         const previousCount = previousTodayCountRef.current
         const nextCount = filtered.length
@@ -322,11 +318,13 @@ export default function Dashboard() {
       }
     }
 
+    refreshTodayOrdersRef.current = refreshTodayOrders
     refreshTodayOrders()
-    const intervalId = window.setInterval(refreshTodayOrders, 30_000)
+    const intervalId = window.setInterval(() => void refreshTodayOrdersRef.current(), 30_000)
 
     return () => {
       mounted = false
+      refreshTodayOrdersRef.current = () => Promise.resolve()
       window.clearInterval(intervalId)
       if (audioCtxRef.current) {
         void audioCtxRef.current.close()
@@ -335,28 +333,62 @@ export default function Dashboard() {
     }
   }, [])
 
+  const noOrdersLabel =
+    todayOrders.length === 0 ? t('dashboardPage.noOrdersToday') : t('dashboardPage.noOrdersForStatus')
+
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100">Today&apos;s Orders</h1>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100">{t('dashboardPage.title')}</h1>
+        <div className="flex w-full flex-col gap-1 sm:w-auto sm:min-w-[11rem]">
+          <label htmlFor="dashboard-status-filter" className="text-xs font-medium text-slate-600 dark:text-slate-400">
+            {t('dashboardPage.filterByStatus')}
+          </label>
+          <select
+            id="dashboard-status-filter"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500/60 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+          >
+            <option value="">{t('dashboardPage.statusAll')}</option>
+            {DASHBOARD_STATUS_FILTER_ORDER.map((s) => (
+              <option key={s} value={s}>
+                {t(DASHBOARD_STATUS_LABEL_KEY[s])}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {orderActionError ? (
+        <div
+          role="alert"
+          className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/50 dark:text-red-200"
+        >
+          {orderActionError}
+        </div>
+      ) : null}
 
       <div className="bg-white rounded-md border shadow-sm dark:bg-slate-900 dark:border-slate-700 overflow-x-auto md:overflow-visible">
         {loading ? (
           <Table>
             <TableHead>
               <tr>
-                <TableHeadCell>Order</TableHeadCell>
-                <TableHeadCell>Restaurant</TableHeadCell>
-                <TableHeadCell>Delivery Location</TableHeadCell>
-                <TableHeadCell>Customer</TableHeadCell>
-                <TableHeadCell>Price</TableHeadCell>
-                <TableHeadCell>Status</TableHeadCell>
-                <TableHeadCell>Actions</TableHeadCell>
+                <TableHeadCell>{t('ordersPage.orderId')}</TableHeadCell>
+                <TableHeadCell>{t('ordersPage.orderNumber')}</TableHeadCell>
+                <TableHeadCell>{t('ordersPage.orderDate')}</TableHeadCell>
+                <TableHeadCell>{t('ordersPage.restaurant')}</TableHeadCell>
+                <TableHeadCell>{t('ordersPage.deliveryLocation')}</TableHeadCell>
+                <TableHeadCell>{t('ordersPage.customer')}</TableHeadCell>
+                <TableHeadCell>{t('ordersPage.price')}</TableHeadCell>
+                <TableHeadCell>{t('ordersPage.status')}</TableHeadCell>
+                <TableHeadCell>{t('dashboardPage.actions')}</TableHeadCell>
               </tr>
             </TableHead>
             <TableBody>
               {Array.from({ length: 5 }).map((_, r) => (
                 <TableRow key={r} className="animate-pulse">
-                  {Array.from({ length: 7 }).map((__, c) => (
+                  {Array.from({ length: 9 }).map((__, c) => (
                     <TableCell key={c}>
                       <Skeleton className="h-4 w-full bg-gray-200" />
                     </TableCell>
@@ -370,10 +402,10 @@ export default function Dashboard() {
         ) : (
           <>
             <div className="md:hidden divide-y divide-slate-200 dark:divide-slate-800">
-              {todayOrders.length === 0 ? (
-                <div className="p-4 text-sm text-slate-500 dark:text-slate-400">No orders for today</div>
+              {displayedOrders.length === 0 ? (
+                <div className="p-4 text-sm text-slate-500 dark:text-slate-400">{noOrdersLabel}</div>
               ) : (
-                todayOrders.map((o, i) => {
+                displayedOrders.map((o, i) => {
                   const id = String(o.id ?? '')
                   const restaurant = o.restaurant?.name ?? '-'
                   const deliveryLocation = o.deliveryLocation?.name ?? '-'
@@ -389,46 +421,110 @@ export default function Dashboard() {
                       className="rounded-none border-0 border-b last:border-b-0 bg-white dark:bg-slate-900"
                     >
                       <CardContent className="p-4 flex flex-col gap-2">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">#{id || '-'}</div>
-                          {status ? (
-                            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusClass(status)}`}>
-                              {status}
+                        <div
+                          className="flex flex-col gap-2 cursor-pointer rounded-md -m-1 p-1 hover:bg-slate-50 dark:hover:bg-slate-800/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                          onClick={() => toggleRow(o.id ?? '')}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault()
+                              toggleRow(o.id ?? '')
+                            }
+                          }}
+                          tabIndex={0}
+                          role="button"
+                          aria-expanded={openRowId === String(o.id ?? '')}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                              Order id {id || '—'}
+                            </div>
+                            {status ? (
+                              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusClass(status)}`}>
+                                {status}
+                              </span>
+                            ) : null}
+                          </div>
+                          <div className="text-xs text-slate-600 dark:text-slate-300">{restaurant} • {deliveryLocation}</div>
+                          <div className="text-xs text-slate-600 dark:text-slate-400">
+                            {t('dashboardPage.orderNumberMobile', {
+                              num: o.orderNumber != null ? String(o.orderNumber) : dash,
+                              date: formatOrderBusinessDate(o.orderDate),
+                            })}
+                          </div>
+                          <div className="text-sm text-slate-700 dark:text-slate-200 truncate">{customer}</div>
+                          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                            <span className="font-medium text-slate-900 dark:text-slate-100">
+                              {total}{' '}
+                              <span className="font-normal">{t('dashboardPage.subtotalMobile', { sub: subtotal })}</span>
                             </span>
-                          ) : null}
-                        </div>
-                        <div className="text-xs text-slate-600 dark:text-slate-300">{restaurant} • {deliveryLocation}</div>
-                        <div className="text-sm text-slate-700 dark:text-slate-200 truncate">{customer}</div>
-                        <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                          <span className="font-medium text-slate-900 dark:text-slate-100">{total} <span className="font-normal">(Subtotal {subtotal})</span></span>
-                          <span>{created}</span>
+                            <span>{created}</span>
+                          </div>
                         </div>
                         <div>
-                          <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => toggleRow(o.id ?? '')}
-                            >
-                              {openRowId === String(o.id ?? '') ? 'Hide' : 'Details'}
-                            </Button>
-                            <Button
-                              variant="primary"
-                              size="sm"
-                              icon={<FiCheckCircle className="w-4 h-4" />}
-                              onClick={() => acceptOrder(String(o.id ?? ''))}
-                            />
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              icon={<FiSlash className="w-4 h-4" />}
-                              onClick={() => rejectOrder(String(o.id ?? ''))}
-                            />
+                          <div className="flex flex-nowrap items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                            {isChef ? (
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                disabled={!!patchingOrderId || chefCannotMarkReady(status)}
+                                aria-label={t('dashboardPage.ariaReady')}
+                                onClick={() => markOrderReady(String(o.id ?? ''))}
+                              >
+                                {t('dashboardPage.ready')}
+                              </Button>
+                            ) : isDeliveryMan ? (
+                              <>
+                                <Button
+                                  variant="primary"
+                                  size="sm"
+                                  disabled={!!patchingOrderId || !deliveryCanMarkOnTheWay(status)}
+                                  aria-label={t('dashboardPage.ariaOnTheWay')}
+                                  onClick={() =>
+                                    patchOrderStatusWithRefresh(String(o.id ?? ''), OrderStatus.ON_THE_WAY)
+                                  }
+                                >
+                                  {t('dashboardPage.onTheWay')}
+                                </Button>
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  disabled={!!patchingOrderId || !deliveryCanMarkDelivered(status)}
+                                  aria-label={t('dashboardPage.ariaDelivered')}
+                                  onClick={() =>
+                                    patchOrderStatusWithRefresh(String(o.id ?? ''), OrderStatus.DELIVERED)
+                                  }
+                                >
+                                  {t('dashboardPage.delivered')}
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                <Button
+                                  variant="primary"
+                                  size="sm"
+                                  icon={<FiCheckCircle className="w-4 h-4" />}
+                                  disabled={!!patchingOrderId}
+                                  aria-label={t('dashboardPage.confirmOrder')}
+                                  onClick={() => confirmOrder(String(o.id ?? ''))}
+                                />
+                                <Button
+                                  variant="danger"
+                                  size="sm"
+                                  icon={<FiSlash className="w-4 h-4" />}
+                                  disabled={!!patchingOrderId}
+                                  aria-label={t('dashboardPage.cancelOrder')}
+                                  onClick={() => cancelOrder(String(o.id ?? ''))}
+                                />
+                              </>
+                            )}
                           </div>
                         </div>
                         {openRowId === String(o.id ?? '') && (
-                          <div className="border-t border-gray-100 pt-2">
-                            <OrderDetails order={o} />
+                          <div
+                            className="border-t border-gray-100 pt-2"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <OrderDetailsPanel order={o} />
                           </div>
                         )}
                       </CardContent>
@@ -442,34 +538,105 @@ export default function Dashboard() {
               <Table>
                 <TableHead>
                   <tr>
-                    <TableHeadCell>Order</TableHeadCell>
-                    <TableHeadCell>Restaurant</TableHeadCell>
-                    <TableHeadCell>Delivery Location</TableHeadCell>
-                    <TableHeadCell>Customer</TableHeadCell>
-                    <TableHeadCell>Price</TableHeadCell>
-                    <TableHeadCell>Status</TableHeadCell>
-                    <TableHeadCell>Actions</TableHeadCell>
+                    <OrderTableSortHeadCell
+                      label={t('ordersPage.orderId')}
+                      colKey="createdAt"
+                      activeKey={sortKey}
+                      dir={sortDir}
+                      onSort={onSortColumn}
+                    />
+                    <OrderTableSortHeadCell
+                      label={t('ordersPage.orderNumber')}
+                      colKey="orderNumber"
+                      activeKey={sortKey}
+                      dir={sortDir}
+                      onSort={onSortColumn}
+                    />
+                    <OrderTableSortHeadCell
+                      label={t('ordersPage.orderDate')}
+                      colKey="orderDate"
+                      activeKey={sortKey}
+                      dir={sortDir}
+                      onSort={onSortColumn}
+                    />
+                    <OrderTableSortHeadCell
+                      label={t('ordersPage.restaurant')}
+                      colKey="restaurant"
+                      activeKey={sortKey}
+                      dir={sortDir}
+                      onSort={onSortColumn}
+                    />
+                    <OrderTableSortHeadCell
+                      label={t('ordersPage.deliveryLocation')}
+                      colKey="deliveryLocation"
+                      activeKey={sortKey}
+                      dir={sortDir}
+                      onSort={onSortColumn}
+                    />
+                    <OrderTableSortHeadCell
+                      label={t('ordersPage.customer')}
+                      colKey="customer"
+                      activeKey={sortKey}
+                      dir={sortDir}
+                      onSort={onSortColumn}
+                    />
+                    <OrderTableSortHeadCell
+                      label={t('ordersPage.price')}
+                      colKey="price"
+                      activeKey={sortKey}
+                      dir={sortDir}
+                      onSort={onSortColumn}
+                    />
+                    <OrderTableSortHeadCell
+                      label={t('ordersPage.status')}
+                      colKey="status"
+                      activeKey={sortKey}
+                      dir={sortDir}
+                      onSort={onSortColumn}
+                    />
+                    <TableHeadCell>{t('dashboardPage.actions')}</TableHeadCell>
                   </tr>
                 </TableHead>
                 <TableBody>
-                  {todayOrders.length === 0 && (
+                  {displayedOrders.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={7}>No orders for today</TableCell>
+                      <TableCell colSpan={9}>{noOrdersLabel}</TableCell>
                     </TableRow>
                   )}
-                  {todayOrders.map((o, i) => (
+                  {displayedOrders.map((o, i) => (
                     <Fragment key={String(o.id ?? i)}>
-                      <TableRow>
+                      <TableRow
+                        onClick={() => toggleRow(o.id ?? '')}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            toggleRow(o.id ?? '')
+                          }
+                        }}
+                        tabIndex={0}
+                        aria-expanded={openRowId === String(o.id ?? '')}
+                        className="cursor-pointer hover:bg-blue-50 dark:hover:bg-slate-700/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                      >
                         <TableCell>
-                          <div className="text-sm font-semibold">#{String(o.id ?? '')}</div>
+                          <div className="text-sm font-semibold">{String(o.id ?? '')}</div>
                           <div className="text-xs text-slate-500">{o.createdAt ? new Date(String(o.createdAt)).toLocaleTimeString() : ''}</div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm font-semibold tabular-nums">
+                            {o.orderNumber != null ? o.orderNumber : dash}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm">{formatOrderBusinessDate(o.orderDate)}</span>
                         </TableCell>
                         <TableCell>{o.restaurant?.name ?? '-'}</TableCell>
                         <TableCell>{o.deliveryLocation?.name ?? '-'}</TableCell>
                         <TableCell>{o.customerName ?? o.customer?.name ?? o.email ?? '-'}</TableCell>
                         <TableCell>
                           <p className="font-semibold">{formatMoney(o.total ?? o.amount)}</p>
-                          <p className="text-xs">Subtotal: {formatMoney(o.subtotal)}</p>
+                          <p className="text-xs">
+                            {t('common.subtotal')}: {formatMoney(o.subtotal)}
+                          </p>
                         </TableCell>
                         <TableCell>
                           <span className={`px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${statusClass(o.status)}`}>
@@ -477,33 +644,73 @@ export default function Dashboard() {
                           </span>
                         </TableCell>
                         <TableCell>
-                          <div className="flex justify-center gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => toggleRow(o.id ?? '')}
-                            >
-                              {openRowId === String(o.id ?? '') ? 'Hide' : 'Details'}
-                            </Button>
-                            <Button
-                              variant="primary"
-                              size="sm"
-                              icon={<FiCheckCircle className="w-4 h-4" />}
-                              onClick={() => acceptOrder(String(o.id ?? ''))}
-                            />
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              icon={<FiSlash className="w-4 h-4" />}
-                              onClick={() => rejectOrder(String(o.id ?? ''))}
-                            />
+                          <div
+                            className="flex flex-nowrap justify-center items-center gap-1"
+                            onClick={(e) => e.stopPropagation()}
+                            role="presentation"
+                          >
+                            {isChef ? (
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                disabled={!!patchingOrderId || chefCannotMarkReady(o.status)}
+                                aria-label={t('dashboardPage.ariaReady')}
+                                onClick={() => markOrderReady(String(o.id ?? ''))}
+                              >
+                                {t('dashboardPage.ready')}
+                              </Button>
+                            ) : isDeliveryMan ? (
+                              <>
+                                <Button
+                                  variant="primary"
+                                  size="sm"
+                                  disabled={!!patchingOrderId || !deliveryCanMarkOnTheWay(o.status)}
+                                  aria-label={t('dashboardPage.ariaOnTheWay')}
+                                  onClick={() =>
+                                    patchOrderStatusWithRefresh(String(o.id ?? ''), OrderStatus.ON_THE_WAY)
+                                  }
+                                >
+                                  {t('dashboardPage.onTheWay')}
+                                </Button>
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  disabled={!!patchingOrderId || !deliveryCanMarkDelivered(o.status)}
+                                  aria-label={t('dashboardPage.ariaDelivered')}
+                                  onClick={() =>
+                                    patchOrderStatusWithRefresh(String(o.id ?? ''), OrderStatus.DELIVERED)
+                                  }
+                                >
+                                  {t('dashboardPage.delivered')}
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                <Button
+                                  variant="primary"
+                                  size="sm"
+                                  icon={<FiCheckCircle className="w-4 h-4" />}
+                                  disabled={!!patchingOrderId}
+                                  aria-label={t('dashboardPage.confirmOrder')}
+                                  onClick={() => confirmOrder(String(o.id ?? ''))}
+                                />
+                                <Button
+                                  variant="danger"
+                                  size="sm"
+                                  icon={<FiSlash className="w-4 h-4" />}
+                                  disabled={!!patchingOrderId}
+                                  aria-label={t('dashboardPage.cancelOrder')}
+                                  onClick={() => cancelOrder(String(o.id ?? ''))}
+                                />
+                              </>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
                       {openRowId === String(o.id ?? '') && (
                         <TableRow>
-                          <TableCell colSpan={7}>
-                            <OrderDetails order={o} />
+                          <TableCell colSpan={9} className="text-left align-top">
+                            <OrderDetailsPanel order={o} />
                           </TableCell>
                         </TableRow>
                       )}

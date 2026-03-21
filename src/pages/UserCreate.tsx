@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button'
@@ -12,6 +13,7 @@ import { getRolesList, getCurrentUserId } from '../utils/api'
 import { Select } from '../components/ui/select';
 
 export default function UserCreate() {
+  const { t } = useTranslation()
   const { id } = useParams<{ id?: string }>()
   const navigate = useNavigate()
 
@@ -77,7 +79,7 @@ export default function UserCreate() {
         username: String(form.username).trim(),
       }
       if (!payload.email || !payload.username) {
-        setError('Email and username are required')
+        setError(t('common.emailUsernameRequired'))
         setSaving(false)
         return
       }
@@ -119,13 +121,13 @@ export default function UserCreate() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">{id ? 'Edit User' : 'Create User'}</h1>
+        <h1 className="text-3xl font-bold">{id ? t('createForms.editUser') : t('createForms.createUser')}</h1>
       </div>
 
       <Card className="shadow-md">
         <CardHeader>
-          <CardTitle>{id ? 'Update User' : 'New User'}</CardTitle>
-          <CardDescription>Manage user account and permissions</CardDescription>
+          <CardTitle>{id ? t('common.updateUser') : t('common.newUser')}</CardTitle>
+          <CardDescription>{t('common.manageUserAccount')}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSave} className="space-y-6">
@@ -138,30 +140,30 @@ export default function UserCreate() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium">Email *</Label>
+                <Label htmlFor="email" className="text-sm font-medium">{t('common.emailStar')}</Label>
                 <Input
                   id="email"
                   type="email"
                   className="w-full"
                   value={form.email}
                   onChange={(e) => setForm((s) => ({ ...s, email: e.target.value }))}
-                  placeholder="user@example.com"
+                  placeholder={t('common.userEmailPh')}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="username" className="text-sm font-medium">Username *</Label>
+                <Label htmlFor="username" className="text-sm font-medium">{t('common.username')} *</Label>
                 <Input
                   id="username"
                   className="w-full"
                   value={form.username}
                   onChange={(e) => setForm((s) => ({ ...s, username: e.target.value }))}
-                  placeholder="Username"
+                  placeholder={t('common.usernamePh')}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="role" className="text-sm font-medium">Role{isEditingSelf && <span className="text-gray-500 font-normal ml-1">(you cannot change your own role)</span>}</Label>
+                <Label htmlFor="role" className="text-sm font-medium">{t('common.role')}{isEditingSelf && <span className="text-gray-500 font-normal ml-1">{t('common.cannotChangeOwnRole')}</span>}</Label>
                 <Select
                   id="role"
                   value={String(roleId ?? '')}
@@ -169,7 +171,7 @@ export default function UserCreate() {
                   className="w-full"
                   disabled={isEditingSelf}
                 >
-                  <option value="">(No role)</option>
+                  <option value="">{t('common.noRoleOption')}</option>
                   {roleIds.map((r) => (
                     <option key={String(r.id)} value={String(r.id)}>
                       {r.name ?? String(r.id)}
@@ -182,11 +184,11 @@ export default function UserCreate() {
             <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-gray-200">
               <Link to="/users">
                 <Button variant="default" type="button">
-                  Cancel
+                  {t('common.cancel')}
                 </Button>
               </Link>
               <Button variant="primary" type="submit" disabled={saving}>
-                {saving ? (id ? 'Saving...' : 'Creating...') : (id ? 'Update' : 'Create')}
+                {saving ? (id ? t('common.saving') : t('common.creating')) : (id ? t('common.update') : t('common.create'))}
               </Button>
             </div>
           </form>
