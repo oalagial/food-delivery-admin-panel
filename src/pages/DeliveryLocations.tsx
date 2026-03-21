@@ -42,12 +42,18 @@ function renderRestaurantsCell(
           typeof item.minOrder === 'number' || typeof item.minOrder === 'string'
             ? t('deliveryLocationsPage.minBadge', { amount: String(item.minOrder) })
             : ''
+        const minTimeRaw = item.minDeliveryTimeMinutes
+        const minTime =
+          typeof minTimeRaw === 'number' || typeof minTimeRaw === 'string'
+            ? t('deliveryLocationsPage.minTimeBadge', { minutes: String(minTimeRaw) })
+            : ''
         const inactive = item.isActive === false
         return (
           <span key={idx} className={inactive ? 'opacity-60' : ''}>
             <span className="font-medium">{name}</span>
             {fee && <span className="ml-2 bg-gray-100 text-gray-800 rounded px-2 py-0.5 text-xs">{fee}</span>}
             {min && <span className="ml-2 bg-gray-100 text-gray-800 rounded px-2 py-0.5 text-xs">{min}</span>}
+            {minTime && <span className="ml-2 bg-gray-100 text-gray-800 rounded px-2 py-0.5 text-xs">{minTime}</span>}
             {inactive && <span className="ml-2 bg-red-200 text-red-800 rounded px-2 py-0.5 text-xs">{t('common.inactive')}</span>}
           </span>
         )

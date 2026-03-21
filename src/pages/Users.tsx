@@ -131,7 +131,7 @@ export default function Users() {
   }
 
   function isUserActive(u: User): boolean {
-    const v = (u as Record<string, unknown>).active
+    const v = (u as Record<string, unknown>).isActive
     if (v === undefined || v === null) return true
     return v === true || v === 'true' || String(v) === '1'
   }

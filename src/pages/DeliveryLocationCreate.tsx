@@ -12,10 +12,13 @@ import { AlertCircle } from 'lucide-react'
 import { createDeliveryLocation, getDeliveryLocationById, updateDeliveryLocation, getRestaurantsList } from '../utils/api'
 import type { CreateDeliveryLocationPayload, Restaurant as RestaurantType } from '../utils/api'
 
+const DEFAULT_MIN_DELIVERY_MINUTES = 10
+
 type DeliveredByEntry = {
   restaurantId: number
   deliveryFee: number
   minOrder: number
+  minDeliveryTimeMinutes: number
   isActive?: boolean
 }
 
@@ -76,10 +79,16 @@ export default function DeliveryLocationCreate() {
                 const entry = d as Record<string, unknown>
                 // Handle both restaurantId (direct) and id (from restaurant object)
                 const restaurantId = entry['restaurantId'] ?? entry['id']
+                const rawMinTime = entry['minDeliveryTimeMinutes']
+                const minDeliveryTimeMinutes =
+                  rawMinTime !== undefined && rawMinTime !== null && String(rawMinTime) !== ''
+                    ? Math.max(0, Math.floor(Number(rawMinTime)))
+                    : DEFAULT_MIN_DELIVERY_MINUTES
                 return {
                   restaurantId: Number(String(restaurantId ?? '')),
                   deliveryFee: entry['deliveryFee'] !== undefined && entry['deliveryFee'] !== null ? Number(entry['deliveryFee']) : 0,
                   minOrder: entry['minOrder'] !== undefined && entry['minOrder'] !== null ? Number(entry['minOrder']) : 0,
+                  minDeliveryTimeMinutes: Number.isFinite(minDeliveryTimeMinutes) ? minDeliveryTimeMinutes : DEFAULT_MIN_DELIVERY_MINUTES,
                   isActive: entry['isActive'] === undefined ? true : Boolean(entry['isActive']),
                 } as DeliveredByEntry
               })
@@ -164,6 +173,7 @@ export default function DeliveryLocationCreate() {
         restaurantId: entry.restaurantId,
         deliveryFee: entry.deliveryFee,
         minOrder: entry.minOrder,
+        minDeliveryTimeMinutes: entry.minDeliveryTimeMinutes,
         isActive: entry.isActive,
       })),
     }
@@ -380,7 +390,7 @@ export default function DeliveryLocationCreate() {
                             onClick={() =>
                               setSelectedDeliveredBy(list => [
                                 ...list,
-                                { restaurantId: Number(r.id), deliveryFee: 0, minOrder: 0, isActive: true },
+                                { restaurantId: Number(r.id), deliveryFee: 0, minOrder: 0, minDeliveryTimeMinutes: DEFAULT_MIN_DELIVERY_MINUTES, isActive: true },
                               ])
                             }
                           >
@@ -431,7 +441,7 @@ export default function DeliveryLocationCreate() {
                 {selectedDeliveredBy.map((entry, idx) => {
                   const rest = restaurants.find((r) => String(r.id) === String(entry.restaurantId))
                   return (
-                    <div key={entry.restaurantId} className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end p-3 bg-white dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-700">
+                    <div key={entry.restaurantId} className="grid grid-cols-1 md:grid-cols-7 gap-3 items-end p-3 bg-white dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-700">
                       <div className="md:col-span-2">
                         <div className="text-sm font-medium">{rest?.name ?? entry.restaurantId}</div>
                       </div>
@@ -458,6 +468,26 @@ export default function DeliveryLocationCreate() {
                             const v = Number(e.target.value)
                             setSelectedDeliveredBy((s) => s.map((it, i) => i === idx ? { ...it, minOrder: Number.isNaN(v) ? 0 : v } : it))
                           }} 
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">{t('common.minDeliveryTimeMinutesLabel')}</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          step={1}
+                          value={String(entry.minDeliveryTimeMinutes)}
+                          onChange={(e) => {
+                            const v = Math.floor(Number(e.target.value))
+                            setSelectedDeliveredBy((s) =>
+                              s.map((it, i) =>
+                                i === idx
+                                  ? { ...it, minDeliveryTimeMinutes: Number.isNaN(v) || v < 0 ? DEFAULT_MIN_DELIVERY_MINUTES : v }
+                                  : it,
+                              ),
+                            )
+                          }}
                           className="mt-1"
                         />
                       </div>

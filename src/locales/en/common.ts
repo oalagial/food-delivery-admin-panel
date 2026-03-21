@@ -412,5 +412,6 @@ export const common = {
   loadingRestaurants: 'Loading restaurants…',
   deliveryFeeEuro: 'Fee (€)',
   minOrderEuro: 'Min order (€)',
+  minDeliveryTimeMinutesLabel: 'Min delivery time (min)',
   extraPlusPrice: '(+{{price}} €)',
 } as const

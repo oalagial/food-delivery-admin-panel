@@ -12,6 +12,7 @@ import { API_BASE } from '../config'
 export default function SetPassword() {
   const { t } = useTranslation()
   const [searchParams] = useSearchParams()
+  const email = searchParams.get('email') ?? ''
   const token = searchParams.get('token') ?? ''
 
   const [password, setPassword] = useState('')
@@ -39,20 +40,28 @@ export default function SetPassword() {
       setError(passwordError)
       return
     }
-    if (!token) {
+    if (!email || !token) {
       setError(t('setPassword.errInvalidLink'))
       return
     }
     setLoading(true)
     try {
-      const res = await fetch(`${API_BASE}/auth/set-password`, {
+      const res = await fetch(`${API_BASE}/auth/accept-invite`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, password }),
+        body: JSON.stringify({ email, token, password }),
       })
       if (!res.ok) {
         const text = await res.text()
-        throw new Error(text || `Request failed (${res.status})`)
+        let msg = text || `Request failed (${res.status})`
+        try {
+          const j = JSON.parse(text) as { message?: string | string[] }
+          if (Array.isArray(j.message)) msg = j.message.join(', ')
+          else if (typeof j.message === 'string') msg = j.message
+        } catch {
+          /* use raw text */
+        }
+        throw new Error(msg)
       }
       setSuccess(true)
     } catch (err: unknown) {

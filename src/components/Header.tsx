@@ -14,8 +14,6 @@ import { FiLogOut, FiClock, FiMenu, FiMoon, FiSun, FiChevronDown } from 'react-i
 
 type HeaderProps = {
   onToggleSidebar?: () => void
-  /** When false, menu button sits flush left (no centered max-width bar). */
-  sidebarOpen?: boolean
 }
 
 function timeLocale(lng: string): string {
@@ -32,7 +30,7 @@ function userInitials(info: { email?: string; username?: string }): string {
   return primary.slice(0, 2).toUpperCase()
 }
 
-export default function Header({ onToggleSidebar, sidebarOpen = true }: HeaderProps) {
+export default function Header({ onToggleSidebar }: HeaderProps) {
   const { t, i18n } = useTranslation()
   const [time, setTime] = useState<string>(() =>
     new Date().toLocaleTimeString(timeLocale(i18n.language))
@@ -150,13 +148,7 @@ export default function Header({ onToggleSidebar, sidebarOpen = true }: HeaderPr
 
   return (
     <header className="fixed inset-x-0 top-0 z-20 border-b border-slate-200 bg-white/80 backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/80 md:sticky md:top-0">
-      <div
-        className={`flex w-full items-center justify-between gap-3 py-3 md:py-4 ${
-          sidebarOpen
-            ? 'mx-auto max-w-6xl px-4 md:px-6'
-            : 'max-w-none pl-2 pr-4 md:pl-3 md:pr-6'
-        }`}
-      >
+      <div className="flex w-full min-w-0 items-center justify-between gap-3 py-3 pl-3 pr-4 md:py-4 md:pl-4 md:pr-6">
         <div className="flex shrink-0 items-center">
           <button
             type="button"
@@ -171,7 +163,7 @@ export default function Header({ onToggleSidebar, sidebarOpen = true }: HeaderPr
           </button>
         </div>
 
-        <div className="flex flex-shrink-0 items-center gap-2 sm:gap-3">
+        <div className="flex min-w-0 shrink-0 items-center justify-end gap-2 sm:gap-3">
           <label className="sr-only" htmlFor="header-lang">
             {t('header.language')}
           </label>

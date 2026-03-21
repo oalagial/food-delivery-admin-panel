@@ -14,6 +14,6 @@ export const setPassword = {
   errUppercase: 'La password deve contenere almeno una lettera maiuscola',
   errSpecial: 'La password deve contenere almeno un carattere speciale',
   errMismatch: 'Le password non coincidono',
-  errInvalidLink: 'Link non valido o mancante',
+  errInvalidLink: 'Link non valido o mancante. Apri il link dall’email di invito.',
   errGeneric: 'Si è verificato un errore',
 } as const

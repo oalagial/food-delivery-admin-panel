@@ -419,12 +419,12 @@ export async function deleteUser(id: string | number): Promise<void> {
   }
 }
 
-export async function setUserActive(id: string | number, active: boolean): Promise<void> {
+export async function setUserActive(id: string | number, isActive: boolean): Promise<void> {
   if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
   const res = await authFetch(`/users/${encodeURIComponent(String(id))}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ active }),
+    body: JSON.stringify({ isActive }),
   })
   if (!res.ok) {
     const text = await res.text().catch(() => '')
@@ -1768,6 +1768,7 @@ export type CreateDeliveryLocationPayload = {
     restaurantId: number | string
     deliveryFee?: number
     minOrder?: number
+    minDeliveryTimeMinutes?: number
     isActive?: boolean
     [k: string]: unknown
   }>

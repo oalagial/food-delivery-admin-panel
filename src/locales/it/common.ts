@@ -412,5 +412,6 @@ export const common = {
   loadingRestaurants: 'Caricamento ristoranti…',
   deliveryFeeEuro: 'Commissione (€)',
   minOrderEuro: 'Ordine minimo (€)',
+  minDeliveryTimeMinutesLabel: 'Tempo minimo consegna (min)',
   extraPlusPrice: '(+{{price}} €)',
 } as const

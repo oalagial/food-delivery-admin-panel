@@ -14,6 +14,6 @@ export const setPassword = {
   errUppercase: 'Password must contain at least one uppercase letter',
   errSpecial: 'Password must contain at least one special character',
   errMismatch: 'Passwords do not match',
-  errInvalidLink: 'Invalid or missing link',
+  errInvalidLink: 'Invalid or missing link. Open the link from your invitation email.',
   errGeneric: 'Something went wrong',
 } as const

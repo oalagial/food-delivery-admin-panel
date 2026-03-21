@@ -144,5 +144,6 @@ export const deliveryLocationsPage = {
   restaurantsLabel: 'Restaurants',
   feeBadge: 'Fee: €{{amount}}',
   minBadge: 'Min: €{{amount}}',
+  minTimeBadge: 'Min time: {{minutes}} min',
   defaultLocationName: 'this location',
 } as const
