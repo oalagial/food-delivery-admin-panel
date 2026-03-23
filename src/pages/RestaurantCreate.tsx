@@ -1,8 +1,21 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { createRestaurant, getRestaurantsList, getRestaurantById, updateRestaurant, getMenusList, updateMenu } from '../utils/api'
-import type { CreateRestaurantPayload, MenuItem } from '../utils/api'
+import {
+  createRestaurant,
+  getRestaurantsList,
+  getRestaurantById,
+  updateRestaurant,
+  updateRestaurantImage,
+  getMenusList,
+  updateMenu,
+  PaymentMethod,
+  PAYMENT_METHODS,
+  type CreateRestaurantPayload,
+  type MenuItem,
+  type RestaurantConfig,
+} from '../utils/api'
+import { API_BASE } from '../config'
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
@@ -10,7 +23,9 @@ import { Label } from '../components/ui/label'
 import { Textarea } from '../components/ui/textarea'
 import { Alert, AlertDescription } from '../components/ui/alert'
 import { AlertCircle, CheckCircle } from 'lucide-react'
-import { Select } from '../components/ui/select';
+import { Select } from '../components/ui/select'
+import { MultiSelectDropdown } from '../components/ui/multi-select-dropdown'
+import { Checkbox } from '../components/ui/checkbox'
 
 const OPENING_HOUR_DAYS = [
   ['Monday', 'weekdayMon'],
@@ -21,6 +36,56 @@ const OPENING_HOUR_DAYS = [
   ['Saturday', 'weekdaySat'],
   ['Sunday', 'weekdaySun'],
 ] as const
+
+function parseRestaurantConfig(raw: unknown): RestaurantConfig {
+  if (raw == null || raw === '') return {}
+  if (typeof raw === 'string') {
+    try {
+      const o = JSON.parse(raw) as unknown
+      if (typeof o === 'object' && o !== null && !Array.isArray(o)) {
+        return { ...(o as Record<string, unknown>) }
+      }
+    } catch {
+      return {}
+    }
+    return {}
+  }
+  if (typeof raw === 'object' && raw !== null && !Array.isArray(raw)) {
+    return { ...(raw as Record<string, unknown>) }
+  }
+  return {}
+}
+
+function isPaymentMethod(v: unknown): v is PaymentMethod {
+  return v === PaymentMethod.CASH || v === PaymentMethod.CARD || v === PaymentMethod.ONLINE
+}
+
+function sortPaymentMethods(methods: PaymentMethod[]): PaymentMethod[] {
+  return PAYMENT_METHODS.filter((m) => methods.includes(m))
+}
+
+function parseConfigBoolean(v: unknown): boolean {
+  return v === true || v === 'true' || v === 1 || v === '1'
+}
+
+function parsePaymentMethodsFromConfig(cfg: RestaurantConfig): PaymentMethod[] {
+  const raw = cfg.paymentMethods
+  if (Array.isArray(raw)) {
+    const seen = new Set<PaymentMethod>()
+    for (const x of raw) {
+      if (isPaymentMethod(x)) seen.add(x)
+    }
+    return sortPaymentMethods([...seen])
+  }
+  if (isPaymentMethod(cfg.paymentMethod)) return [cfg.paymentMethod]
+  return []
+}
+
+const PAYMENT_METHOD_I18N: Record<PaymentMethod, string> = {
+  CASH: 'common.paymentMethodCash',
+  CARD: 'common.paymentMethodCard',
+  ONLINE: 'common.paymentMethodOnline',
+}
 
 export default function RestaurantCreate() {
   const { t } = useTranslation()
@@ -47,9 +112,15 @@ export default function RestaurantCreate() {
     ordersPerTimeslot: '',
   })
   const [files, setFiles] = useState<FileList | null>(null)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
   const [openingHours, setOpeningHours] = useState<Array<{ day: string; open: string; close: string }>>([])
   const [menus, setMenus] = useState<MenuItem[]>([])
   const [loadingMenus, setLoadingMenus] = useState(false)
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
+  const [removeProductIngredients, setRemoveProductIngredients] = useState(false)
+  const loadedConfigRef = useRef<RestaurantConfig>({})
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
@@ -66,7 +137,6 @@ export default function RestaurantCreate() {
       zipCode: String(form.zipCode || '').trim(),
       country: String(form.country || '').trim(),
       telephone: String(form.telephone || '').trim() || undefined,
-      image: String(form.image || '').trim(),
       description: String(form.description || '').trim(),
     }
 
@@ -89,6 +159,23 @@ export default function RestaurantCreate() {
     }
     if (openingHours.length > 0) {
       payload.openingHours = openingHours
+    }
+
+    const nextConfig: RestaurantConfig = { ...loadedConfigRef.current }
+    delete nextConfig.paymentMethod
+    delete (nextConfig as { deductMaterialsFromProducts?: unknown }).deductMaterialsFromProducts
+    const hadPaymentConfig =
+      Array.isArray(loadedConfigRef.current.paymentMethods) ||
+      isPaymentMethod(loadedConfigRef.current.paymentMethod)
+    delete nextConfig.paymentMethods
+    const ordered = sortPaymentMethods(paymentMethods)
+    if (ordered.length > 0) nextConfig.paymentMethods = ordered
+    else if (hadPaymentConfig) nextConfig.paymentMethods = []
+
+    nextConfig.removeProductIngredients = removeProductIngredients
+
+    if (Object.keys(nextConfig).length > 0) {
+      payload.config = nextConfig
     }
 
     const latRaw = String(form.latitude || '').trim()
@@ -123,16 +210,25 @@ export default function RestaurantCreate() {
     }
 
     try {
+      delete (payload as { image?: string }).image
+
       if (id) {
-        // Edit mode: use PUT
         await updateRestaurant(id, payload)
+        if (selectedFile) {
+          await updateRestaurantImage(id, selectedFile)
+        }
         setCreateResult(true)
       } else {
-        await createRestaurant(payload)
+        const created = await createRestaurant(payload)
+        const newId =
+          (created as { id?: string | number })?.id ??
+          (created as { data?: { id?: string | number } })?.data?.id
+        if (selectedFile && newId != null && String(newId) !== '') {
+          await updateRestaurantImage(newId, selectedFile)
+        }
         setCreateResult(true)
       }
 
-      // Optionally refresh list
       await getRestaurantsList()
 
       // After success, navigate back to list
@@ -157,6 +253,13 @@ export default function RestaurantCreate() {
       .then(([data, menusData]) => {
         if (!mounted) return
         if (data) {
+          const cfg = parseRestaurantConfig((data as { config?: unknown }).config)
+          loadedConfigRef.current = { ...cfg }
+          setPaymentMethods(parsePaymentMethodsFromConfig(cfg))
+          setRemoveProductIngredients(
+            parseConfigBoolean(cfg.removeProductIngredients) ||
+              parseConfigBoolean((cfg as { deductMaterialsFromProducts?: unknown }).deductMaterialsFromProducts),
+          )
           setForm((s) => ({
             ...s,
             name: String(data.name ?? ''),
@@ -197,6 +300,30 @@ export default function RestaurantCreate() {
       mounted = false
     }
   }, [id, t])
+
+  useEffect(() => {
+    if (id) return
+    loadedConfigRef.current = {}
+    setPaymentMethods([])
+    setRemoveProductIngredients(false)
+    setSelectedFile(null)
+    setImagePreview(null)
+  }, [id])
+
+  const handleRestaurantImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        setCreateError(t('common.selectImageFile'))
+        return
+      }
+      setCreateError(null)
+      setSelectedFile(file)
+      const reader = new FileReader()
+      reader.onloadend = () => setImagePreview(reader.result as string)
+      reader.readAsDataURL(file)
+    }
+  }
 
   const handleSetActiveMenu = async (menuId: string | number) => {
     try {
@@ -464,90 +591,211 @@ export default function RestaurantCreate() {
           </CardContent>
         </Card>
 
+        {/* Main image — same flow as products (JSON update + separate multipart PUT) */}
+        <Card className="shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">{t('common.image')}</CardTitle>
+            <CardDescription>{t('common.restaurantPhoto')}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex flex-wrap items-center gap-4">
+              <input
+                ref={imageInputRef}
+                id="restaurant-image-input"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleRestaurantImageSelect}
+              />
+              <Button
+                variant="primary"
+                type="button"
+                onClick={() => imageInputRef.current?.click()}
+              >
+                {t('common.chooseImage')}
+              </Button>
+              {selectedFile && (
+                <span className="text-sm text-gray-600 dark:text-slate-400">
+                  {selectedFile.name}
+                </span>
+              )}
+              {!selectedFile && form.image && (
+                <span className="text-sm text-gray-500 dark:text-slate-500">
+                  {t('common.existingImage')}
+                </span>
+              )}
+            </div>
+            {(imagePreview || form.image) && (
+              <div className="pt-1">
+                <img
+                  src={
+                    imagePreview ??
+                    (form.image ? `${API_BASE}/images/${form.image}` : '')
+                  }
+                  alt={t('common.restaurantPhoto')}
+                  className="h-32 w-32 rounded-lg border border-slate-200 object-cover dark:border-slate-700"
+                />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Config (e.g. payment methods) — same form for create & edit */}
+        <Card className="shadow-sm lg:col-span-2">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">{t('common.restaurantConfigTitle')}</CardTitle>
+            <CardDescription>{t('common.restaurantConfigDesc')}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 max-w-md">
+            <Label htmlFor="restaurant-payment-methods" className="text-base">
+              {t('common.restaurantPaymentMethods')}
+            </Label>
+            <p className="text-sm text-gray-600 dark:text-slate-400">
+              {t('common.restaurantPaymentMethodsHint')}
+            </p>
+            <MultiSelectDropdown
+              id="restaurant-payment-methods"
+              className="mt-1.5"
+              options={PAYMENT_METHODS.map((m) => ({
+                value: m,
+                label: t(PAYMENT_METHOD_I18N[m]),
+              }))}
+              value={paymentMethods}
+              onChange={(next) => setPaymentMethods(sortPaymentMethods(next))}
+              placeholder={t('common.paymentMethodPlaceholder')}
+            />
+
+            <div className="border-t border-slate-200 pt-4 dark:border-slate-700">
+              <label
+                htmlFor="remove-product-ingredients"
+                className="flex cursor-pointer items-start gap-3"
+              >
+                <Checkbox
+                  id="remove-product-ingredients"
+                  className="mt-0.5"
+                  checked={removeProductIngredients}
+                  onCheckedChange={(c) => setRemoveProductIngredients(!!c)}
+                />
+                <span>
+                  <span className="block text-base font-medium text-gray-900 dark:text-slate-100">
+                    {t('common.removeProductIngredients')}
+                  </span>
+                  <span className="mt-0.5 block text-sm text-gray-600 dark:text-slate-400">
+                    {t('common.removeProductIngredientsHint')}
+                  </span>
+                </span>
+              </label>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Opening hours */}
         <Card className="shadow-sm lg:col-span-2">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">{t('common.openingHoursTitle')}</CardTitle>
             <CardDescription>{t('common.weeklySchedule')}</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="space-y-2 mt-1">
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {openingHours.map((oh, idx) => (
-                <div key={idx} className="flex flex-wrap items-center gap-2">
-                  <Select
-                    className="border rounded px-2 py-1 w-36"
-                    value={oh.day}
-                    onChange={(e) =>
-                      setOpeningHours((hrs) =>
-                        hrs.map((h, i) =>
-                          i === idx ? { ...h, day: e.target.value } : h,
-                        ),
-                      )
-                    }
-                  >
-                    <option value="">{t('common.day')}</option>
-                    {OPENING_HOUR_DAYS.map(([value, labelKey]) => (
-                      <option key={value} value={value}>
-                        {t(`common.${labelKey}`)}
-                      </option>
-                    ))}
-                  </Select>
-                  <Input
-                    type="time"
-                    className="w-28"
-                    value={oh.open}
-                    onChange={(e) =>
-                      setOpeningHours((hrs) =>
-                        hrs.map((h, i) =>
-                          i === idx ? { ...h, open: e.target.value } : h,
-                        ),
-                      )
-                    }
-                    placeholder={t('common.open')}
-                  />
-                  <span>-</span>
-                  <Input
-                    type="time"
-                    className="w-28"
-                    value={oh.close}
-                    onChange={(e) =>
-                      setOpeningHours((hrs) =>
-                        hrs.map((h, i) =>
-                          i === idx ? { ...h, close: e.target.value } : h,
-                        ),
-                      )
-                    }
-                    placeholder={t('common.closeHours')}
-                  />
-                  <Button
-                    type="button"
-                    variant="danger"
-                    size="sm"
-                    className="ml-2"
-                    onClick={() =>
-                      setOpeningHours((hrs) =>
-                        hrs.filter((_, i) => i !== idx),
-                      )
-                    }
-                  >
-                    {t('common.remove')}
-                  </Button>
+                <div
+                  key={idx}
+                  className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50/90 p-4 shadow-sm dark:border-slate-600 dark:bg-slate-900/45"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      {t('common.openingHoursSlotLabel', { n: idx + 1 })}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="danger"
+                      size="sm"
+                      className="shrink-0"
+                      onClick={() =>
+                        setOpeningHours((hrs) => hrs.filter((_, i) => i !== idx))
+                      }
+                    >
+                      {t('common.remove')}
+                    </Button>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-slate-600 dark:text-slate-400">
+                      {t('common.day')}
+                    </Label>
+                    <Select
+                      className="mt-1.5 w-full border rounded-md px-2 py-2 text-sm"
+                      value={oh.day}
+                      onChange={(e) =>
+                        setOpeningHours((hrs) =>
+                          hrs.map((h, i) =>
+                            i === idx ? { ...h, day: e.target.value } : h,
+                          ),
+                        )
+                      }
+                    >
+                      <option value="">{t('common.day')}</option>
+                      {OPENING_HOUR_DAYS.map(([value, labelKey]) => (
+                        <option key={value} value={value}>
+                          {t(`common.${labelKey}`)}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs text-slate-600 dark:text-slate-400">
+                        {t('common.open')}
+                      </Label>
+                      <Input
+                        type="time"
+                        className="mt-1.5 w-full"
+                        value={oh.open}
+                        onChange={(e) =>
+                          setOpeningHours((hrs) =>
+                            hrs.map((h, i) =>
+                              i === idx ? { ...h, open: e.target.value } : h,
+                            ),
+                          )
+                        }
+                        placeholder={t('common.open')}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-slate-600 dark:text-slate-400">
+                        {t('common.closeHours')}
+                      </Label>
+                      <Input
+                        type="time"
+                        className="mt-1.5 w-full"
+                        value={oh.close}
+                        onChange={(e) =>
+                          setOpeningHours((hrs) =>
+                            hrs.map((h, i) =>
+                              i === idx ? { ...h, close: e.target.value } : h,
+                            ),
+                          )
+                        }
+                        placeholder={t('common.closeHours')}
+                      />
+                    </div>
+                  </div>
                 </div>
               ))}
-              <Button
-                type="button"
-                variant="default"
-                size="sm"
-                onClick={() =>
-                  setOpeningHours((hrs) => [
-                    ...hrs,
-                    { day: '', open: '', close: '' },
-                  ])
-                }
-              >
-                {t('common.addOpeningHour')}
-              </Button>
             </div>
+            <Button
+              type="button"
+              variant="default"
+              size="sm"
+              className="w-full sm:w-auto"
+              onClick={() =>
+                setOpeningHours((hrs) => [
+                  ...hrs,
+                  { day: '', open: '', close: '' },
+                ])
+              }
+            >
+              {t('common.addOpeningHour')}
+            </Button>
           </CardContent>
         </Card>
 

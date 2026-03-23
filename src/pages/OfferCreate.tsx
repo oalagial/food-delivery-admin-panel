@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Link, useNavigate, useParams } from "react-router-dom"
-import { createOffer, getOfferById, getProductsList, getRestaurantsList, updateOffer, type CreateOfferPayload, type OfferGroup, type Product, type Restaurant } from "../utils/api"
+import { createOffer, getOfferById, getProductsList, getRestaurantsList, updateOffer, updateOfferImage, type CreateOfferPayload, type OfferGroup, type Product, type Restaurant } from "../utils/api"
+import { API_BASE } from "../config"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
 import { Label } from "../components/ui/label"
@@ -23,6 +24,9 @@ export default function OfferCreate () {
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState<Boolean>(true)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
   const [form, setForm] = useState<{
     name: string;
     description: string;
@@ -30,6 +34,7 @@ export default function OfferCreate () {
     restaurantId: string;
     menuId: string;
     isActive: boolean;
+    image: string;
     groups: OfferGroup[];
   }>({
     name: '',
@@ -38,6 +43,7 @@ export default function OfferCreate () {
     restaurantId: '',
     menuId: '',
     isActive: true,
+    image: '',
     groups: []
   });
 
@@ -89,6 +95,7 @@ export default function OfferCreate () {
           restaurantId: String(offer.restaurantId) || '',
           menuId: String(offer.menuId) || '',
           isActive: Boolean(offer.isActive),
+          image: typeof offer.image === 'string' ? offer.image : '',
           groups: offer.groups.map(g => ({
             name: g.name,
             minItems: g.minItems,
@@ -107,12 +114,33 @@ export default function OfferCreate () {
 
   useEffect(() => {
     setSelectedRestaurant(null);
-    const selectedRestaurant = restaurants.find(r => String(r.id) === form.restaurantId);  // Use find() for efficiency
+    const selectedRestaurant = restaurants.find(r => String(r.id) === form.restaurantId);
     if (selectedRestaurant?.menu) {
       setSelectedRestaurant(selectedRestaurant)
-      console.log(selectedRestaurant)
     }
-  }, [form.restaurantId]);  // Add restaurants as dependency
+  }, [form.restaurantId, restaurants])
+
+  useEffect(() => {
+    if (!id) {
+      setSelectedFile(null)
+      setImagePreview(null)
+    }
+  }, [id])
+
+  const handleOfferImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        setCreateError(t('common.selectImageFile'))
+        return
+      }
+      setCreateError(null)
+      setSelectedFile(file)
+      const reader = new FileReader()
+      reader.onloadend = () => setImagePreview(reader.result as string)
+      reader.readAsDataURL(file)
+    }
+  }
 
   const addGroup = () => {
     setForm(prev => ({
@@ -154,9 +182,17 @@ export default function OfferCreate () {
       }
       if (editing && id) {
         await updateOffer(Number(id), payload)
-      }
-      else {
-        await createOffer(payload)
+        if (selectedFile) {
+          await updateOfferImage(Number(id), selectedFile)
+        }
+      } else {
+        const created = await createOffer(payload)
+        const newId =
+          (created as { id?: string | number })?.id ??
+          (created as { data?: { id?: string | number } })?.data?.id
+        if (selectedFile && newId != null && String(newId) !== '') {
+          await updateOfferImage(newId, selectedFile)
+        }
       }
       navigate('/offers')
 
@@ -321,6 +357,55 @@ export default function OfferCreate () {
                   {t('common.activeOffer')}
                 </Label>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Main image — same flow as products */}
+          <Card className="shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">{t('common.image')}</CardTitle>
+              <CardDescription>{t('common.offerPhoto')}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex flex-wrap items-center gap-4">
+                <input
+                  ref={imageInputRef}
+                  id="offer-image-input"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleOfferImageSelect}
+                />
+                <Button
+                  variant="primary"
+                  type="button"
+                  onClick={() => imageInputRef.current?.click()}
+                >
+                  {t('common.chooseImage')}
+                </Button>
+                {selectedFile && (
+                  <span className="text-sm text-gray-600 dark:text-slate-400">
+                    {selectedFile.name}
+                  </span>
+                )}
+                {!selectedFile && form.image && (
+                  <span className="text-sm text-gray-500 dark:text-slate-500">
+                    {t('common.existingImage')}
+                  </span>
+                )}
+              </div>
+              {(imagePreview || form.image) && (
+                <div className="pt-1">
+                  <img
+                    src={
+                      imagePreview ??
+                      (form.image ? `${API_BASE}/images/${form.image}` : '')
+                    }
+                    alt={t('common.offerPhoto')}
+                    className="h-32 w-32 rounded-lg border border-slate-200 object-cover dark:border-slate-700"
+                  />
+                </div>
+              )}
             </CardContent>
           </Card>
 
