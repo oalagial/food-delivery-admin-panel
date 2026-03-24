@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../components/ui/button'
 import { Link } from 'react-router-dom'
@@ -20,12 +20,15 @@ import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert'
 import { AlertCircle } from 'lucide-react'
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card'
 
+const PAGE_SIZE = 10
+
 export default function Users() {
   const { t } = useTranslation()
   const [users, setUsers] = useState<User[]>([])
   const [rolesMap, setRolesMap] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
   const [userToDeactivate, setUserToDeactivate] = useState<User | null>(null)
   const [deactivating, setDeactivating] = useState(false)
   const [activatingId, setActivatingId] = useState<string | number | null>(null)
@@ -62,6 +65,32 @@ export default function Users() {
   useEffect(() => {
     void fetchUsers()
   }, [])
+
+  const totalPages = Math.max(1, Math.ceil(users.length / PAGE_SIZE))
+
+  useEffect(() => {
+    setPage((p) => Math.min(p, totalPages))
+  }, [totalPages])
+
+  const paginatedUsers = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE
+    return users.slice(start, start + PAGE_SIZE)
+  }, [users, page])
+
+  const pageNumbers = useMemo(() => {
+    return Array.from({ length: totalPages }, (_, i) => i + 1)
+      .filter(
+        (pn) =>
+          pn === 1 ||
+          pn === totalPages ||
+          (pn >= page - 2 && pn <= page + 2)
+      )
+      .reduce((arr: (number | 'ellipsis')[], pn, idx, src) => {
+        if (idx > 0 && pn - (src[idx - 1] as number) > 1) arr.push('ellipsis')
+        arr.push(pn)
+        return arr
+      }, [])
+  }, [page, totalPages])
 
   useEffect(() => {
     if (!userToDeactivate) return
@@ -210,7 +239,7 @@ export default function Users() {
         {users.length === 0 ? (
           <p className="text-sm text-gray-500">{t('usersPage.noUsers')}</p>
         ) : (
-          users.map((u) => {
+          paginatedUsers.map((u) => {
             const active = isUserActive(u)
             const roleLabel = (() => {
               const rec = u as unknown as Record<string, unknown>
@@ -312,7 +341,7 @@ export default function Users() {
                 <TableCell colSpan={6}>{t('usersPage.noUsers')}</TableCell>
               </TableRow>
             )}
-            {users.map((u) => {
+            {paginatedUsers.map((u) => {
               const active = isUserActive(u)
               return (
                 <TableRow key={u.id}>
@@ -354,6 +383,70 @@ export default function Users() {
           </TableBody>
         </Table>
       </div>
+
+      {users.length > 0 && (
+        <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-2">
+          <div className="text-gray-600 dark:text-slate-400 text-sm mb-2 sm:mb-0">
+            {t('common.paginationSummary', { page, totalPages, total: users.length })}
+          </div>
+          <div className="flex items-center gap-1 flex-wrap justify-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setPage(1)}
+              disabled={page === 1}
+              aria-label={t('common.firstPage')}
+            >
+              «
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              aria-label={t('common.prevPage')}
+            >
+              ‹
+            </Button>
+            {pageNumbers.map((pn, idx) =>
+              pn === 'ellipsis' ? (
+                <span key={`ellipsis-${idx}`} className="px-2 text-gray-400 dark:text-slate-500">
+                  …
+                </span>
+              ) : (
+                <Button
+                  key={pn}
+                  variant={pn === page ? 'primary' : 'default'}
+                  size="sm"
+                  onClick={() => setPage(pn as number)}
+                  disabled={pn === page}
+                  aria-current={pn === page ? 'page' : undefined}
+                >
+                  {pn}
+                </Button>
+              )
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              aria-label={t('common.nextPage')}
+            >
+              ›
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setPage(totalPages)}
+              disabled={page === totalPages}
+              aria-label={t('common.lastPage')}
+            >
+              »
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

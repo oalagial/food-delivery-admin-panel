@@ -72,6 +72,8 @@ export const offersPage = {
   noActive: 'No active offers found.',
   noDeleted: 'No deleted offers found.',
   name: 'Name',
+  image: 'Image',
+  offerAlt: 'Offer',
   description: 'Description',
   price: 'Price',
   restaurant: 'Restaurant',

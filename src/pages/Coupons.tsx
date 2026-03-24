@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
@@ -152,6 +152,27 @@ export default function Coupons() {
   useEffect(() => {
     loadCoupons()
   }, [page, limit])
+
+  useEffect(() => {
+    setPage(1)
+  }, [search, activeTab])
+
+  const couponTotalPages = response?.totalPages ?? 1
+
+  const pageNumbers = useMemo(() => {
+    return Array.from({ length: couponTotalPages }, (_, i) => i + 1)
+      .filter(
+        (pn) =>
+          pn === 1 ||
+          pn === couponTotalPages ||
+          (pn >= page - 2 && pn <= page + 2)
+      )
+      .reduce((arr: (number | 'ellipsis')[], pn, idx, src) => {
+        if (idx > 0 && pn - (src[idx - 1] as number) > 1) arr.push('ellipsis')
+        arr.push(pn)
+        return arr
+      }, [])
+  }, [page, couponTotalPages])
 
   const openConfirm = (type: 'delete' | 'restore', id: number, name: string) => {
     setConfirmDialog({ show: true, type, id, name })
@@ -432,14 +453,70 @@ export default function Coupons() {
               </Table>
             </div>
 
-            {response && response.totalPages > 1 && (
-              <div className="flex items-center justify-between mt-4">
-                <p className="text-sm text-gray-600 dark:text-slate-400">
-                  {t('common.page')} {response.page} {t('common.of')} {response.totalPages} · {t('common.totalCount')}: {response.total}
-                </p>
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" disabled={response.page <= 1} onClick={() => setPage((p) => p - 1)}>{t('common.prev')}</Button>
-                  <Button variant="ghost" size="sm" disabled={response.page >= response.totalPages} onClick={() => setPage((p) => p + 1)}>{t('common.next')}</Button>
+            {response && response.total > 0 && (
+              <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-2">
+                <div className="text-gray-600 dark:text-slate-400 text-sm mb-2 sm:mb-0">
+                  {t('common.paginationSummary', {
+                    page: response.page,
+                    totalPages: response.totalPages,
+                    total: response.total,
+                  })}
+                </div>
+                <div className="flex items-center gap-1 flex-wrap justify-center">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPage(1)}
+                    disabled={response.page <= 1}
+                    aria-label={t('common.firstPage')}
+                  >
+                    «
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={response.page <= 1}
+                    aria-label={t('common.prevPage')}
+                  >
+                    ‹
+                  </Button>
+                  {pageNumbers.map((pn, idx) =>
+                    pn === 'ellipsis' ? (
+                      <span key={`ellipsis-${idx}`} className="px-2 text-gray-400 dark:text-slate-500">
+                        …
+                      </span>
+                    ) : (
+                      <Button
+                        key={pn}
+                        variant={pn === response.page ? 'primary' : 'default'}
+                        size="sm"
+                        onClick={() => setPage(pn as number)}
+                        disabled={pn === response.page}
+                        aria-current={pn === response.page ? 'page' : undefined}
+                      >
+                        {pn}
+                      </Button>
+                    )
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPage((p) => Math.min(response.totalPages, p + 1))}
+                    disabled={response.page >= response.totalPages}
+                    aria-label={t('common.nextPage')}
+                  >
+                    ›
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPage(response.totalPages)}
+                    disabled={response.page >= response.totalPages}
+                    aria-label={t('common.lastPage')}
+                  >
+                    »
+                  </Button>
                 </div>
               </div>
             )}
