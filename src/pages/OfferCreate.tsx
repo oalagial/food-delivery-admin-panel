@@ -11,12 +11,15 @@ import { Select } from "../components/ui/select"
 import { Checkbox } from "../components/ui/checkbox"
 import { Alert, AlertDescription } from "../components/ui/alert"
 import { AlertCircle } from "lucide-react"
+import { canSubmitResourceForm } from "../utils/permissions"
+import { FormSaveBarrier } from "../components/FormSaveBarrier"
 
 export default function OfferCreate () {
   const { t } = useTranslation()
   const { id } = useParams<{ id?: string }>()
   const editing = !!id;
   const navigate = useNavigate()
+  const canSave = canSubmitResourceForm("offers", editing)
 
   const [createError, setCreateError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -167,6 +170,7 @@ export default function OfferCreate () {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!canSave) return
     setCreateError(null)
     setSaving(true)
 
@@ -222,6 +226,7 @@ export default function OfferCreate () {
           onSubmit={handleSubmit}
           className="grid gap-6 max-w-5xl lg:grid-cols-2"
         >
+          <FormSaveBarrier canSave={canSave} alertClassName="lg:col-span-2">
           {/* Basic info */}
           <Card className="shadow-sm">
             <CardHeader className="pb-3">
@@ -605,28 +610,29 @@ export default function OfferCreate () {
                 ))}
               </div>
 
-              <div className="flex flex-wrap justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
-                <Link to="/offers">
-                  <Button variant="default" type="button">
-                    {t('common.cancel')}
-                  </Button>
-                </Link>
-                <Button
-                  variant="primary"
-                  type="submit"
-                  disabled={saving}
-                >
-                  {saving
-                    ? id
-                      ? t('common.saving')
-                      : t('common.creating')
-                    : id
-                    ? t('common.update')
-                    : t('common.create')}
-                </Button>
-              </div>
             </CardContent>
           </Card>
+          </FormSaveBarrier>
+          <div className="flex flex-wrap justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-700 lg:col-span-2">
+            <Link to="/offers">
+              <Button variant="default" type="button">
+                {t('common.cancel')}
+              </Button>
+            </Link>
+            <Button
+              variant="primary"
+              type="submit"
+              disabled={!canSave || saving}
+            >
+              {saving
+                ? id
+                  ? t('common.saving')
+                  : t('common.creating')
+                : id
+                ? t('common.update')
+                : t('common.create')}
+            </Button>
+          </div>
         </form>
       )}
     </div>

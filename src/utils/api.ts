@@ -1,10 +1,28 @@
 import { API_BASE } from '../config'
 import { normalizeUserRole, type UserRole } from './userRoles'
+import { clearStoredPermissions, setStoredPermissions } from './permissions'
 
 type LoginResponse = {
   token?: string
   accessToken?: string
   [k: string]: unknown
+}
+
+/**
+ * Reload permission strings from the API into localStorage (sidebar / route guards).
+ * Safe to call while logged in; no-op without a token. 401 clears session via authFetch.
+ */
+export async function syncPermissionsFromServer(): Promise<void> {
+  if (!getToken()) return
+  const res = await authFetch('/me/permissions')
+  if (!res.ok) return
+  const data = (await res.json().catch(() => null)) as Record<string, unknown> | null
+  const permsRaw = data?.permissions
+  if (Array.isArray(permsRaw)) {
+    setStoredPermissions(permsRaw.filter((x): x is string => typeof x === 'string'))
+  } else {
+    setStoredPermissions([])
+  }
 }
 
 export async function login(email: string, password: string): Promise<LoginResponse> {
@@ -23,6 +41,12 @@ export async function login(email: string, password: string): Promise<LoginRespo
   const obj = data as unknown as Record<string, unknown>
   const tokenVal = obj['access_token'] ?? obj['accessToken'] ?? obj['token'] ?? obj['bearer']
   if (typeof tokenVal === 'string') setToken(tokenVal)
+  const permsRaw = obj['permissions']
+  if (Array.isArray(permsRaw)) {
+    setStoredPermissions(permsRaw.filter((x): x is string => typeof x === 'string'))
+  } else {
+    setStoredPermissions([])
+  }
   return data
 }
 
@@ -37,6 +61,7 @@ export function setToken(token: string) {
 
 export function clearToken() {
   try { localStorage.removeItem('access_token') } catch { /* ignore */ }
+  clearStoredPermissions()
   try { if (typeof window !== 'undefined') window.dispatchEvent(new Event('auth')) } catch { /* ignore */ }
 }
 
@@ -388,53 +413,91 @@ export async function createRestaurant(payload: CreateRestaurantPayload) {
 }
 
 // Roles API
+export type PermissionDefinition = {
+  id: number
+  action: string
+  description?: string | null
+}
+
+export type RolePermissionLink = {
+  roleId?: number
+  permissionId?: number
+  permission?: PermissionDefinition
+  [k: string]: unknown
+}
+
 export type RoleItem = {
   id?: string | number
   name?: string
   description?: string
   createdAt?: string | number
+  permissions?: RolePermissionLink[]
   [k: string]: unknown
 }
 
-export async function getRolesList(): Promise<RoleItem[]> {
-  // Try authenticated fetch first (works when user is logged in)
-  try {
-    const res = await authFetch('/roles')
-    if (res.ok) {
-      const data = await res.json().catch(() => null)
-      return Array.isArray(data) ? data : (data?.items || data?.data || [])
-    }
-  } catch {
-    // ignore and fallback to unauthenticated fetch below
-  }
-
-  // Fallback: try a plain fetch to the full API URL (some deployments expose roles publicly)
-  try {
-    const url = API_BASE.replace(/\/$/, '') + '/roles'
-    const res2 = await fetch(url)
-    if (!res2.ok) {
-      const text = await res2.text().catch(() => '')
-      throw new Error(text || `GET /roles failed (${res2.status})`)
-    }
-    const data2 = await res2.json().catch(() => null)
-    return Array.isArray(data2) ? data2 : (data2?.items || data2?.data || [])
-  } catch (err) {
-    throw err
-  }
-}
-
-export async function getRoleById(id: string | number): Promise<Restaurant | null> {
-  if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
-  const res = await authFetch(`/roles?id=${encodeURIComponent(String(id))}`)
-
-  if (res.status === 404) return null
+/** Backend paginated list */
+export async function getRolesList(params?: { page?: number; limit?: number }): Promise<RoleItem[]> {
+  const search = new URLSearchParams()
+  search.set('page', String(params?.page ?? 1))
+  search.set('limit', String(params?.limit ?? 200))
+  const res = await authFetch(`/roles?${search}`)
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    throw new Error(text || `GET /roles/${id} failed (${res.status})`)
+    throw new Error(text || `GET /roles failed (${res.status})`)
   }
-
   const data = await res.json().catch(() => null)
-  return data.data?.[0] || null
+  const rows = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : []
+  return rows as RoleItem[]
+}
+
+export async function fetchPermissionsDefinitions(): Promise<PermissionDefinition[]> {
+  const res = await authFetch('/permissions')
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(text || `GET /permissions failed (${res.status})`)
+  }
+  const data = await res.json().catch(() => null)
+  return Array.isArray(data) ? (data as PermissionDefinition[]) : []
+}
+
+export type SaveRolePayload = {
+  name: string
+  description: string
+  permissionIds?: number[]
+}
+
+export async function createRole(payload: SaveRolePayload) {
+  const res = await authFetch('/roles/create', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) {
+    const bodyText = parseErrorJson(await res.json().catch(() => null)) || (await res.text().catch(() => ''))
+    throw new Error(bodyText || `POST /roles/create failed (${res.status})`)
+  }
+  return res.json().catch(() => null)
+}
+
+export async function updateRole(id: string | number, payload: SaveRolePayload) {
+  const res = await authFetch(`/roles/update/${encodeURIComponent(String(id))}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) {
+    const bodyText = parseErrorJson(await res.json().catch(() => null)) || (await res.text().catch(() => ''))
+    throw new Error(bodyText || `PUT /roles/update failed (${res.status})`)
+  }
+  return res.json().catch(() => null)
+}
+
+/** Backend has no GET /roles/:id; load list and pick one. */
+export async function getRoleById(id: string | number): Promise<RoleItem | null> {
+  if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
+  const list = await getRolesList({ limit: 500 })
+  const found = list.find((r) => String(r.id) === String(id))
+  return found ?? null
 }
 
 export async function deleteUser(id: string | number): Promise<void> {

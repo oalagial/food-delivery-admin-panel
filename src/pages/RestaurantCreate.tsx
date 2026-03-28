@@ -26,6 +26,8 @@ import { AlertCircle, CheckCircle } from 'lucide-react'
 import { Select } from '../components/ui/select'
 import { MultiSelectDropdown } from '../components/ui/multi-select-dropdown'
 import { Checkbox } from '../components/ui/checkbox'
+import { canSubmitResourceForm } from '../utils/permissions'
+import { FormSaveBarrier } from '../components/FormSaveBarrier'
 
 const OPENING_HOUR_DAYS = [
   ['Monday', 'weekdayMon'],
@@ -91,6 +93,7 @@ export default function RestaurantCreate() {
   const { t } = useTranslation()
   const { id } = useParams<{ id?: string }>()
   const navigate = useNavigate()
+  const canSave = canSubmitResourceForm('restaurants', !!id)
 
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
@@ -124,6 +127,7 @@ export default function RestaurantCreate() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
+    if (!canSave) return
     setCreating(true)
     setCreateError(null)
     setCreateResult(false)
@@ -367,6 +371,7 @@ export default function RestaurantCreate() {
         onSubmit={handleCreate}
         className="grid gap-6 max-w-5xl lg:grid-cols-2"
       >
+        <FormSaveBarrier canSave={canSave} alertClassName="lg:col-span-2">
         {/* Basic address info */}
         <Card className="shadow-sm">
           <CardHeader className="pb-3">
@@ -918,19 +923,19 @@ export default function RestaurantCreate() {
                 <AlertDescription>{createError}</AlertDescription>
               </Alert>
             )}
-
-            <div className="flex justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
-              <Link to="/restaurant">
-                <Button variant="default" type="button">
-                  {t('common.cancel')}
-                </Button>
-              </Link>
-              <Button variant="primary" type="submit" disabled={creating}>
-                {creating ? t('common.saving') : id ? t('common.update') : t('common.create')}
-              </Button>
-            </div>
           </CardContent>
         </Card>
+        </FormSaveBarrier>
+        <div className="flex justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-700 lg:col-span-2">
+          <Link to="/restaurant">
+            <Button variant="default" type="button">
+              {t('common.cancel')}
+            </Button>
+          </Link>
+          <Button variant="primary" type="submit" disabled={!canSave || creating}>
+            {creating ? t('common.saving') : id ? t('common.update') : t('common.create')}
+          </Button>
+        </div>
       </form>
 
       {createResult && (

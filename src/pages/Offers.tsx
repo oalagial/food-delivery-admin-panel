@@ -9,6 +9,7 @@ import { Skeleton } from "../components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeadCell, TableRow } from "../components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from "../components/ui/alert";
+import { perm } from "../utils/permissions";
 
 type OfferRowProps = {
   offer: any;
@@ -89,19 +90,29 @@ function OfferRow({ offer, isOpen, onToggle, onDelete, isDeleting = false, onTog
         <TableCell>{offer.description}</TableCell>
         <TableCell>{offer.price}</TableCell>
         <TableCell className="text-center">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="inline-flex items-center justify-center"
-            onClick={() => onToggleActive && onToggleActive(offer)}
-            aria-label={offer.isActive ? t("common.deactivate") : t("common.activate")}
-            icon={
-              offer.isActive
-                ? <FiCheckCircle className="w-5 h-5 text-green-500" aria-label={t("common.active")} />
-                : <FiXCircle className="w-5 h-5 text-red-500" aria-label={t("common.inactive")} />
-            }
-          />
+          {perm("offers", "update") ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="inline-flex items-center justify-center"
+              onClick={() => onToggleActive && onToggleActive(offer)}
+              aria-label={offer.isActive ? t("common.deactivate") : t("common.activate")}
+              icon={
+                offer.isActive
+                  ? <FiCheckCircle className="w-5 h-5 text-green-500" aria-label={t("common.active")} />
+                  : <FiXCircle className="w-5 h-5 text-red-500" aria-label={t("common.inactive")} />
+              }
+            />
+          ) : (
+            <span className="inline-flex justify-center" aria-hidden>
+              {offer.isActive ? (
+                <FiCheckCircle className="w-5 h-5 text-green-500 opacity-70" aria-label={t("common.active")} />
+              ) : (
+                <FiXCircle className="w-5 h-5 text-red-500 opacity-70" aria-label={t("common.inactive")} />
+              )}
+            </span>
+          )}
         </TableCell>
         <TableCell>
           <div className="flex justify-center gap-2">
@@ -113,17 +124,21 @@ function OfferRow({ offer, isOpen, onToggle, onDelete, isDeleting = false, onTog
               {isOpen ? t("common.hide") : t("common.details")}
             </Button>
 
-            <Link to={`/offers/creation/${offer.id}`}>
-              <Button variant="ghost" size="sm" icon={<FiEdit className="w-4 h-4" />} />
-            </Link>
+            {perm("offers", "update") ? (
+              <Link to={`/offers/creation/${offer.id}`}>
+                <Button variant="ghost" size="sm" icon={<FiEdit className="w-4 h-4" />} />
+              </Link>
+            ) : null}
 
-            <Button
-              variant="danger"
-              size="sm"
-              icon={<FiTrash className="w-4 h-4" />}
-              onClick={() => onDelete && onDelete(offer.id, offer.name)}
-              disabled={isDeleting}
-            />
+            {perm("offers", "delete") ? (
+              <Button
+                variant="danger"
+                size="sm"
+                icon={<FiTrash className="w-4 h-4" />}
+                onClick={() => onDelete && onDelete(offer.id, offer.name)}
+                disabled={isDeleting}
+              />
+            ) : null}
           </div>
         </TableCell>
       </TableRow>
@@ -248,6 +263,7 @@ export default function Offers() {
     const anyOffer = o as Record<string, unknown>;
     return !!anyOffer.deletedBy;
   });
+  const canSeeDeletedOffers = perm("offers", "restore");
 
   const totalPages = Math.max(1, Math.ceil(activeOffers.length / ACTIVE_PAGE_SIZE));
 
@@ -335,15 +351,17 @@ export default function Offers() {
           <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{t("offersPage.title")}</h1>
           <p className="text-gray-600 mt-1 dark:text-slate-400">{t("offersPage.subtitle")}</p>
         </div>
-        <Link to="/offers/creation" className="w-full sm:w-auto">
-          <Button
-            variant="primary"
-            icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
-            className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
-          >
-            <span className="sm:inline">{t("offersPage.create")}</span>
-          </Button>
-        </Link>
+        {perm("offers", "create") ? (
+          <Link to="/offers/creation" className="w-full sm:w-auto">
+            <Button
+              variant="primary"
+              icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
+              className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
+            >
+              <span className="sm:inline">{t("offersPage.create")}</span>
+            </Button>
+          </Link>
+        ) : null}
       </div>
       {loading && (
         <Table>
@@ -429,35 +447,41 @@ export default function Offers() {
                           {openRowId === String(o.id) ? t("common.hideDetails") : t("common.details")}
                         </Button>
                         <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="p-2 text-xs"
-                            icon={
-                              o.isActive ? (
-                                <FiCheckCircle className="w-4 h-4 text-green-600" />
-                              ) : (
-                                <FiXCircle className="w-4 h-4 text-red-600" />
-                              )
-                            }
-                            onClick={() => handleToggleActive(o)}
-                          />
-                          <Link to={`/offers/creation/${o.id}`}>
+                          {perm("offers", "update") ? (
                             <Button
                               variant="ghost"
                               size="sm"
                               className="p-2 text-xs"
-                              icon={<FiEdit className="w-4 h-4" />}
+                              icon={
+                                o.isActive ? (
+                                  <FiCheckCircle className="w-4 h-4 text-green-600" />
+                                ) : (
+                                  <FiXCircle className="w-4 h-4 text-red-600" />
+                                )
+                              }
+                              onClick={() => handleToggleActive(o)}
                             />
-                          </Link>
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            className="p-2 text-xs"
-                            icon={<FiTrash className="w-4 h-4" />}
-                            onClick={() => handleDelete(o.id, o.name)}
-                            disabled={deletingId === o.id}
-                          />
+                          ) : null}
+                          {perm("offers", "update") ? (
+                            <Link to={`/offers/creation/${o.id}`}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="p-2 text-xs"
+                                icon={<FiEdit className="w-4 h-4" />}
+                              />
+                            </Link>
+                          ) : null}
+                          {perm("offers", "delete") ? (
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              className="p-2 text-xs"
+                              icon={<FiTrash className="w-4 h-4" />}
+                              onClick={() => handleDelete(o.id, o.name)}
+                              disabled={deletingId === o.id}
+                            />
+                          ) : null}
                         </div>
                       </div>
 
@@ -577,7 +601,7 @@ export default function Offers() {
             )}
           </div>
 
-          {deletedOffers.length > 0 && (
+          {canSeeDeletedOffers && deletedOffers.length > 0 && (
             <div>
               <h2 className="text-2xl font-semibold text-gray-600 dark:text-slate-400 mb-4">{t("offersPage.deletedHeading")}</h2>
               <Table>
@@ -621,13 +645,15 @@ export default function Offers() {
                         </TableCell>
                         <TableCell>
                           <div className="flex justify-center gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="p-2"
-                              icon={<FiRotateCw className="w-4 h-4" />}
-                              onClick={() => handleRestore(o.id, o.name)}
-                            />
+                            {perm("offers", "restore") ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="p-2"
+                                icon={<FiRotateCw className="w-4 h-4" />}
+                                onClick={() => handleRestore(o.id, o.name)}
+                              />
+                            ) : null}
                           </div>
                         </TableCell>
                       </TableRow>

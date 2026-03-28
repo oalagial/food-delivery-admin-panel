@@ -9,6 +9,7 @@ import { OrderDetailsPanel } from '../components/OrderDetailsPanel'
 
 import { API_BASE } from '../config'
 import { getCurrentUserRole, OrderStatus, updateOrder } from '../utils/api'
+import { hasOrdersMutationUiAccess } from '../utils/permissions'
 import { UserRole } from '../utils/userRoles'
 import { OrderTableSortHeadCell } from '../components/OrderTableSortHeadCell'
 import {
@@ -251,6 +252,7 @@ export default function Dashboard() {
 
   const isChef = getCurrentUserRole() === UserRole.CHEF
   const isDeliveryMan = getCurrentUserRole() === UserRole.DELIVERY_MAN
+  const canMutateOrders = hasOrdersMutationUiAccess()
 
   const deliveryCanMarkOnTheWay = (status: string | undefined) => (status ?? '') === OrderStatus.READY
 
@@ -495,7 +497,7 @@ export default function Dashboard() {
                         </div>
                         <div>
                           <div className="flex flex-nowrap items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                            {isChef ? (
+                            {canMutateOrders && isChef ? (
                               <Button
                                 variant="primary"
                                 size="sm"
@@ -505,7 +507,7 @@ export default function Dashboard() {
                               >
                                 {t('dashboardPage.ready')}
                               </Button>
-                            ) : isDeliveryMan ? (
+                            ) : canMutateOrders && isDeliveryMan ? (
                               <>
                                 <Button
                                   variant="primary"
@@ -530,7 +532,7 @@ export default function Dashboard() {
                                   {t('dashboardPage.delivered')}
                                 </Button>
                               </>
-                            ) : (
+                            ) : canMutateOrders ? (
                               <>
                                 <Button
                                   variant="primary"
@@ -549,7 +551,7 @@ export default function Dashboard() {
                                   onClick={() => cancelOrder(String(o.id ?? ''))}
                                 />
                               </>
-                            )}
+                            ) : null}
                           </div>
                         </div>
                         {openRowId === String(o.id ?? '') && (
@@ -682,7 +684,7 @@ export default function Dashboard() {
                             onClick={(e) => e.stopPropagation()}
                             role="presentation"
                           >
-                            {isChef ? (
+                            {canMutateOrders && isChef ? (
                               <Button
                                 variant="primary"
                                 size="sm"
@@ -692,7 +694,7 @@ export default function Dashboard() {
                               >
                                 {t('dashboardPage.ready')}
                               </Button>
-                            ) : isDeliveryMan ? (
+                            ) : canMutateOrders && isDeliveryMan ? (
                               <>
                                 <Button
                                   variant="primary"
@@ -717,7 +719,7 @@ export default function Dashboard() {
                                   {t('dashboardPage.delivered')}
                                 </Button>
                               </>
-                            ) : (
+                            ) : canMutateOrders ? (
                               <>
                                 <Button
                                   variant="primary"
@@ -736,7 +738,7 @@ export default function Dashboard() {
                                   onClick={() => cancelOrder(String(o.id ?? ''))}
                                 />
                               </>
-                            )}
+                            ) : null}
                           </div>
                         </TableCell>
                       </TableRow>

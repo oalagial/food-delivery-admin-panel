@@ -10,6 +10,7 @@ import { restaurantPage } from './restaurant'
 import {
   typesPage,
   rolesPage,
+  permissionsPage,
   menusPage,
   sectionsPage,
   offersPage,
@@ -33,6 +34,7 @@ export const it = {
   restaurantPage,
   typesPage,
   rolesPage,
+  permissionsPage,
   menusPage,
   sectionsPage,
   offersPage,

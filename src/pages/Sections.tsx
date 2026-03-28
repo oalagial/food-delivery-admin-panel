@@ -5,6 +5,7 @@ import { Table, TableBody, TableHead, TableRow, TableCell, TableHeadCell } from 
 import { Button } from '../components/ui/button'
 import { FiPlus, FiEdit, FiTrash, FiAlertCircle } from 'react-icons/fi'
 import { getSectionsList, deleteSection } from '../utils/api'
+import { perm } from '../utils/permissions'
 import type { SectionItem } from '../utils/api'
 import { Skeleton } from '../components/ui/skeleton'
 import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert'
@@ -113,15 +114,17 @@ export default function Sections() {
             <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{t('sectionsPage.title')}</h1>
             <p className="text-gray-600 mt-1 dark:text-slate-400">{t('sectionsPage.subtitle')}</p>
           </div>
-          <Link to="/sections/creation" className="w-full sm:w-auto">
-            <Button
-              variant="primary"
-              icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
-              className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
-            >
-              <span className="sm:inline">{t('sectionsPage.create')}</span>
-            </Button>
-          </Link>
+          {perm('sections', 'create') ? (
+            <Link to="/sections/creation" className="w-full sm:w-auto">
+              <Button
+                variant="primary"
+                icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
+                className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
+              >
+                <span className="sm:inline">{t('sectionsPage.create')}</span>
+              </Button>
+            </Link>
+          ) : null}
         </div>
 
         {loading ? (
@@ -182,21 +185,25 @@ export default function Sections() {
                         <p>{it.description ?? t('common.noDescription')}</p>
                       </CardContent>
                       <CardFooter className="flex justify-end gap-1 px-4 pb-4 pt-0">
-                        <Link to={`/sections/creation/${it.id}`}>
+                        {perm('sections', 'update') ? (
+                          <Link to={`/sections/creation/${it.id}`}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="p-2 text-xs"
+                              icon={<FiEdit className="w-4 h-4" />}
+                            />
+                          </Link>
+                        ) : null}
+                        {perm('sections', 'delete') ? (
                           <Button
-                            variant="ghost"
+                            variant="danger"
                             size="sm"
                             className="p-2 text-xs"
-                            icon={<FiEdit className="w-4 h-4" />}
+                            icon={<FiTrash className="w-4 h-4" />}
+                            onClick={() => handleDelete(it.id ?? '', it.name ?? '')}
                           />
-                        </Link>
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          className="p-2 text-xs"
-                          icon={<FiTrash className="w-4 h-4" />}
-                          onClick={() => handleDelete(it.id ?? '', it.name ?? '')}
-                        />
+                        ) : null}
                       </CardFooter>
                     </Card>
                   )
@@ -237,15 +244,19 @@ export default function Sections() {
                       <TableCell>{it.description ?? ''}</TableCell>
                       <TableCell>
                         <div className="flex justify-center gap-2">
-                          <Link to={`/sections/creation/${it.id}`}>
-                            <Button size="sm" variant="ghost" icon={<FiEdit className="w-4 h-4" />}></Button>
-                          </Link>
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            icon={<FiTrash className="w-4 h-4" />}
-                            onClick={() => handleDelete(it.id ?? '', it.name ?? '')}
-                          ></Button>
+                          {perm('sections', 'update') ? (
+                            <Link to={`/sections/creation/${it.id}`}>
+                              <Button size="sm" variant="ghost" icon={<FiEdit className="w-4 h-4" />}></Button>
+                            </Link>
+                          ) : null}
+                          {perm('sections', 'delete') ? (
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              icon={<FiTrash className="w-4 h-4" />}
+                              onClick={() => handleDelete(it.id ?? '', it.name ?? '')}
+                            ></Button>
+                          ) : null}
                         </div>
                       </TableCell>
                     </TableRow>

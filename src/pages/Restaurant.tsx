@@ -6,6 +6,7 @@ import { Button } from '../components/ui/button'
 import { FiPlus, FiEdit, FiTrash, FiRotateCw, FiAlertCircle } from 'react-icons/fi'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { getRestaurantsList, restoreRestaurant, deleteRestaurant } from '../utils/api'
+import { perm } from '../utils/permissions'
 import type { Restaurant as RestaurantType, OpeningHour } from '../utils/api'
 import { Skeleton } from '../components/ui/skeleton'
 import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert'
@@ -84,6 +85,7 @@ export default function Restaurant() {
   // Separate active and deleted restaurants
   const activeRestaurants = restaurants.filter((r) => !r.deletedBy)
   const deletedRestaurants = restaurants.filter((r) => r.deletedBy)
+  const canSeeDeletedRestaurants = perm('restaurants', 'restore')
 
   const totalPages = Math.max(1, Math.ceil(activeRestaurants.length / ACTIVE_PAGE_SIZE))
 
@@ -161,10 +163,16 @@ export default function Restaurant() {
     <>
       {/* Confirmation Dialog Modal */}
       {confirmDialog.show && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" onClick={closeConfirmDialog}>
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70"
+          onClick={closeConfirmDialog}
+        >
+          <div
+            className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full mx-4 border border-slate-200 dark:border-slate-700"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="p-6">
-              <Alert variant="default">
+              <Alert variant="destructive">
                 <FiAlertCircle className="h-4 w-4" />
                 <AlertTitle>
                   {confirmDialog.type === 'delete' ? t('restaurantPage.deleteTitle') : t('restaurantPage.restoreTitle')}
@@ -197,15 +205,17 @@ export default function Restaurant() {
             <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{t('restaurantPage.title')}</h1>
             <p className="text-gray-600 mt-1 dark:text-slate-400">{t('restaurantPage.subtitle')}</p>
           </div>
-          <Link to="/restaurant/creation" className="w-full sm:w-auto">
-            <Button
-              variant="primary"
-              icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
-              className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
-            >
-              <span className="sm:inline">{t('restaurantPage.create')}</span>
-            </Button>
-          </Link>
+          {perm('restaurants', 'create') ? (
+            <Link to="/restaurant/creation" className="w-full sm:w-auto">
+              <Button
+                variant="primary"
+                icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
+                className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
+              >
+                <span className="sm:inline">{t('restaurantPage.create')}</span>
+              </Button>
+            </Link>
+          ) : null}
         </div>
         {loading && (
           <Table>
@@ -290,21 +300,25 @@ export default function Restaurant() {
                           )}
                         </CardContent>
                         <CardFooter className="flex justify-end gap-1 px-4 pb-4 pt-0">
-                          <Link to={`/restaurant/creation/${encodeURIComponent(String(r.id ?? ''))}`}>
+                          {perm('restaurants', 'update') ? (
+                            <Link to={`/restaurant/creation/${encodeURIComponent(String(r.id ?? ''))}`}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="p-2 text-xs"
+                                icon={<FiEdit className="w-4 h-4" />}
+                              />
+                            </Link>
+                          ) : null}
+                          {perm('restaurants', 'delete') ? (
                             <Button
-                              variant="ghost"
+                              variant="danger"
                               size="sm"
                               className="p-2 text-xs"
-                              icon={<FiEdit className="w-4 h-4" />}
+                              icon={<FiTrash className="w-4 h-4" />}
+                              onClick={() => handleDelete(r.id ?? '', r.name ?? '')}
                             />
-                          </Link>
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            className="p-2 text-xs"
-                            icon={<FiTrash className="w-4 h-4" />}
-                            onClick={() => handleDelete(r.id ?? '', r.name ?? '')}
-                          />
+                          ) : null}
                         </CardFooter>
                       </Card>
                     )
@@ -364,8 +378,12 @@ export default function Restaurant() {
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-1">
-                              <Link to={`/restaurant/creation/${encodeURIComponent(String(r.id ?? ''))}`} className='mr-2' ><Button variant="ghost" className='p-2' size="sm" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
-                              <Button variant="danger" size="sm" className='p-2' icon={<FiTrash className="w-4 h-4" />} onClick={() => handleDelete(r.id ?? '', r.name ?? '')}></Button>
+                              {perm('restaurants', 'update') ? (
+                                <Link to={`/restaurant/creation/${encodeURIComponent(String(r.id ?? ''))}`} className='mr-2' ><Button variant="ghost" className='p-2' size="sm" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
+                              ) : null}
+                              {perm('restaurants', 'delete') ? (
+                                <Button variant="danger" size="sm" className='p-2' icon={<FiTrash className="w-4 h-4" />} onClick={() => handleDelete(r.id ?? '', r.name ?? '')}></Button>
+                              ) : null}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -440,7 +458,7 @@ export default function Restaurant() {
               )}
             </div>
 
-            {deletedRestaurants.length > 0 && (
+            {canSeeDeletedRestaurants && deletedRestaurants.length > 0 && (
               <div className="mt-8">
                 <h2 className="text-2xl font-semibold mb-4">{t('restaurantPage.deletedHeading')}</h2>
 
@@ -497,14 +515,16 @@ export default function Restaurant() {
                           </p>
                         </CardContent>
                         <CardFooter className="flex justify-end gap-1 px-4 pb-4 pt-0">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="p-2 text-xs"
-                            icon={<FiRotateCw className="w-4 h-4" />}
-                            onClick={() => handleRestore(r.id ?? '', r.name ?? '')}
-                            title={t('common.restore')}
-                          />
+                          {perm('restaurants', 'restore') ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="p-2 text-xs"
+                              icon={<FiRotateCw className="w-4 h-4" />}
+                              onClick={() => handleRestore(r.id ?? '', r.name ?? '')}
+                              title={t('common.restore')}
+                            />
+                          ) : null}
                         </CardFooter>
                       </Card>
                     )
@@ -569,13 +589,15 @@ export default function Restaurant() {
                             </TableCell>
                             <TableCell className="text-gray-500 text-sm">{String(r.deletedBy ?? '')}</TableCell>
                             <TableCell>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className='p-2'
-                                icon={<FiRotateCw className="w-4 h-4" />}
-                                onClick={() => handleRestore(r.id ?? '', r.name ?? '')}
-                              ></Button>
+                              {perm('restaurants', 'restore') ? (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className='p-2'
+                                  icon={<FiRotateCw className="w-4 h-4" />}
+                                  onClick={() => handleRestore(r.id ?? '', r.name ?? '')}
+                                ></Button>
+                              ) : null}
                             </TableCell>
                           </TableRow>
                         )
