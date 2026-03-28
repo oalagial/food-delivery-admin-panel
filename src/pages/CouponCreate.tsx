@@ -20,6 +20,8 @@ import {
   type Restaurant,
   type CustomerListItem,
 } from '../utils/api'
+import { canSubmitResourceForm } from '../utils/permissions'
+import { FormSaveBarrier } from '../components/FormSaveBarrier'
 
 function toDatetimeLocal(isoOrDate: string | Date | null | undefined): string {
   if (isoOrDate == null) return ''
@@ -33,6 +35,7 @@ export default function CouponCreate() {
   const { id } = useParams<{ id?: string }>()
   const navigate = useNavigate()
   const editing = !!id
+  const canSave = canSubmitResourceForm('coupons', editing)
 
   const [submitting, setSubmitting] = useState(false)
   const [loading, setLoading] = useState(editing)
@@ -117,6 +120,7 @@ export default function CouponCreate() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!canSave) return
     setSubmitting(true)
     setError(null)
 
@@ -172,6 +176,7 @@ export default function CouponCreate() {
             </Alert>
           )}
 
+          <FormSaveBarrier canSave={canSave}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Left: Basic details + Scope */}
             <Card className="shadow-sm">
@@ -353,9 +358,10 @@ export default function CouponCreate() {
               </CardContent>
             </Card>
           </div>
+          </FormSaveBarrier>
 
           <div className="flex flex-wrap gap-3 pt-2 border-t border-gray-200 dark:border-slate-700">
-            <Button type="submit" variant="primary" disabled={submitting}>
+            <Button type="submit" variant="primary" disabled={!canSave || submitting}>
               {submitting ? t('common.saving') : editing ? t('common.saveChanges') : t('createForms.createCouponButton')}
             </Button>
             <Button type="button" variant="ghost" onClick={() => navigate('/coupons')}>

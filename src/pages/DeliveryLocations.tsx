@@ -8,6 +8,7 @@ import { Skeleton } from '../components/ui/skeleton'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/card'
 import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert'
 import { getDeliveryLocationsList, getRestaurantsList, updateDeliveryLocation, deleteDeliveryLocation } from '../utils/api'
+import { perm } from '../utils/permissions'
 import type { CreateDeliveryLocationPayload as DeliveryLocation, Restaurant as RestaurantType } from '../utils/api'
 
 function renderRestaurantsCell(
@@ -126,6 +127,7 @@ export default function DeliveryLocations() {
     const anyLoc = loc as unknown as Record<string, unknown>
     return anyLoc.deletedBy
   })
+  const canSeeDeletedLocations = perm('delivery_locations', 'restore')
 
   const totalPages = Math.max(1, Math.ceil(activeLocations.length / ACTIVE_PAGE_SIZE))
 
@@ -245,15 +247,17 @@ export default function DeliveryLocations() {
           <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{t('deliveryLocationsPage.title')}</h1>
           <p className="text-gray-600 mt-1 dark:text-slate-400">{t('deliveryLocationsPage.subtitle')}</p>
         </div>
-        <Link to="/delivery-locations/creation" className="w-full sm:w-auto">
-          <Button
-            variant="primary"
-            icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
-            className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
-          >
-            <span className="sm:inline">{t('deliveryLocationsPage.create')}</span>
-          </Button>
-        </Link>
+        {perm('delivery_locations', 'create') ? (
+          <Link to="/delivery-locations/creation" className="w-full sm:w-auto">
+            <Button
+              variant="primary"
+              icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
+              className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
+            >
+              <span className="sm:inline">{t('deliveryLocationsPage.create')}</span>
+            </Button>
+          </Link>
+        ) : null}
       </div>
 
       {error && <p className="text-red-600">{error}</p>}
@@ -330,36 +334,42 @@ export default function DeliveryLocations() {
                       </div>
                     </CardContent>
                     <CardFooter className="flex justify-end gap-1 px-4 pb-4 pt-0">
-                      <Link to={`/delivery-locations/creation/${encodeURIComponent(String(loc.id ?? ''))}`}>
+                      {perm('delivery_locations', 'update') ? (
+                        <Link to={`/delivery-locations/creation/${encodeURIComponent(String(loc.id ?? ''))}`}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="p-2 text-xs"
+                            icon={<FiEdit className="w-4 h-4" />}
+                          />
+                        </Link>
+                      ) : null}
+                      {perm('delivery_locations', 'update') ? (
                         <Button
                           variant="ghost"
                           size="sm"
                           className="p-2 text-xs"
-                          icon={<FiEdit className="w-4 h-4" />}
+                          icon={
+                            loc.isActive ? (
+                              <FiCheckCircle className="w-4 h-4 text-green-600" />
+                            ) : (
+                              <FiXCircle className="w-4 h-4 text-red-600" />
+                            )
+                          }
+                          onClick={() => toggleActiveStatus(loc)}
+                          title={loc.isActive ? t('common.deactivate') : t('common.activate')}
                         />
-                      </Link>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="p-2 text-xs"
-                        icon={
-                          loc.isActive ? (
-                            <FiCheckCircle className="w-4 h-4 text-green-600" />
-                          ) : (
-                            <FiXCircle className="w-4 h-4 text-red-600" />
-                          )
-                        }
-                        onClick={() => toggleActiveStatus(loc)}
-                        title={loc.isActive ? t('common.deactivate') : t('common.activate')}
-                      />
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        className="p-2 text-xs"
-                        icon={<FiTrash className="w-4 h-4" />}
-                        onClick={() => openConfirmDialog(loc)}
-                        title={t('common.delete')}
-                      />
+                      ) : null}
+                      {perm('delivery_locations', 'delete') ? (
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          className="p-2 text-xs"
+                          icon={<FiTrash className="w-4 h-4" />}
+                          onClick={() => openConfirmDialog(loc)}
+                          title={t('common.delete')}
+                        />
+                      ) : null}
                     </CardFooter>
                   </Card>
                 ))
@@ -401,16 +411,22 @@ export default function DeliveryLocations() {
                       <TableCell>{renderRestaurantsCell(loc, restaurantsMap, t)}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
-                          <Link to={`/delivery-locations/creation/${encodeURIComponent(String(loc.id ?? ''))}`}><Button variant="ghost" className='p-2' size="sm" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
-                          <Button
-                            variant={loc.isActive ? "ghost" : "ghost"}
-                            size="sm"
-                            className='p-2'
-                            icon={loc.isActive ? <FiCheckCircle className="w-4 h-4 text-green-600" /> : <FiXCircle className="w-4 h-4 text-red-600" />}
-                            onClick={() => toggleActiveStatus(loc)}
-                            title={loc.isActive ? t('common.deactivate') : t('common.activate')}
-                          ></Button>
-                          <Button variant="danger" size="sm" className='p-2' icon={<FiTrash className="w-4 h-4" />} onClick={() => openConfirmDialog(loc)} title={t('common.delete')} />
+                          {perm('delivery_locations', 'update') ? (
+                            <Link to={`/delivery-locations/creation/${encodeURIComponent(String(loc.id ?? ''))}`}><Button variant="ghost" className='p-2' size="sm" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
+                          ) : null}
+                          {perm('delivery_locations', 'update') ? (
+                            <Button
+                              variant={loc.isActive ? "ghost" : "ghost"}
+                              size="sm"
+                              className='p-2'
+                              icon={loc.isActive ? <FiCheckCircle className="w-4 h-4 text-green-600" /> : <FiXCircle className="w-4 h-4 text-red-600" />}
+                              onClick={() => toggleActiveStatus(loc)}
+                              title={loc.isActive ? t('common.deactivate') : t('common.activate')}
+                            ></Button>
+                          ) : null}
+                          {perm('delivery_locations', 'delete') ? (
+                            <Button variant="danger" size="sm" className='p-2' icon={<FiTrash className="w-4 h-4" />} onClick={() => openConfirmDialog(loc)} title={t('common.delete')} />
+                          ) : null}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -484,7 +500,7 @@ export default function DeliveryLocations() {
             )}
           </div>
 
-          {deletedLocations.length > 0 && (
+          {canSeeDeletedLocations && deletedLocations.length > 0 && (
             <div className="mt-8">
               <h2 className="text-2xl font-semibold mb-4">{t('deliveryLocationsPage.deletedHeading')}</h2>
 

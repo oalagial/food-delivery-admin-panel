@@ -14,8 +14,10 @@ import {
   FiLayers,
   FiBarChart2,
   FiPercent,
+  FiKey,
 } from 'react-icons/fi'
 import { getCurrentUserRole } from '../utils/api'
+import { canSeeNavPath } from '../utils/permissions'
 import { roleHasFullPanelAccess } from '../utils/userRoles'
 
 type NavSectionProps = {
@@ -101,12 +103,17 @@ const SIDEBAR_SECTIONS: NavSectionConfig[] = [
     items: [
       { to: '/users', labelKey: 'nav.users', icon: <FiUsers className="w-5 h-5" />, fullPanelOnly: true },
       { to: '/roles', labelKey: 'nav.roles', icon: <FiShield className="w-5 h-5" />, fullPanelOnly: true },
+      { to: '/permissions', labelKey: 'nav.permissions', icon: <FiKey className="w-5 h-5" />, fullPanelOnly: true },
     ],
   },
 ]
 
 function filterNavItems(items: NavItem[], fullPanel: boolean): NavItem[] {
-  return items.filter((item) => !item.fullPanelOnly || fullPanel)
+  return items.filter((item) => {
+    if (item.fullPanelOnly && !fullPanel) return false
+    if (!canSeeNavPath(item.to)) return false
+    return true
+  })
 }
 
 function NavList({

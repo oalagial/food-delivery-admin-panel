@@ -6,7 +6,7 @@ import Login from './pages/Login'
 import SetPassword from './pages/SetPassword'
 import RequireAuth from './components/RequireAuth'
 import RequireRouteAccess from './components/RequireRouteAccess'
-import { getToken } from './utils/api'
+import { getToken, syncPermissionsFromServer } from './utils/api'
 import { Sidebar } from './components/Sidebar'
 import Dashboard from './pages/Dashboard'
 import Stats from './pages/Stats'
@@ -19,6 +19,7 @@ import Users from './pages/Users'
 import UserCreate from './pages/UserCreate'
 import Roles from './pages/Roles'
 import RoleCreate from './pages/RoleCreate'
+import PermissionsPage from './pages/Permissions'
 import Types from './pages/Types'
 import TypeCreate from './pages/TypeCreate'
 import Products from './pages/Products'
@@ -68,6 +69,7 @@ const routes: RouteConfig[] = [
   { path: '/roles', element: <Roles />, protected: true },
   { path: '/roles/creation', element: <RoleCreate />, protected: true },
   { path: '/roles/creation/:id', element: <RoleCreate />, protected: true },
+  { path: '/permissions', element: <PermissionsPage />, protected: true },
   { path: '/offers', element: <Offers />, protected: true },
   { path: '/offers/creation', element: <OfferCreate />, protected: true },
   { path: '/offers/creation/:id', element: <OfferCreate />, protected: true },
@@ -135,6 +137,8 @@ function AuthenticatedLayout() {
   )
 }
 
+const PERMISSIONS_SYNC_THROTTLE_MS = 2500
+
 function App() {
   const [token, setToken] = useState<string | null>(getToken())
 
@@ -147,6 +151,31 @@ function App() {
       window.removeEventListener('auth', update)
     }
   }, [])
+
+  useEffect(() => {
+    if (!token) return
+    void syncPermissionsFromServer()
+  }, [token])
+
+  useEffect(() => {
+    if (!token) return
+    let last = 0
+    const run = () => {
+      const now = Date.now()
+      if (now - last < PERMISSIONS_SYNC_THROTTLE_MS) return
+      last = now
+      void syncPermissionsFromServer()
+    }
+    const onVis = () => {
+      if (document.visibilityState === 'visible') run()
+    }
+    window.addEventListener('focus', run)
+    document.addEventListener('visibilitychange', onVis)
+    return () => {
+      window.removeEventListener('focus', run)
+      document.removeEventListener('visibilitychange', onVis)
+    }
+  }, [token])
 
   if (!token) {
     return (

@@ -15,6 +15,7 @@ import { Skeleton } from '../components/ui/skeleton'
 import { Input } from '../components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert'
+import { perm } from '../utils/permissions'
 
 function formatDiscount(coupon: Coupon): string {
   const val = Number(coupon.value)
@@ -68,19 +69,29 @@ function CouponRow({ coupon, onDelete, onRestore, onToggleActive, isDeleted = fa
       </TableCell>
       {!isDeleted && (
         <TableCell className="text-center">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="inline-flex items-center justify-center"
-            onClick={() => onToggleActive?.(coupon)}
-            aria-label={coupon.isActive ? t('common.deactivate') : t('common.activate')}
-            icon={
-              coupon.isActive
-                ? <FiCheckCircle className="w-5 h-5 text-green-500" aria-label={t('common.active')} />
-                : <FiXCircle className="w-5 h-5 text-red-500" aria-label={t('common.inactive')} />
-            }
-          />
+          {perm('coupons', 'update') ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="inline-flex items-center justify-center"
+              onClick={() => onToggleActive?.(coupon)}
+              aria-label={coupon.isActive ? t('common.deactivate') : t('common.activate')}
+              icon={
+                coupon.isActive
+                  ? <FiCheckCircle className="w-5 h-5 text-green-500" aria-label={t('common.active')} />
+                  : <FiXCircle className="w-5 h-5 text-red-500" aria-label={t('common.inactive')} />
+              }
+            />
+          ) : (
+            <span className="inline-flex justify-center" aria-hidden>
+              {coupon.isActive ? (
+                <FiCheckCircle className="w-5 h-5 text-green-500 opacity-70" aria-label={t('common.active')} />
+              ) : (
+                <FiXCircle className="w-5 h-5 text-red-500 opacity-70" aria-label={t('common.inactive')} />
+              )}
+            </span>
+          )}
         </TableCell>
       )}
       {isDeleted && (
@@ -89,7 +100,7 @@ function CouponRow({ coupon, onDelete, onRestore, onToggleActive, isDeleted = fa
       <TableCell>
         <div className="flex justify-center gap-2">
           {isDeleted ? (
-            onRestore && (
+            onRestore && perm('coupons', 'restore') ? (
               <Button
                 variant="ghost"
                 size="sm"
@@ -97,19 +108,23 @@ function CouponRow({ coupon, onDelete, onRestore, onToggleActive, isDeleted = fa
                 onClick={() => onRestore(coupon.id, coupon.name)}
                 icon={<FiRotateCw className="w-4 h-4" />}
               />
-            )
+            ) : null
           ) : (
             <>
-              <Link to={`/coupons/creation/${coupon.id}`}>
-                <Button variant="ghost" size="sm" className="p-2" icon={<FiEdit className="w-4 h-4" />} />
-              </Link>
-              <Button
-                variant="danger"
-                size="sm"
-                icon={<FiTrash className="w-4 h-4" />}
-                onClick={() => onDelete?.(coupon.id, coupon.name)}
-                disabled={isDeleting}
-              />
+              {perm('coupons', 'update') ? (
+                <Link to={`/coupons/creation/${coupon.id}`}>
+                  <Button variant="ghost" size="sm" className="p-2" icon={<FiEdit className="w-4 h-4" />} />
+                </Link>
+              ) : null}
+              {perm('coupons', 'delete') ? (
+                <Button
+                  variant="danger"
+                  size="sm"
+                  icon={<FiTrash className="w-4 h-4" />}
+                  onClick={() => onDelete?.(coupon.id, coupon.name)}
+                  disabled={isDeleting}
+                />
+              ) : null}
             </>
           )}
         </div>
@@ -229,6 +244,7 @@ export default function Coupons() {
 
   const activeForTab = activeTab === 'general' ? generalActive : perCustomerActive
   const deletedForTab = activeTab === 'general' ? generalDeleted : perCustomerDeleted
+  const canSeeDeletedCoupons = perm('coupons', 'restore')
 
   const filteredActive = search.trim()
     ? activeForTab.filter(
@@ -290,15 +306,17 @@ export default function Coupons() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <Link to="/coupons/creation" className="w-full sm:w-auto">
-            <Button
-              variant="primary"
-              icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
-              className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
-            >
-              <span className="sm:inline">{t('createForms.newCoupon')}</span>
-            </Button>
-          </Link>
+          {perm('coupons', 'create') ? (
+            <Link to="/coupons/creation" className="w-full sm:w-auto">
+              <Button
+                variant="primary"
+                icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
+                className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
+              >
+                <span className="sm:inline">{t('createForms.newCoupon')}</span>
+              </Button>
+            </Link>
+          ) : null}
         </div>
       </div>
 
@@ -406,9 +424,15 @@ export default function Coupons() {
                         </p>
                       )}
                       <div className="flex justify-end gap-1 pt-2">
-                        <Button variant="ghost" size="sm" className="p-2 text-xs" icon={c.isActive ? <FiCheckCircle className="w-4 h-4 text-green-600" /> : <FiXCircle className="w-4 h-4 text-red-600" />} onClick={() => handleToggleActive(c)} />
-                        <Link to={`/coupons/creation/${c.id}`}><Button variant="ghost" size="sm" className="p-2 text-xs" icon={<FiEdit className="w-4 h-4" />} /></Link>
-                        <Button variant="danger" size="sm" className="p-2 text-xs" icon={<FiTrash className="w-4 h-4" />} onClick={() => openConfirm('delete', c.id, c.name)} disabled={deletingId === c.id} />
+                        {perm('coupons', 'update') ? (
+                          <Button variant="ghost" size="sm" className="p-2 text-xs" icon={c.isActive ? <FiCheckCircle className="w-4 h-4 text-green-600" /> : <FiXCircle className="w-4 h-4 text-red-600" />} onClick={() => handleToggleActive(c)} />
+                        ) : null}
+                        {perm('coupons', 'update') ? (
+                          <Link to={`/coupons/creation/${c.id}`}><Button variant="ghost" size="sm" className="p-2 text-xs" icon={<FiEdit className="w-4 h-4" />} /></Link>
+                        ) : null}
+                        {perm('coupons', 'delete') ? (
+                          <Button variant="danger" size="sm" className="p-2 text-xs" icon={<FiTrash className="w-4 h-4" />} onClick={() => openConfirm('delete', c.id, c.name)} disabled={deletingId === c.id} />
+                        ) : null}
                       </div>
                     </CardContent>
                   </Card>
@@ -522,7 +546,7 @@ export default function Coupons() {
             )}
           </div>
 
-          {deletedForTab.length > 0 && (
+          {canSeeDeletedCoupons && deletedForTab.length > 0 && (
             <div className="mt-8">
               <h2 className="text-2xl font-semibold text-gray-600 dark:text-slate-400 mb-4">
                 {activeTab === 'general' ? t('couponsPage.deletedGeneral') : t('couponsPage.deletedPerCustomer')}

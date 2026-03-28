@@ -26,6 +26,24 @@ export const rolesPage = {
   cannotDelete: 'Cannot delete role',
 } as const
 
+export const permissionsPage = {
+  title: 'Permissions',
+  subtitle: 'Catalog of all access rules; assign them to roles under Roles.',
+  manageRoles: 'Manage roles',
+  howItWorksTitle: 'How this works',
+  howItWorksBody:
+    'Each row is a fixed permission key from the backend. New keys are added via backend deploy and database seed — not created here. Use Roles to attach permissions to a role; users inherit them through their assigned role(s).',
+  search: 'Search',
+  searchPh: 'Filter by action or description…',
+  count: 'Showing {{n}} of {{total}} permissions',
+  empty: 'No permissions found. Run backend seed (e.g. npm run seed:permissions) or check API access.',
+  groupCount: '{{n}} permissions in this group',
+  colId: 'ID',
+  colAction: 'Action key',
+  colDescription: 'Description',
+  colRoles: 'Used by roles',
+} as const
+
 export const menusPage = {
   title: 'Menus',
   subtitle: 'Manage restaurant menus',

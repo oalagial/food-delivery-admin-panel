@@ -10,6 +10,8 @@ import { AlertCircle } from 'lucide-react'
 
 import { API_BASE } from '../config'
 import { getRolesList, getCurrentUserId } from '../utils/api'
+import { canSubmitResourceForm } from '../utils/permissions'
+import { FormSaveBarrier } from '../components/FormSaveBarrier'
 import { Select } from '../components/ui/select';
 
 export default function UserCreate() {
@@ -68,9 +70,11 @@ export default function UserCreate() {
   }, [id])
 
   const isEditingSelf = id != null && getCurrentUserId() != null && String(id) === String(getCurrentUserId())
+  const canSave = canSubmitResourceForm('users', !!id)
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
+    if (!canSave) return
     setSaving(true)
     setError(null)
     try {
@@ -138,6 +142,7 @@ export default function UserCreate() {
               </Alert>
             )}
 
+            <FormSaveBarrier canSave={canSave}>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium">{t('common.emailStar')}</Label>
@@ -180,6 +185,7 @@ export default function UserCreate() {
                 </Select>
               </div>
             </div>
+            </FormSaveBarrier>
 
             <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-gray-200">
               <Link to="/users">
@@ -187,7 +193,7 @@ export default function UserCreate() {
                   {t('common.cancel')}
                 </Button>
               </Link>
-              <Button variant="primary" type="submit" disabled={saving}>
+              <Button variant="primary" type="submit" disabled={!canSave || saving}>
                 {saving ? (id ? t('common.saving') : t('common.creating')) : (id ? t('common.update') : t('common.create'))}
               </Button>
             </div>

@@ -26,6 +26,24 @@ export const rolesPage = {
   cannotDelete: 'Impossibile eliminare il ruolo',
 } as const
 
+export const permissionsPage = {
+  title: 'Permessi',
+  subtitle: 'Catalogo di tutte le regole di accesso; assegnali ai ruoli nella sezione Ruoli.',
+  manageRoles: 'Gestisci ruoli',
+  howItWorksTitle: 'Come funziona',
+  howItWorksBody:
+    'Ogni riga è una chiave fissa dal backend. Nuove chiavi si aggiungono con deploy/seed — non da questa pagina. Usa Ruoli per collegare i permessi a un ruolo; gli utenti li ereditano dal ruolo assegnato.',
+  search: 'Cerca',
+  searchPh: 'Filtra per azione o descrizione…',
+  count: 'Mostrati {{n}} di {{total}} permessi',
+  empty: 'Nessun permesso. Esegui il seed sul backend o verifica l’accesso all’API.',
+  groupCount: '{{n}} permessi in questo gruppo',
+  colId: 'ID',
+  colAction: 'Chiave azione',
+  colDescription: 'Descrizione',
+  colRoles: 'Usato dai ruoli',
+} as const
+
 export const menusPage = {
   title: 'Menu',
   subtitle: 'Gestisci i menu dei ristoranti',

@@ -1,0 +1,233 @@
+const STORAGE_KEY = 'user_permissions'
+
+export function setStoredPermissions(perms: string[]) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(perms))
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event('auth'))
+  } catch {
+    /* ignore */
+  }
+}
+
+/** `null` = never set (legacy session); `[]` = logged in with no DB permissions (enum-based backend access). */
+export function getStoredPermissions(): string[] | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (raw === null) return null
+    const parsed = JSON.parse(raw) as unknown
+    if (!Array.isArray(parsed)) return null
+    return parsed.filter((x): x is string => typeof x === 'string')
+  } catch {
+    return null
+  }
+}
+
+export function clearStoredPermissions() {
+  try {
+    localStorage.removeItem(STORAGE_KEY)
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event('auth'))
+  } catch {
+    /* ignore */
+  }
+}
+
+/** When true, sidebar / route guard use permission strings; when false, only JWT role (chef/delivery) rules apply. */
+export function usesPermissionBasedUi(): boolean {
+  const p = getStoredPermissions()
+  return p !== null && p.length > 0
+}
+
+export function hasPermission(action: string): boolean {
+  const p = getStoredPermissions()
+  if (p === null || p.length === 0) return true
+  if (p.includes('*')) return true
+  return p.includes(action)
+}
+
+export function hasAnyPermission(actions: string[]): boolean {
+  const p = getStoredPermissions()
+  if (p === null || p.length === 0) return true
+  if (p.includes('*')) return true
+  return actions.some((a) => p.includes(a))
+}
+
+export type ResourceCrudOp =
+  | 'access'
+  | 'read'
+  | 'create'
+  | 'update'
+  | 'delete'
+  | 'restore'
+
+/** UI guard for `${resource}.${op}` (e.g. `products.update`). Legacy sessions without stored perms → allow. */
+export function perm(resource: string, op: ResourceCrudOp): boolean {
+  return hasPermission(`${resource}.${op}`)
+}
+
+/** First URL segment (path) → permission resource key (underscore). */
+const PATH_FIRST_SEGMENT_TO_RESOURCE: Record<string, string> = {
+  dashboard: 'dashboard',
+  orders: 'orders',
+  restaurant: 'restaurants',
+  'delivery-locations': 'delivery_locations',
+  types: 'types',
+  products: 'products',
+  menus: 'menus',
+  sections: 'sections',
+  users: 'users',
+  roles: 'roles',
+  permissions: 'roles',
+  offers: 'offers',
+  customers: 'customers',
+  coupons: 'coupons',
+}
+
+function resourceKeyFromAdminPath(pathname: string): string | null {
+  const norm = (pathname.replace(/\/+$/, '') || '/').toLowerCase()
+  const first = norm.split('/').filter(Boolean)[0]
+  if (!first) return null
+  return PATH_FIRST_SEGMENT_TO_RESOURCE[first] ?? null
+}
+
+/** Create route → `*.create`; edit route (has id) → `*.update`. */
+export function canSubmitResourceForm(resource: string, isEditMode: boolean): boolean {
+  return isEditMode ? perm(resource, 'update') : perm(resource, 'create')
+}
+
+/** Any permission that allows opening the orders list (narrow or broad). */
+export function hasOrdersReadUiAccess(): boolean {
+  const p = getStoredPermissions()
+  if (p === null || p.length === 0) return true
+  if (p.includes('*') || p.includes('orders.read')) return true
+  return p.some(
+    (x) =>
+      x.startsWith('orders.read_status.') || x.startsWith('orders.read_payment.'),
+  )
+}
+
+/** Create / update orders in UI (broad or status/payment-scoped update). */
+export function hasOrdersMutationUiAccess(): boolean {
+  const p = getStoredPermissions()
+  if (p === null || p.length === 0) return true
+  if (p.includes('*')) return true
+  if (p.includes('orders.create') || p.includes('orders.update')) return true
+  return p.some(
+    (x) =>
+      x.startsWith('orders.update_status.') ||
+      x.startsWith('orders.update_payment.'),
+  )
+}
+
+/**
+ * Rough map for tooling: primary data permission (UI also needs `*.access` when using RBAC).
+ * @deprecated Prefer `canAccessPath` / `canSeeNavPath` which enforce `*.access`.
+ */
+export function getRequiredPermissionForPath(pathname: string): string | string[] | null {
+  const p = (pathname.replace(/\/+$/, '') || '/').toLowerCase()
+  if (p === '/' || p === '/dashboard') return 'dashboard.access'
+  if (p.startsWith('/stats')) return 'stats.read'
+
+  const segments = p.split('/').filter(Boolean)
+  const first = segments[0]
+  const resKey = first ? PATH_FIRST_SEGMENT_TO_RESOURCE[first] : undefined
+  if (!resKey) return null
+
+  const isCreation = segments.includes('creation')
+  if (isCreation) {
+    const cIdx = segments.indexOf('creation')
+    const idAfter = cIdx >= 0 ? segments[cIdx + 1] : undefined
+    if (idAfter) {
+      return [`${resKey}.read`, `${resKey}.update`]
+    }
+    return [`${resKey}.create`, `${resKey}.update`]
+  }
+  return `${resKey}.read`
+}
+
+/** Order used when a route is denied — pick first reachable module (avoids redirect loop if Dashboard is gated). */
+const PANEL_PATH_PRIORITY: readonly string[] = [
+  '/dashboard',
+  '/orders',
+  '/stats',
+  '/restaurant',
+  '/delivery-locations',
+  '/types',
+  '/products',
+  '/menus',
+  '/sections',
+  '/offers',
+  '/coupons',
+  '/customers',
+  '/users',
+  '/roles',
+  '/permissions',
+]
+
+export function getFirstAccessiblePanelPath(): string | null {
+  if (!usesPermissionBasedUi()) return '/dashboard'
+  for (const path of PANEL_PATH_PRIORITY) {
+    if (canAccessPath(path)) return path
+  }
+  return null
+}
+
+/** Sidebar / module entry: show link if user may open that admin section (`*.access`). */
+export function canSeeNavPath(to: string): boolean {
+  const norm = (to.replace(/\/+$/, '') || '/').toLowerCase()
+  if (norm === '/' || norm === '/dashboard') {
+    if (!usesPermissionBasedUi()) return true
+    return perm('dashboard', 'access')
+  }
+  if (!usesPermissionBasedUi()) return true
+
+  if (norm === '/orders' || norm.startsWith('/orders/')) {
+    return perm('orders', 'access')
+  }
+  if (norm.startsWith('/stats')) {
+    return perm('stats', 'access')
+  }
+
+  const resKey = resourceKeyFromAdminPath(to)
+  if (!resKey) return true
+  return perm(resKey, 'access')
+}
+
+export function canAccessPath(pathname: string): boolean {
+  if (!usesPermissionBasedUi()) return true
+
+  const norm = (pathname.replace(/\/+$/, '') || '/').toLowerCase()
+  if (norm === '/' || norm === '/dashboard') {
+    return perm('dashboard', 'access')
+  }
+
+  if (norm === '/orders' || norm.startsWith('/orders/')) {
+    if (!perm('orders', 'access')) return false
+    const segments = norm.split('/').filter(Boolean)
+    if (segments.includes('creation')) {
+      return hasOrdersMutationUiAccess()
+    }
+    return hasOrdersReadUiAccess()
+  }
+
+  if (norm.startsWith('/stats')) {
+    return perm('stats', 'access') && perm('stats', 'read')
+  }
+
+  const resKey = resourceKeyFromAdminPath(pathname)
+  if (!resKey) return true
+
+  if (!perm(resKey, 'access')) return false
+
+  const segments = norm.split('/').filter(Boolean)
+  const isCreation = segments.includes('creation')
+  if (isCreation) {
+    const cIdx = segments.indexOf('creation')
+    const idAfter = cIdx >= 0 ? segments[cIdx + 1] : undefined
+    if (idAfter) {
+      return hasAnyPermission([`${resKey}.read`, `${resKey}.update`])
+    }
+    return hasAnyPermission([`${resKey}.create`, `${resKey}.update`])
+  }
+
+  return perm(resKey, 'read')
+}

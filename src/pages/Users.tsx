@@ -16,6 +16,7 @@ type User = {
 
 import { API_BASE } from '../config'
 import { getRolesList, setUserActive, getCurrentUserId } from '../utils/api'
+import { perm } from '../utils/permissions'
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert'
 import { AlertCircle } from 'lucide-react'
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card'
@@ -106,7 +107,9 @@ export default function Users() {
       <div>
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold">{t('usersPage.title')}</h1>
-          <Link to="/users/creation"><Button variant="primary" icon={<FiPlus className="w-4 h-4" />}>{t('usersPage.create')}</Button></Link>
+          {perm('users', 'create') ? (
+            <Link to="/users/creation"><Button variant="primary" icon={<FiPlus className="w-4 h-4" />}>{t('usersPage.create')}</Button></Link>
+          ) : null}
         </div>
         <Table>
           <TableHead>
@@ -188,15 +191,17 @@ export default function Users() {
           <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{t('usersPage.title')}</h1>
           <p className="text-gray-600 mt-1 dark:text-slate-400">{t('usersPage.subtitle')}</p>
         </div>
-        <Link to="/users/creation" className="w-full sm:w-auto">
-          <Button
-            variant="primary"
-            icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
-            className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
-          >
-            <span className="sm:inline">{t('usersPage.createUser')}</span>
-          </Button>
-        </Link>
+        {perm('users', 'create') ? (
+          <Link to="/users/creation" className="w-full sm:w-auto">
+            <Button
+              variant="primary"
+              icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
+              className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
+            >
+              <span className="sm:inline">{t('usersPage.createUser')}</span>
+            </Button>
+          </Link>
+        ) : null}
       </div>
 
       {error && (
@@ -283,37 +288,41 @@ export default function Users() {
                     )}
                   </div>
                   <div className="flex gap-1">
-                    <Link to={`/users/creation/${encodeURIComponent(String(u.id ?? ''))}`}>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="p-2 text-xs"
-                        icon={<FiEdit className="w-4 h-4" />}
-                        title={t('usersPage.editTitle')}
-                      />
-                    </Link>
-                    {isCurrent ? null : active ? (
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        className="p-2 text-xs"
-                        icon={<FiUserMinus className="w-4 h-4" />}
-                        onClick={() => askDeactivate(u)}
-                        type="button"
-                        title={t('usersPage.deactivateUserTitle')}
-                      />
-                    ) : (
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        className="p-2 text-xs"
-                        icon={<FiUserPlus className="w-4 h-4" />}
-                        onClick={() => handleActivate(u)}
-                        type="button"
-                        disabled={activatingId === u.id}
-                        title={t('usersPage.activateUserTitle')}
-                      />
-                    )}
+                    {perm('users', 'update') ? (
+                      <Link to={`/users/creation/${encodeURIComponent(String(u.id ?? ''))}`}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="p-2 text-xs"
+                          icon={<FiEdit className="w-4 h-4" />}
+                          title={t('usersPage.editTitle')}
+                        />
+                      </Link>
+                    ) : null}
+                    {perm('users', 'update') && !isCurrent ? (
+                      active ? (
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          className="p-2 text-xs"
+                          icon={<FiUserMinus className="w-4 h-4" />}
+                          onClick={() => askDeactivate(u)}
+                          type="button"
+                          title={t('usersPage.deactivateUserTitle')}
+                        />
+                      ) : (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          className="p-2 text-xs"
+                          icon={<FiUserPlus className="w-4 h-4" />}
+                          onClick={() => handleActivate(u)}
+                          type="button"
+                          disabled={activatingId === u.id}
+                          title={t('usersPage.activateUserTitle')}
+                        />
+                      )
+                    ) : null}
                   </div>
                 </CardFooter>
               </Card>
@@ -368,14 +377,18 @@ export default function Users() {
                   </TableCell>
                   <TableCell>{u.createdAt ? new Date(String(u.createdAt)).toLocaleString() : ''}</TableCell>
                   <TableCell className="flex items-center gap-1">
-                    <Link to={`/users/creation/${encodeURIComponent(String(u.id ?? ''))}`}>
-                      <Button variant="ghost" className="p-2" size="sm" icon={<FiEdit className="w-4 h-4" />} title={t('usersPage.editTitle')} />
-                    </Link>
-                    {currentUserId != null && String(u.id) === String(currentUserId) ? null : active ? (
-                      <Button variant="danger" size="sm" className="p-2" icon={<FiUserMinus className="w-4 h-4" />} onClick={() => askDeactivate(u)} type="button" title={t('usersPage.deactivateUserTitle')} />
-                    ) : (
-                      <Button variant="primary" size="sm" className="p-2" icon={<FiUserPlus className="w-4 h-4" />} onClick={() => handleActivate(u)} type="button" disabled={activatingId === u.id} title={t('usersPage.activateUserTitle')} />
-                    )}
+                    {perm('users', 'update') ? (
+                      <Link to={`/users/creation/${encodeURIComponent(String(u.id ?? ''))}`}>
+                        <Button variant="ghost" className="p-2" size="sm" icon={<FiEdit className="w-4 h-4" />} title={t('usersPage.editTitle')} />
+                      </Link>
+                    ) : null}
+                    {perm('users', 'update') && !(currentUserId != null && String(u.id) === String(currentUserId)) ? (
+                      active ? (
+                        <Button variant="danger" size="sm" className="p-2" icon={<FiUserMinus className="w-4 h-4" />} onClick={() => askDeactivate(u)} type="button" title={t('usersPage.deactivateUserTitle')} />
+                      ) : (
+                        <Button variant="primary" size="sm" className="p-2" icon={<FiUserPlus className="w-4 h-4" />} onClick={() => handleActivate(u)} type="button" disabled={activatingId === u.id} title={t('usersPage.activateUserTitle')} />
+                      )
+                    ) : null}
                   </TableCell>
                 </TableRow>
               )

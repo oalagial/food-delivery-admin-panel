@@ -22,7 +22,9 @@ const ProductLabel = {
 type ProductLabel = typeof ProductLabel[keyof typeof ProductLabel];
 
 import { Select } from '../components/ui/select';
-import { API_BASE } from '../config';
+import { API_BASE } from '../config'
+import { canSubmitResourceForm } from '../utils/permissions'
+import { FormSaveBarrier } from '../components/FormSaveBarrier'
 
 function utcToLocalDateTimeInput(utc?: string | null): string {
   if (!utc) return ''
@@ -169,6 +171,7 @@ export default function ProductCreate() {
   const { t: tr } = useTranslation()
   const { id } = useParams<{ id?: string }>()
   const navigate = useNavigate()
+  const canSave = canSubmitResourceForm('products', !!id)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -305,6 +308,7 @@ export default function ProductCreate() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!canSave) return
     setSaving(true)
     setError(null)
 
@@ -408,6 +412,7 @@ export default function ProductCreate() {
           onSubmit={handleSubmit}
           className="grid gap-6 max-w-5xl lg:grid-cols-2"
         >
+          <FormSaveBarrier canSave={canSave} alertClassName="lg:col-span-2">
           {/* Basic info */}
           <Card className="shadow-sm">
             <CardHeader className="pb-3">
@@ -704,12 +709,13 @@ export default function ProductCreate() {
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
+          </FormSaveBarrier>
 
           <div className="flex flex-wrap justify-end gap-3 pt-2 lg:col-span-2">
             <Button variant="default" type="button" onClick={() => navigate('/products')}>
               {tr('common.cancel')}
             </Button>
-            <Button variant="primary" type="submit" disabled={saving}>
+            <Button variant="primary" type="submit" disabled={!canSave || saving}>
               {saving ? tr('common.saving') : id ? tr('common.update') : tr('common.create')}
             </Button>
           </div>

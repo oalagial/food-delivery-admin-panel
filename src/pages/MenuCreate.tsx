@@ -8,6 +8,8 @@ import { Label } from '../components/ui/label'
 import { Alert, AlertDescription } from '../components/ui/alert'
 import { AlertCircle } from 'lucide-react'
 import { getRestaurantsList, getSectionsList, getMenuById, createMenu, updateMenu } from '../utils/api'
+import { canSubmitResourceForm } from '../utils/permissions'
+import { FormSaveBarrier } from '../components/FormSaveBarrier'
 import type { CreateMenuPayload, Restaurant, SectionItem } from '../utils/api'
 import { Select } from '../components/ui/select';
 
@@ -16,6 +18,7 @@ export default function MenuCreate() {
   const { id } = useParams<{ id?: string }>()
   const navigate = useNavigate()
   const editing = !!id
+  const canSave = canSubmitResourceForm('menus', editing)
 
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -63,6 +66,7 @@ export default function MenuCreate() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!canSave) return
     setError(null)
     if (!name.trim()) { setError(t('common.menuNameRequired')); return }
     const payload: CreateMenuPayload = {
@@ -103,6 +107,7 @@ export default function MenuCreate() {
           onSubmit={handleSubmit}
           className="grid gap-6 max-w-5xl lg:grid-cols-2"
         >
+          <FormSaveBarrier canSave={canSave} alertClassName="lg:col-span-2">
           {/* Basic info */}
           <Card className="shadow-sm">
             <CardHeader className="pb-3">
@@ -235,21 +240,21 @@ export default function MenuCreate() {
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
-
-              <div className="flex justify-end gap-3 pt-2">
-                <Button
-                  variant="default"
-                  type="button"
-                  onClick={() => navigate(-1)}
-                >
-                  {t('common.cancel')}
-                </Button>
-                <Button type="submit" variant="primary" disabled={saving}>
-                  {saving ? t('common.saving') : editing ? t('common.update') : t('common.create')}
-                </Button>
-              </div>
             </CardContent>
           </Card>
+          </FormSaveBarrier>
+          <div className="flex justify-end gap-3 pt-2 lg:col-span-2">
+            <Button
+              variant="default"
+              type="button"
+              onClick={() => navigate(-1)}
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button type="submit" variant="primary" disabled={!canSave || saving}>
+              {saving ? t('common.saving') : editing ? t('common.update') : t('common.create')}
+            </Button>
+          </div>
         </form>
       )}
     </div>

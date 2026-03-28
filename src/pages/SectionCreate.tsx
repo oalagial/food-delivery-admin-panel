@@ -10,6 +10,8 @@ import { Textarea } from '../components/ui/textarea'
 import { Alert, AlertDescription } from '../components/ui/alert'
 import { AlertCircle } from 'lucide-react'
 import { getSectionById, createSection, updateSection, getTypesList, getProductsList } from '../utils/api'
+import { canSubmitResourceForm } from '../utils/permissions'
+import { FormSaveBarrier } from '../components/FormSaveBarrier'
 import type { TypeItem, Product } from '../utils/api'
 import { Select } from '../components/ui/select';
 
@@ -17,6 +19,7 @@ export default function SectionCreate(){
   const { t } = useTranslation()
   const params = useParams<{id?: string}>()
   const navigate = useNavigate()
+  const canSave = canSubmitResourceForm('sections', !!params.id)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [typeId, setTypeId] = useState<number | ''>('')
@@ -51,6 +54,7 @@ export default function SectionCreate(){
 
   async function onSubmit(e: FormEvent<HTMLFormElement>){
     e.preventDefault()
+    if (!canSave) return
     setLoading(true)
     setError(null)
     const payload = { name, description: String(description || ''), typeId: typeof typeId === 'string' ? Number(typeId) : typeId, productsIds }
@@ -77,6 +81,7 @@ export default function SectionCreate(){
         onSubmit={onSubmit}
         className="grid gap-6 max-w-5xl lg:grid-cols-2"
       >
+        <FormSaveBarrier canSave={canSave} alertClassName="lg:col-span-2">
         {/* Basic info */}
         <Card className="shadow-sm">
           <CardHeader className="pb-3">
@@ -206,13 +211,13 @@ export default function SectionCreate(){
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
-
-            <div className="flex justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
-              <Button type="button" variant="default" onClick={()=>navigate('/sections')}>{t('common.cancel')}</Button>
-              <Button type="submit" variant="primary" disabled={loading}>{loading ? t('common.saving') : params.id ? t('common.update') : t('common.create')}</Button>
-            </div>
           </CardContent>
         </Card>
+        </FormSaveBarrier>
+        <div className="flex justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-700 lg:col-span-2">
+          <Button type="button" variant="default" onClick={()=>navigate('/sections')}>{t('common.cancel')}</Button>
+          <Button type="submit" variant="primary" disabled={!canSave || loading}>{loading ? t('common.saving') : params.id ? t('common.update') : t('common.create')}</Button>
+        </div>
       </form>
     </div>
   )

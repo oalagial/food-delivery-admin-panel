@@ -5,6 +5,7 @@ import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from 
 import { Button } from '../components/ui/button'
 import { FiPlus, FiEdit, FiTrash, FiCheckCircle, FiXCircle, FiRotateCw, FiAlertCircle } from 'react-icons/fi'
 import { getProductsList, restoreProduct, deleteProduct, updateProduct } from '../utils/api'
+import { perm } from '../utils/permissions'
 import type { Product } from '../utils/api'
 import { Skeleton } from '../components/ui/skeleton'
 import { API_BASE } from '../config'
@@ -121,26 +122,36 @@ function ProductRow({ product, isOpen, onToggle, isDeleted = false, onRestore, o
           ) : '-'}
         </TableCell>
         <TableCell className={`text-center ${isDeleted ? "text-gray-600" : ""}`}>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="inline-flex items-center justify-center"
-            disabled={isDeleted}
-            onClick={() => !isDeleted && onToggleAvailability && onToggleAvailability(product)}
-            aria-label={product.isAvailable ? t('common.setUnavailable') : t('common.setAvailable')}
-            icon={
-              product.isAvailable
-                ? <FiCheckCircle className="w-5 h-5 text-green-500" aria-label={t('common.ariaAvailable')} />
-                : <FiXCircle className="w-5 h-5 text-red-500" aria-label={t('common.ariaNotAvailable')} />
-            }
-          />
+          {perm('products', 'update') ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="inline-flex items-center justify-center"
+              disabled={isDeleted}
+              onClick={() => !isDeleted && onToggleAvailability && onToggleAvailability(product)}
+              aria-label={product.isAvailable ? t('common.setUnavailable') : t('common.setAvailable')}
+              icon={
+                product.isAvailable
+                  ? <FiCheckCircle className="w-5 h-5 text-green-500" aria-label={t('common.ariaAvailable')} />
+                  : <FiXCircle className="w-5 h-5 text-red-500" aria-label={t('common.ariaNotAvailable')} />
+              }
+            />
+          ) : (
+            <span className="inline-flex justify-center" aria-hidden>
+              {product.isAvailable ? (
+                <FiCheckCircle className="w-5 h-5 text-green-500 opacity-70" aria-label={t('common.ariaAvailable')} />
+              ) : (
+                <FiXCircle className="w-5 h-5 text-red-500 opacity-70" aria-label={t('common.ariaNotAvailable')} />
+              )}
+            </span>
+          )}
         </TableCell>
         {isDeleted ? (
           <>
             <TableCell className="text-gray-500 text-sm">{String(anyProduct.deletedBy ?? '')}</TableCell>
             <TableCell>
-              {onRestore && (
+              {onRestore && perm('products', 'restore') ? (
                 <div className="flex justify-center">
                   <Button
                     variant="ghost"
@@ -150,7 +161,7 @@ function ProductRow({ product, isOpen, onToggle, isDeleted = false, onRestore, o
                     icon={<FiRotateCw className="w-4 h-4" />}
                   ></Button>
                 </div>
-              )}
+              ) : null}
             </TableCell>
           </>
         ) : (
@@ -163,8 +174,12 @@ function ProductRow({ product, isOpen, onToggle, isDeleted = false, onRestore, o
               >
                 {isOpen ? t('productsPage.hide') : t('productsPage.details')}
               </Button>
-              <Link to={`/products/creation/${encodeURIComponent(String(product.id ?? ''))}`} ><Button variant="ghost" className='p-2' size="sm" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
-              <Button variant="danger" size="sm" icon={<FiTrash className="w-4 h-4" />} onClick={() => onDelete && onDelete(product.id ?? '', product.name ?? '')}></Button>
+              {perm('products', 'update') ? (
+                <Link to={`/products/creation/${encodeURIComponent(String(product.id ?? ''))}`} ><Button variant="ghost" className='p-2' size="sm" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
+              ) : null}
+              {perm('products', 'delete') ? (
+                <Button variant="danger" size="sm" icon={<FiTrash className="w-4 h-4" />} onClick={() => onDelete && onDelete(product.id ?? '', product.name ?? '')}></Button>
+              ) : null}
             </div>
           </TableCell>
         )}
@@ -293,6 +308,7 @@ export default function Products() {
     const anyProduct = p as unknown as Record<string, unknown>
     return anyProduct.deletedBy
   })
+  const canSeeDeletedProducts = perm('products', 'restore')
 
   const filteredItems = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -388,15 +404,17 @@ export default function Products() {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-            <Link to="/products/creation" className="w-full sm:w-auto">
-              <Button
-                variant="primary"
-                icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
-                className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
-              >
-                <span className="sm:inline">{t('productsPage.createProduct')}</span>
-              </Button>
-            </Link>
+            {perm('products', 'create') ? (
+              <Link to="/products/creation" className="w-full sm:w-auto">
+                <Button
+                  variant="primary"
+                  icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
+                  className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
+                >
+                  <span className="sm:inline">{t('productsPage.createProduct')}</span>
+                </Button>
+              </Link>
+            ) : null}
           </div>
         </div>
 
@@ -510,34 +528,40 @@ export default function Products() {
                             {openRowId === String(p.id) ? t('common.hideDetails') : t('productsPage.details')}
                           </Button>
                           <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="p-2 text-xs"
-                              icon={
-                                p.isAvailable ? (
-                                  <FiCheckCircle className="w-4 h-4 text-green-600" />
-                                ) : (
-                                  <FiXCircle className="w-4 h-4 text-red-600" />
-                                )
-                              }
-                              onClick={() => handleToggleAvailability(p)}
-                            />
-                            <Link to={`/products/creation/${encodeURIComponent(String(p.id ?? ''))}`}>
+                            {perm('products', 'update') ? (
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 className="p-2 text-xs"
-                                icon={<FiEdit className="w-4 h-4" />}
+                                icon={
+                                  p.isAvailable ? (
+                                    <FiCheckCircle className="w-4 h-4 text-green-600" />
+                                  ) : (
+                                    <FiXCircle className="w-4 h-4 text-red-600" />
+                                  )
+                                }
+                                onClick={() => handleToggleAvailability(p)}
                               />
-                            </Link>
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              className="p-2 text-xs"
-                              icon={<FiTrash className="w-4 h-4" />}
-                              onClick={() => handleDelete(p.id ?? '', p.name ?? '')}
-                            />
+                            ) : null}
+                            {perm('products', 'update') ? (
+                              <Link to={`/products/creation/${encodeURIComponent(String(p.id ?? ''))}`}>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="p-2 text-xs"
+                                  icon={<FiEdit className="w-4 h-4" />}
+                                />
+                              </Link>
+                            ) : null}
+                            {perm('products', 'delete') ? (
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                className="p-2 text-xs"
+                                icon={<FiTrash className="w-4 h-4" />}
+                                onClick={() => handleDelete(p.id ?? '', p.name ?? '')}
+                              />
+                            ) : null}
                           </div>
                         </CardFooter>
 
@@ -655,7 +679,7 @@ export default function Products() {
               )}
             </div>
 
-            {deletedProducts.length > 0 && (
+            {canSeeDeletedProducts && deletedProducts.length > 0 && (
               <div className="mt-8">
                 <h2 className="text-2xl font-semibold text-gray-600 dark:text-slate-400 mb-4">
                   {t('productsPage.deletedHeading')}

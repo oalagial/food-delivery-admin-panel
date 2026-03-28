@@ -5,6 +5,7 @@ import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from 
 import { Button } from '../components/ui/button'
 import { FiPlus, FiEdit, FiTrash, FiAlertCircle } from 'react-icons/fi'
 import { getTypesList, deleteType } from '../utils/api'
+import { perm } from '../utils/permissions'
 import type { TypeItem } from '../utils/api'
 import { Skeleton } from '../components/ui/skeleton'
 import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert'
@@ -141,15 +142,17 @@ export default function Types() {
           <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{tr('typesPage.title')}</h1>
           <p className="text-gray-600 mt-1 dark:text-slate-400">{tr('typesPage.subtitle')}</p>
         </div>
-        <Link to="/types/creation" className="w-full sm:w-auto">
-          <Button
-            variant="primary"
-            icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
-            className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
-          >
-            <span className="sm:inline">{tr('typesPage.create')}</span>
-          </Button>
-        </Link>
+        {perm('types', 'create') ? (
+          <Link to="/types/creation" className="w-full sm:w-auto">
+            <Button
+              variant="primary"
+              icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
+              className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
+            >
+              <span className="sm:inline">{tr('typesPage.create')}</span>
+            </Button>
+          </Link>
+        ) : null}
       </div>
 
       {loading && (
@@ -202,22 +205,26 @@ export default function Types() {
                     )}
                   </CardContent>
                   <CardFooter className="flex justify-end gap-1 px-4 pb-4 pt-0">
-                    <Link to={`/types/creation/${encodeURIComponent(String(ty.id ?? ''))}`}>
+                    {perm('types', 'update') ? (
+                      <Link to={`/types/creation/${encodeURIComponent(String(ty.id ?? ''))}`}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="p-2 text-xs"
+                          icon={<FiEdit className="w-4 h-4" />}
+                        />
+                      </Link>
+                    ) : null}
+                    {perm('types', 'delete') ? (
                       <Button
-                        variant="ghost"
+                        variant="danger"
                         size="sm"
                         className="p-2 text-xs"
-                        icon={<FiEdit className="w-4 h-4" />}
+                        icon={<FiTrash className="w-4 h-4" />}
+                        onClick={() => handleDelete(ty.id, ty.name)}
+                        disabled={deletingId === ty.id}
                       />
-                    </Link>
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      className="p-2 text-xs"
-                      icon={<FiTrash className="w-4 h-4" />}
-                      onClick={() => handleDelete(ty.id, ty.name)}
-                      disabled={deletingId === ty.id}
-                    />
+                    ) : null}
                   </CardFooter>
                 </Card>
               ))
@@ -250,25 +257,29 @@ export default function Types() {
                     <TableCell>{ty.description ?? ''}</TableCell>
                     <TableCell>{ty.createdAt ? new Date(String(ty.createdAt)).toLocaleString() : ''}</TableCell>
                     <TableCell>
-                      <Link
-                        to={`/types/creation/${encodeURIComponent(String(ty.id ?? ''))}`}
-                        className='mr-2'
-                      >
+                      {perm('types', 'update') ? (
+                        <Link
+                          to={`/types/creation/${encodeURIComponent(String(ty.id ?? ''))}`}
+                          className='mr-2'
+                        >
+                          <Button
+                            variant="ghost"
+                            className='p-2'
+                            size="sm"
+                            icon={<FiEdit className="w-4 h-4" />}
+                          />
+                        </Link>
+                      ) : null}
+                      {perm('types', 'delete') ? (
                         <Button
-                          variant="ghost"
-                          className='p-2'
+                          variant="danger"
                           size="sm"
-                          icon={<FiEdit className="w-4 h-4" />}
+                          className='p-2'
+                          icon={<FiTrash className="w-4 h-4" />}
+                          onClick={() => handleDelete(ty.id, ty.name)}
+                          disabled={deletingId === ty.id}
                         />
-                      </Link>
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        className='p-2'
-                        icon={<FiTrash className="w-4 h-4" />}
-                        onClick={() => handleDelete(ty.id, ty.name)}
-                        disabled={deletingId === ty.id}
-                      />
+                      ) : null}
                     </TableCell>
                   </TableRow>
                 ))}
