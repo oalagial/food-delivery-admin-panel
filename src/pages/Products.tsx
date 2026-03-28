@@ -181,12 +181,15 @@ function ProductRow({ product, isOpen, onToggle, isDeleted = false, onRestore, o
   )
 }
 
+const ACTIVE_PAGE_SIZE = 10
+
 export default function Products() {
   const { t } = useTranslation()
   const [items, setItems] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
   const [openRowId, setOpenRowId] = useState<string | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
     show: boolean
@@ -301,6 +304,35 @@ export default function Products() {
     )
   }, [activeProducts, search])
 
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / ACTIVE_PAGE_SIZE))
+
+  useEffect(() => {
+    setPage(1)
+  }, [search])
+
+  useEffect(() => {
+    setPage((p) => Math.min(p, totalPages))
+  }, [totalPages])
+
+  const paginatedItems = useMemo(() => {
+    const start = (page - 1) * ACTIVE_PAGE_SIZE
+    return filteredItems.slice(start, start + ACTIVE_PAGE_SIZE)
+  }, [filteredItems, page])
+
+  const pageNumbers = useMemo(() => {
+    return Array.from({ length: totalPages }, (_, i) => i + 1)
+      .filter(
+        (pn) =>
+          pn === 1 ||
+          pn === totalPages ||
+          (pn >= page - 2 && pn <= page + 2)
+      )
+      .reduce((arr: (number | 'ellipsis')[], pn, idx, src) => {
+        if (idx > 0 && pn - (src[idx - 1] as number) > 1) arr.push('ellipsis')
+        arr.push(pn)
+        return arr
+      }, [])
+  }, [page, totalPages])
 
   return (
     <>
@@ -407,7 +439,7 @@ export default function Products() {
                 {filteredItems.length === 0 ? (
                   <p className="text-sm text-gray-500 dark:text-slate-400">{t('productsPage.noActive')}</p>
                 ) : (
-                  filteredItems.map((p) => {
+                  paginatedItems.map((p) => {
                     const vatLabel = p.vatRate
                       ? p.vatRate === 'FOUR'
                         ? '4%'
@@ -544,7 +576,7 @@ export default function Products() {
                       </TableRow>
                     )}
 
-                    {filteredItems.map((p) => (
+                    {paginatedItems.map((p) => (
                       <ProductRow
                         key={String(p.id)}
                         product={p}
@@ -557,6 +589,70 @@ export default function Products() {
                   </TableBody>
                 </Table>
               </div>
+
+              {filteredItems.length > 0 && (
+                <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-2">
+                  <div className="text-gray-600 dark:text-slate-400 text-sm mb-2 sm:mb-0">
+                    {t('common.paginationSummary', { page, totalPages, total: filteredItems.length })}
+                  </div>
+                  <div className="flex items-center gap-1 flex-wrap justify-center">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setPage(1)}
+                      disabled={page === 1}
+                      aria-label={t('common.firstPage')}
+                    >
+                      «
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                      aria-label={t('common.prevPage')}
+                    >
+                      ‹
+                    </Button>
+                    {pageNumbers.map((pn, idx) =>
+                      pn === 'ellipsis' ? (
+                        <span key={`ellipsis-${idx}`} className="px-2 text-gray-400 dark:text-slate-500">
+                          …
+                        </span>
+                      ) : (
+                        <Button
+                          key={pn}
+                          variant={pn === page ? 'primary' : 'default'}
+                          size="sm"
+                          onClick={() => setPage(pn as number)}
+                          disabled={pn === page}
+                          aria-current={pn === page ? 'page' : undefined}
+                        >
+                          {pn}
+                        </Button>
+                      )
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={page === totalPages}
+                      aria-label={t('common.nextPage')}
+                    >
+                      ›
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setPage(totalPages)}
+                      disabled={page === totalPages}
+                      aria-label={t('common.lastPage')}
+                    >
+                      »
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {deletedProducts.length > 0 && (

@@ -250,6 +250,31 @@ export function attachAuthToFetch() {
   window.fetch = wrapped as unknown as typeof window.fetch
 }
 
+// Shared with orders API — matches backend enum PaymentMethod
+export const PaymentMethod = {
+  CASH: 'CASH',
+  CARD: 'CARD',
+  ONLINE: 'ONLINE',
+} as const
+
+export type PaymentMethod = (typeof PaymentMethod)[keyof typeof PaymentMethod]
+
+export const PAYMENT_METHODS: PaymentMethod[] = [
+  PaymentMethod.CASH,
+  PaymentMethod.CARD,
+  PaymentMethod.ONLINE,
+]
+
+export type RestaurantConfig = {
+  /** Accepted payment options (one or more) */
+  paymentMethods?: PaymentMethod[]
+  /** Legacy single value; still read when migrating old data */
+  paymentMethod?: PaymentMethod
+  /** When true, product ingredients are removed/deducted (e.g. on order fulfilment) */
+  removeProductIngredients?: boolean
+  [k: string]: unknown
+}
+
 export type Restaurant = {
   id?: string
   name?: string
@@ -267,6 +292,7 @@ export type Restaurant = {
   openingHours?: OpeningHour[]
   menu: MenuItem[]
   createdAt?: string | number
+  config?: RestaurantConfig | string | null
   [k: string]: unknown
 }
 
@@ -334,6 +360,7 @@ export type CreateRestaurantPayload = {
   latitude?: string | number
   longitude?: string | number
   openingHours?: OpeningHour[]
+  config?: RestaurantConfig
   [k: string]: unknown
 }
 
@@ -774,6 +801,90 @@ export async function updateProductImage(id: string | number, imageFile: File) {
     }
 
     throw new Error(bodyText || `PUT /products/${id} (image) failed (${res.status})`)
+  }
+
+  const data = await res.json().catch(() => null)
+  return data
+}
+
+export async function updateRestaurantImage(id: string | number, imageFile: File) {
+  if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
+  if (!imageFile) throw new Error('imageFile is required')
+
+  const formData = new FormData()
+  formData.append('imageFile', imageFile)
+
+  const res = await authFetch(`/restaurants/${encodeURIComponent(String(id))}`, {
+    method: 'PUT',
+    body: formData,
+  })
+
+  if (!res.ok) {
+    let bodyText = ''
+    try {
+      const json = await res.json()
+      bodyText = parseErrorJson(json)
+    } catch {
+      try { bodyText = await res.text() } catch { bodyText = '' }
+    }
+
+    throw new Error(bodyText || `PUT /restaurants/${id} (image) failed (${res.status})`)
+  }
+
+  const data = await res.json().catch(() => null)
+  return data
+}
+
+export async function updateDeliveryLocationImage(id: string | number, imageFile: File) {
+  if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
+  if (!imageFile) throw new Error('imageFile is required')
+
+  const formData = new FormData()
+  formData.append('imageFile', imageFile)
+
+  const res = await authFetch(`/delivery-locations/update/${encodeURIComponent(String(id))}`, {
+    method: 'PUT',
+    body: formData,
+  })
+
+  if (!res.ok) {
+    let bodyText = ''
+    try {
+      const json = await res.json()
+      bodyText = parseErrorJson(json)
+    } catch {
+      try { bodyText = await res.text() } catch { bodyText = '' }
+    }
+
+    throw new Error(bodyText || `PUT /delivery-locations/update/${id} (image) failed (${res.status})`)
+  }
+
+  const data = await res.json().catch(() => null)
+  return data
+}
+
+export async function updateOfferImage(id: string | number, imageFile: File) {
+  if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
+  if (!imageFile) throw new Error('imageFile is required')
+
+  const formData = new FormData()
+  formData.append('imageFile', imageFile)
+
+  const res = await authFetch(`/offers/${encodeURIComponent(String(id))}`, {
+    method: 'PUT',
+    body: formData,
+  })
+
+  if (!res.ok) {
+    let bodyText = ''
+    try {
+      const json = await res.json()
+      bodyText = parseErrorJson(json)
+    } catch {
+      try { bodyText = await res.text() } catch { bodyText = '' }
+    }
+
+    throw new Error(bodyText || `PUT /offers/${id} (image) failed (${res.status})`)
   }
 
   const data = await res.json().catch(() => null)
@@ -1610,12 +1721,6 @@ export type OrderProductItem = {
 }
 
 // Replace enums with const objects using 'as const'
-export const PaymentMethod = {
-  CASH: 'CASH',
-  CARD: 'CARD',
-  ONLINE: 'ONLINE'
-} as const;
-
 export const PaymentStatus = {
   UNPAID: 'UNPAID',
   PAID: 'PAID',
@@ -1635,7 +1740,6 @@ export const OrderStatus = {
 } as const;
 
 // Type inference from const objects
-export type PaymentMethod = typeof PaymentMethod[keyof typeof PaymentMethod];
 export type PaymentStatus = typeof PaymentStatus[keyof typeof PaymentStatus];
 export type OrderStatus = typeof OrderStatus[keyof typeof OrderStatus];
 
@@ -1749,6 +1853,23 @@ export async function updateOrder(id: string | number, payload: any) {
   }
   const data = await res.json().catch(() => null)
   return data
+}
+
+export async function printOrder(orderId: string | number): Promise<{ status?: string; printed?: boolean }> {
+  const id = Number(orderId)
+  if (!Number.isFinite(id)) throw new Error('orderId is required')
+  const res = await authFetch(`/printer?orderId=${encodeURIComponent(String(id))}`)
+  if (!res.ok) {
+    let bodyText = ''
+    try {
+      const json = await res.json()
+      bodyText = parseErrorJson(json)
+    } catch {
+      try { bodyText = await res.text() } catch { bodyText = '' }
+    }
+    throw new Error(bodyText || `GET /printer?orderId= failed (${res.status})`)
+  }
+  return (await res.json().catch(() => ({}))) as { status?: string; printed?: boolean }
 }
 
 export type CreateDeliveryLocationPayload = {

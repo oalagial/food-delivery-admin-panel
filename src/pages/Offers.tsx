@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getOfferList, deleteOffer, restoreOffer, updateOffer } from "../utils/api";
+import { API_BASE } from "../config";
 import { FiPlus, FiEdit, FiTrash, FiCheckCircle, FiXCircle, FiRotateCw, FiAlertCircle } from "react-icons/fi";
 import { Link } from "react-router-dom";
 import { Button } from "../components/ui/button";
@@ -74,6 +75,17 @@ function OfferRow({ offer, isOpen, onToggle, onDelete, isDeleting = false, onTog
       {/* MAIN ROW */}
       <TableRow>
         <TableCell>{offer.name}</TableCell>
+        <TableCell>
+          {offer.image ? (
+            <img
+              src={`${API_BASE}/images/${offer.image}`}
+              alt={offer.name ?? t("offersPage.offerAlt")}
+              className="w-12 h-12 object-cover rounded"
+            />
+          ) : (
+            <div className="w-12 h-12 bg-gray-100 dark:bg-slate-700 rounded" aria-hidden />
+          )}
+        </TableCell>
         <TableCell>{offer.description}</TableCell>
         <TableCell>{offer.price}</TableCell>
         <TableCell className="text-center">
@@ -119,7 +131,7 @@ function OfferRow({ offer, isOpen, onToggle, onDelete, isDeleting = false, onTog
       {/* DETAILS ROW */}
       {isOpen && (
         <TableRow className="bg-gray-50 dark:bg-slate-800/60">
-          <TableCell colSpan={5} className="!p-0">
+          <TableCell colSpan={6} className="!p-0">
             {offer.groups.length === 0 ? (
               <div className="p-4 text-sm text-gray-500 dark:text-slate-400">{t("offersPage.noGroupsInOffer")}</div>
             ) : (
@@ -134,12 +146,14 @@ function OfferRow({ offer, isOpen, onToggle, onDelete, isDeleting = false, onTog
   );
 }
 
+const ACTIVE_PAGE_SIZE = 10;
 
 export default function Offers() {
   const { t } = useTranslation();
   const [offers, setOffers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null)
+  const [page, setPage] = useState(1);
   const [openRowId, setOpenRowId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | number | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -235,6 +249,32 @@ export default function Offers() {
     return !!anyOffer.deletedBy;
   });
 
+  const totalPages = Math.max(1, Math.ceil(activeOffers.length / ACTIVE_PAGE_SIZE));
+
+  useEffect(() => {
+    setPage((p) => Math.min(p, totalPages));
+  }, [totalPages]);
+
+  const paginatedActive = useMemo(() => {
+    const start = (page - 1) * ACTIVE_PAGE_SIZE;
+    return activeOffers.slice(start, start + ACTIVE_PAGE_SIZE);
+  }, [activeOffers, page]);
+
+  const pageNumbers = useMemo(() => {
+    return Array.from({ length: totalPages }, (_, i) => i + 1)
+      .filter(
+        (pn) =>
+          pn === 1 ||
+          pn === totalPages ||
+          (pn >= page - 2 && pn <= page + 2)
+      )
+      .reduce((arr: (number | 'ellipsis')[], pn, idx, src) => {
+        if (idx > 0 && pn - (src[idx - 1] as number) > 1) arr.push('ellipsis');
+        arr.push(pn);
+        return arr;
+      }, []);
+  }, [page, totalPages]);
+
   const handleToggleActive = async (offer: any) => {
     if (!offer.id) return;
     try {
@@ -310,15 +350,17 @@ export default function Offers() {
           <TableHead>
             <tr>
               <TableHeadCell>{t("offersPage.name")}</TableHeadCell>
+              <TableHeadCell>{t("offersPage.image")}</TableHeadCell>
               <TableHeadCell>{t("offersPage.description")}</TableHeadCell>
               <TableHeadCell>{t("offersPage.price")}</TableHeadCell>
+              <TableHeadCell>{t("common.status")}</TableHeadCell>
               <TableHeadCell>{t("offersPage.actions")}</TableHeadCell>
             </tr>
           </TableHead>
           <TableBody>
             {Array.from({ length: 6 }).map((_, r) => (
               <TableRow key={r} className="animate-pulse">
-                {Array.from({ length: 11 }).map((__, c) => (
+                {Array.from({ length: 6 }).map((__, c) => (
                   <TableCell key={c}><Skeleton className="h-4 w-full bg-gray-200 dark:bg-slate-700" /></TableCell>
                 ))}
               </TableRow>
@@ -337,26 +379,37 @@ export default function Offers() {
               {activeOffers.length === 0 ? (
                 <p className="text-sm text-gray-600 dark:text-slate-400">{t("offersPage.noActive")}</p>
               ) : (
-                activeOffers.map((o) => (
+                paginatedActive.map((o) => (
                   <Card key={o.id} className="shadow-sm">
-                    <CardHeader className="p-4 pb-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <div>
-                          <CardTitle className="text-base font-semibold">
-                            {o.name}
-                          </CardTitle>
-                          <p className="text-xs text-gray-600 dark:text-slate-400">
-                            {o.description || t("common.noDescription")}
-                          </p>
+                    <CardHeader className="flex flex-row items-center gap-3 p-4 pb-2">
+                      {o.image ? (
+                        <img
+                          src={`${API_BASE}/images/${o.image}`}
+                          alt={o.name ?? t("offersPage.offerAlt")}
+                          className="h-12 w-12 flex-shrink-0 rounded object-cover"
+                        />
+                      ) : (
+                        <div className="h-12 w-12 flex-shrink-0 rounded bg-gray-100 dark:bg-slate-700" aria-hidden />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <CardTitle className="text-base font-semibold truncate">
+                              {o.name}
+                            </CardTitle>
+                            <p className="text-xs text-gray-600 dark:text-slate-400">
+                              {o.description || t("common.noDescription")}
+                            </p>
+                          </div>
+                          <span
+                            className={`inline-flex flex-shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${o.isActive
+                              ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'
+                              : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
+                              }`}
+                          >
+                            {o.isActive ? t("common.active") : t("common.inactive")}
+                          </span>
                         </div>
-                        <span
-                          className={`inline-flex flex-shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${o.isActive
-                            ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'
-                            : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
-                            }`}
-                        >
-                          {o.isActive ? t("common.active") : t("common.inactive")}
-                        </span>
                       </div>
                     </CardHeader>
                     <CardContent className="px-4 pb-4 pt-0 space-y-2 text-xs text-gray-700 dark:text-slate-300">
@@ -431,6 +484,7 @@ export default function Offers() {
                 <TableHead>
                   <tr>
                     <TableHeadCell>{t("offersPage.name")}</TableHeadCell>
+                    <TableHeadCell>{t("offersPage.image")}</TableHeadCell>
                     <TableHeadCell>{t("offersPage.description")}</TableHeadCell>
                     <TableHeadCell>{t("offersPage.price")}</TableHeadCell>
                     <TableHeadCell>{t("common.status")}</TableHeadCell>
@@ -440,10 +494,10 @@ export default function Offers() {
                 <TableBody>
                   {activeOffers.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-gray-500 dark:text-slate-400">{t("offersPage.noActive")}</TableCell>
+                      <TableCell colSpan={6} className="text-gray-500 dark:text-slate-400">{t("offersPage.noActive")}</TableCell>
                     </TableRow>
                   )}
-                  {activeOffers.map((o) => (
+                  {paginatedActive.map((o) => (
                     <OfferRow
                       key={o.id}
                       offer={o}
@@ -457,6 +511,70 @@ export default function Offers() {
                 </TableBody>
               </Table>
             </div>
+
+            {activeOffers.length > 0 && (
+              <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-2">
+                <div className="text-gray-600 dark:text-slate-400 text-sm mb-2 sm:mb-0">
+                  {t("common.paginationSummary", { page, totalPages, total: activeOffers.length })}
+                </div>
+                <div className="flex items-center gap-1 flex-wrap justify-center">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPage(1)}
+                    disabled={page === 1}
+                    aria-label={t("common.firstPage")}
+                  >
+                    «
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    aria-label={t("common.prevPage")}
+                  >
+                    ‹
+                  </Button>
+                  {pageNumbers.map((pn, idx) =>
+                    pn === 'ellipsis' ? (
+                      <span key={`ellipsis-${idx}`} className="px-2 text-gray-400 dark:text-slate-500">
+                        …
+                      </span>
+                    ) : (
+                      <Button
+                        key={pn}
+                        variant={pn === page ? 'primary' : 'default'}
+                        size="sm"
+                        onClick={() => setPage(pn as number)}
+                        disabled={pn === page}
+                        aria-current={pn === page ? 'page' : undefined}
+                      >
+                        {pn}
+                      </Button>
+                    )
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                    aria-label={t("common.nextPage")}
+                  >
+                    ›
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPage(totalPages)}
+                    disabled={page === totalPages}
+                    aria-label={t("common.lastPage")}
+                  >
+                    »
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
 
           {deletedOffers.length > 0 && (
@@ -466,6 +584,7 @@ export default function Offers() {
                 <TableHead>
                   <tr className="bg-gray-100 dark:bg-slate-900">
                     <TableHeadCell className="text-gray-600 dark:text-slate-100">{t("offersPage.name")}</TableHeadCell>
+                    <TableHeadCell className="text-gray-600 dark:text-slate-100">{t("offersPage.image")}</TableHeadCell>
                     <TableHeadCell className="text-gray-600 dark:text-slate-100">{t("offersPage.description")}</TableHeadCell>
                     <TableHeadCell className="text-gray-600 dark:text-slate-100">{t("offersPage.price")}</TableHeadCell>
                     <TableHeadCell className="text-gray-600 dark:text-slate-100">{t("common.status")}</TableHeadCell>
@@ -479,6 +598,17 @@ export default function Offers() {
                     return (
                       <TableRow key={o.id} className="bg-gray-50 opacity-75 dark:bg-slate-800">
                         <TableCell className="text-gray-600 dark:text-slate-300">{o.name}</TableCell>
+                        <TableCell className="text-gray-600 dark:text-slate-300">
+                          {o.image ? (
+                            <img
+                              src={`${API_BASE}/images/${o.image}`}
+                              alt={o.name ?? t("offersPage.offerAlt")}
+                              className="w-12 h-12 object-cover rounded opacity-90"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 bg-gray-200 dark:bg-slate-600 rounded" aria-hidden />
+                          )}
+                        </TableCell>
                         <TableCell className="text-gray-600 dark:text-slate-300">{o.description}</TableCell>
                         <TableCell className="text-gray-600 dark:text-slate-300">{o.price}</TableCell>
                         <TableCell className="text-gray-600 dark:text-slate-300">

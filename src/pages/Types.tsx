@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
@@ -10,11 +10,14 @@ import { Skeleton } from '../components/ui/skeleton'
 import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/card'
 
+const PAGE_SIZE = 10
+
 export default function Types() {
   const { t: tr } = useTranslation()
   const [types, setTypes] = useState<TypeItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
   const [deletingId, setDeletingId] = useState<string | number | null>(null)
   const [confirmDialog, setConfirmDialog] = useState<{
     show: boolean
@@ -43,6 +46,32 @@ export default function Types() {
 
     return () => { mounted = false }
   }, [])
+
+  const totalPages = Math.max(1, Math.ceil(types.length / PAGE_SIZE))
+
+  useEffect(() => {
+    setPage((p) => Math.min(p, totalPages))
+  }, [totalPages])
+
+  const paginatedTypes = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE
+    return types.slice(start, start + PAGE_SIZE)
+  }, [types, page])
+
+  const pageNumbers = useMemo(() => {
+    return Array.from({ length: totalPages }, (_, i) => i + 1)
+      .filter(
+        (pn) =>
+          pn === 1 ||
+          pn === totalPages ||
+          (pn >= page - 2 && pn <= page + 2)
+      )
+      .reduce((arr: (number | 'ellipsis')[], pn, idx, src) => {
+        if (idx > 0 && pn - (src[idx - 1] as number) > 1) arr.push('ellipsis')
+        arr.push(pn)
+        return arr
+      }, [])
+  }, [page, totalPages])
 
   const handleDelete = async (id?: string | number, name?: string) => {
     if (!id && id !== 0) return
@@ -154,26 +183,26 @@ export default function Types() {
             {types.length === 0 ? (
               <p className="text-sm text-gray-500">{tr('typesPage.noTypes')}</p>
             ) : (
-              types.map((t) => (
-                <Card key={t.id ?? t.name} className="shadow-sm">
+              paginatedTypes.map((ty) => (
+                <Card key={ty.id ?? ty.name} className="shadow-sm">
                   <CardHeader className="p-4 pb-2">
                     <CardTitle className="text-base font-semibold">
-                      {t.name ?? ''}
+                      {ty.name ?? ''}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="px-4 pb-2 pt-0 space-y-1">
 
                     <p className="text-xs">
-                      {t.description || tr('common.noDescription')}
+                      {ty.description || tr('common.noDescription')}
                     </p>
-                    {t.createdAt && (
+                    {ty.createdAt && (
                       <p className="text-[11px]">
-                        {tr('common.created')}: {new Date(String(t.createdAt)).toLocaleDateString()}
+                        {tr('common.created')}: {new Date(String(ty.createdAt)).toLocaleDateString()}
                       </p>
                     )}
                   </CardContent>
                   <CardFooter className="flex justify-end gap-1 px-4 pb-4 pt-0">
-                    <Link to={`/types/creation/${encodeURIComponent(String(t.id ?? ''))}`}>
+                    <Link to={`/types/creation/${encodeURIComponent(String(ty.id ?? ''))}`}>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -186,8 +215,8 @@ export default function Types() {
                       size="sm"
                       className="p-2 text-xs"
                       icon={<FiTrash className="w-4 h-4" />}
-                      onClick={() => handleDelete(t.id, t.name)}
-                      disabled={deletingId === t.id}
+                      onClick={() => handleDelete(ty.id, ty.name)}
+                      disabled={deletingId === ty.id}
                     />
                   </CardFooter>
                 </Card>
@@ -214,15 +243,15 @@ export default function Types() {
                   </TableRow>
                 )}
 
-                {types.map((t) => (
-                  <TableRow key={t.id ?? t.name}>
-                    <TableCell>{t.name ?? ''}</TableCell>
-                    <TableCell>{t.tag ?? ''}</TableCell>
-                    <TableCell>{t.description ?? ''}</TableCell>
-                    <TableCell>{t.createdAt ? new Date(String(t.createdAt)).toLocaleString() : ''}</TableCell>
+                {paginatedTypes.map((ty) => (
+                  <TableRow key={ty.id ?? ty.name}>
+                    <TableCell>{ty.name ?? ''}</TableCell>
+                    <TableCell>{ty.tag ?? ''}</TableCell>
+                    <TableCell>{ty.description ?? ''}</TableCell>
+                    <TableCell>{ty.createdAt ? new Date(String(ty.createdAt)).toLocaleString() : ''}</TableCell>
                     <TableCell>
                       <Link
-                        to={`/types/creation/${encodeURIComponent(String(t.id ?? ''))}`}
+                        to={`/types/creation/${encodeURIComponent(String(ty.id ?? ''))}`}
                         className='mr-2'
                       >
                         <Button
@@ -237,8 +266,8 @@ export default function Types() {
                         size="sm"
                         className='p-2'
                         icon={<FiTrash className="w-4 h-4" />}
-                        onClick={() => handleDelete(t.id, t.name)}
-                        disabled={deletingId === t.id}
+                        onClick={() => handleDelete(ty.id, ty.name)}
+                        disabled={deletingId === ty.id}
                       />
                     </TableCell>
                   </TableRow>
@@ -246,6 +275,70 @@ export default function Types() {
               </TableBody>
             </Table>
           </div>
+
+          {types.length > 0 && (
+            <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-2">
+              <div className="text-gray-600 dark:text-slate-400 text-sm mb-2 sm:mb-0">
+                {tr('common.paginationSummary', { page, totalPages, total: types.length })}
+              </div>
+              <div className="flex items-center gap-1 flex-wrap justify-center">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setPage(1)}
+                  disabled={page === 1}
+                  aria-label={tr('common.firstPage')}
+                >
+                  «
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  aria-label={tr('common.prevPage')}
+                >
+                  ‹
+                </Button>
+                {pageNumbers.map((pn, idx) =>
+                  pn === 'ellipsis' ? (
+                    <span key={`ellipsis-${idx}`} className="px-2 text-gray-400 dark:text-slate-500">
+                      …
+                    </span>
+                  ) : (
+                    <Button
+                      key={pn}
+                      variant={pn === page ? 'primary' : 'default'}
+                      size="sm"
+                      onClick={() => setPage(pn as number)}
+                      disabled={pn === page}
+                      aria-current={pn === page ? 'page' : undefined}
+                    >
+                      {pn}
+                    </Button>
+                  )
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  aria-label={tr('common.nextPage')}
+                >
+                  ›
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setPage(totalPages)}
+                  disabled={page === totalPages}
+                  aria-label={tr('common.lastPage')}
+                >
+                  »
+                </Button>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

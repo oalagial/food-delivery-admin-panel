@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type MouseEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../components/ui/button'
-import { getOrdersList } from '../utils/api'
+import { getOrdersList, printOrder } from '../utils/api'
 import type { OrderItem } from '../utils/api'
 import { Skeleton } from '../components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../components/ui/card'
@@ -29,6 +29,42 @@ type OrderRowProps = {
 }
 
 type OrderCardProps = OrderRowProps
+
+function OrderPrintButton({ orderId }: { orderId: string | number | undefined }) {
+  const { t } = useTranslation()
+  const [loading, setLoading] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+
+  const onPrint = async (e: MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation()
+    if (orderId === undefined || orderId === null || String(orderId) === '') return
+    setErr(null)
+    setLoading(true)
+    try {
+      await printOrder(orderId)
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-0.5 min-w-[4.5rem]">
+      <Button
+        type="button"
+        variant="default"
+        size="sm"
+        disabled={loading || orderId == null || String(orderId) === ''}
+        aria-label={t('ordersPage.printAria')}
+        onClick={onPrint}
+      >
+        {loading ? t('ordersPage.printing') : t('ordersPage.print')}
+      </Button>
+      {err ? <p className="text-[10px] text-red-600 text-center leading-tight max-w-[9rem]">{err}</p> : null}
+    </div>
+  )
+}
 
 function OrderRow({ order, isOpen, onToggle }: OrderRowProps) {
   const { t } = useTranslation()
@@ -75,7 +111,8 @@ function OrderRow({ order, isOpen, onToggle }: OrderRowProps) {
           </span>
         </TableCell>
         <TableCell>
-          <div className="flex justify-center" onClick={(e) => e.stopPropagation()}>
+          <div className="flex justify-center items-start gap-2" onClick={(e) => e.stopPropagation()}>
+            <OrderPrintButton orderId={order.id} />
             <Button variant="ghost" size="sm" onClick={onToggle}>
               {isOpen ? t('common.hide') : t('common.details')}
             </Button>
@@ -146,7 +183,8 @@ function OrderCard({ order, isOpen, onToggle }: OrderCardProps) {
         </p>
       </CardContent>
 
-      <CardFooter className="flex justify-start items-center px-4 pb-4 pt-0">
+      <CardFooter className="flex justify-start items-center gap-2 px-4 pb-4 pt-0" onClick={(e) => e.stopPropagation()}>
+        <OrderPrintButton orderId={order.id} />
         <Button variant="ghost" size="sm" onClick={onToggle}>
           {isOpen ? t('common.hideDetails') : t('common.details')}
         </Button>

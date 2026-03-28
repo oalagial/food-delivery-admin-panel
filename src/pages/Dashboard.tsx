@@ -107,6 +107,8 @@ const DASHBOARD_STATUS_FILTER_ORDER = [
   OrderStatus.REJECTED,
 ] as const
 
+const DASHBOARD_PAGE_SIZE = 10
+
 const DASHBOARD_STATUS_LABEL_KEY: Record<(typeof DASHBOARD_STATUS_FILTER_ORDER)[number], string> = {
   [OrderStatus.PENDING]: 'dashboardPage.statusPending',
   [OrderStatus.CONFIRMED]: 'dashboardPage.statusConfirmed',
@@ -143,6 +145,7 @@ export default function Dashboard() {
   const [patchingOrderId, setPatchingOrderId] = useState<string | null>(null)
   const [orderActionError, setOrderActionError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<string>('')
+  const [listPage, setListPage] = useState(1)
   const previousTodayCountRef = useRef<number | null>(null)
   const audioCtxRef = useRef<AudioContext | null>(null)
   const refreshTodayOrdersRef = useRef<() => Promise<void>>(() => Promise.resolve())
@@ -156,6 +159,36 @@ export default function Dashboard() {
     () => sortOrdersByColumn(filteredTodayOrders, sortKey, sortDir),
     [filteredTodayOrders, sortKey, sortDir]
   )
+
+  const totalListPages = Math.max(1, Math.ceil(displayedOrders.length / DASHBOARD_PAGE_SIZE))
+
+  useEffect(() => {
+    setListPage(1)
+  }, [statusFilter])
+
+  useEffect(() => {
+    setListPage((p) => Math.min(p, totalListPages))
+  }, [totalListPages])
+
+  const paginatedOrders = useMemo(() => {
+    const start = (listPage - 1) * DASHBOARD_PAGE_SIZE
+    return displayedOrders.slice(start, start + DASHBOARD_PAGE_SIZE)
+  }, [displayedOrders, listPage])
+
+  const listPageNumbers = useMemo(() => {
+    return Array.from({ length: totalListPages }, (_, i) => i + 1)
+      .filter(
+        (pn) =>
+          pn === 1 ||
+          pn === totalListPages ||
+          (pn >= listPage - 2 && pn <= listPage + 2)
+      )
+      .reduce((arr: (number | 'ellipsis')[], pn, idx, src) => {
+        if (idx > 0 && pn - (src[idx - 1] as number) > 1) arr.push('ellipsis')
+        arr.push(pn)
+        return arr
+      }, [])
+  }, [listPage, totalListPages])
 
   const onSortColumn = (k: OrderTableSortKey) => {
     const next = toggleOrderTableSort(sortKey, sortDir, k)
@@ -405,7 +438,7 @@ export default function Dashboard() {
               {displayedOrders.length === 0 ? (
                 <div className="p-4 text-sm text-slate-500 dark:text-slate-400">{noOrdersLabel}</div>
               ) : (
-                displayedOrders.map((o, i) => {
+                paginatedOrders.map((o, i) => {
                   const id = String(o.id ?? '')
                   const restaurant = o.restaurant?.name ?? '-'
                   const deliveryLocation = o.deliveryLocation?.name ?? '-'
@@ -603,7 +636,7 @@ export default function Dashboard() {
                       <TableCell colSpan={9}>{noOrdersLabel}</TableCell>
                     </TableRow>
                   )}
-                  {displayedOrders.map((o, i) => (
+                  {paginatedOrders.map((o, i) => (
                     <Fragment key={String(o.id ?? i)}>
                       <TableRow
                         onClick={() => toggleRow(o.id ?? '')}
@@ -719,6 +752,74 @@ export default function Dashboard() {
                 </TableBody>
               </Table>
             </div>
+
+            {displayedOrders.length > 0 && (
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-2 border-t border-slate-200 px-3 py-3 dark:border-slate-700">
+                <div className="text-slate-600 dark:text-slate-400 text-sm">
+                  {t('common.paginationSummary', {
+                    page: listPage,
+                    totalPages: totalListPages,
+                    total: displayedOrders.length,
+                  })}
+                </div>
+                <div className="flex items-center gap-1 flex-wrap justify-center">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setListPage(1)}
+                    disabled={listPage === 1}
+                    aria-label={t('common.firstPage')}
+                  >
+                    «
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setListPage((p) => Math.max(1, p - 1))}
+                    disabled={listPage === 1}
+                    aria-label={t('common.prevPage')}
+                  >
+                    ‹
+                  </Button>
+                  {listPageNumbers.map((pn, idx) =>
+                    pn === 'ellipsis' ? (
+                      <span key={`dash-ellipsis-${idx}`} className="px-2 text-slate-400 dark:text-slate-500">
+                        …
+                      </span>
+                    ) : (
+                      <Button
+                        key={pn}
+                        variant={pn === listPage ? 'primary' : 'default'}
+                        size="sm"
+                        onClick={() => setListPage(pn as number)}
+                        disabled={pn === listPage}
+                        aria-current={pn === listPage ? 'page' : undefined}
+                      >
+                        {pn}
+                      </Button>
+                    )
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setListPage((p) => Math.min(totalListPages, p + 1))}
+                    disabled={listPage === totalListPages}
+                    aria-label={t('common.nextPage')}
+                  >
+                    ›
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setListPage(totalListPages)}
+                    disabled={listPage === totalListPages}
+                    aria-label={t('common.lastPage')}
+                  >
+                    »
+                  </Button>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
@@ -40,11 +40,14 @@ function HoursTooltip({ hours, t }: { hours: OpeningHour[]; t: (key: string, opt
   )
 }
 
+const ACTIVE_PAGE_SIZE = 10
+
 export default function Restaurant() {
   const { t } = useTranslation()
   const [restaurants, setRestaurants] = useState<RestaurantType[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
   const [confirmDialog, setConfirmDialog] = useState<{
     show: boolean
     type: 'delete' | 'restore' | null
@@ -81,6 +84,32 @@ export default function Restaurant() {
   // Separate active and deleted restaurants
   const activeRestaurants = restaurants.filter((r) => !r.deletedBy)
   const deletedRestaurants = restaurants.filter((r) => r.deletedBy)
+
+  const totalPages = Math.max(1, Math.ceil(activeRestaurants.length / ACTIVE_PAGE_SIZE))
+
+  useEffect(() => {
+    setPage((p) => Math.min(p, totalPages))
+  }, [totalPages])
+
+  const paginatedActive = useMemo(() => {
+    const start = (page - 1) * ACTIVE_PAGE_SIZE
+    return activeRestaurants.slice(start, start + ACTIVE_PAGE_SIZE)
+  }, [activeRestaurants, page])
+
+  const pageNumbers = useMemo(() => {
+    return Array.from({ length: totalPages }, (_, i) => i + 1)
+      .filter(
+        (pn) =>
+          pn === 1 ||
+          pn === totalPages ||
+          (pn >= page - 2 && pn <= page + 2)
+      )
+      .reduce((arr: (number | 'ellipsis')[], pn, idx, src) => {
+        if (idx > 0 && pn - (src[idx - 1] as number) > 1) arr.push('ellipsis')
+        arr.push(pn)
+        return arr
+      }, [])
+  }, [page, totalPages])
 
   const openConfirmDialog = (type: 'delete' | 'restore', id: string | number, name: string) => {
     setConfirmDialog({
@@ -215,7 +244,7 @@ export default function Restaurant() {
                 {activeRestaurants.length === 0 ? (
                   <p className="text-sm">{t('restaurantPage.noActive')}</p>
                 ) : (
-                  activeRestaurants.map((r) => {
+                  paginatedActive.map((r) => {
                     const anyRestaurant = r as unknown as Record<string, unknown>
                     const menu = anyRestaurant.menu as any
                     const primaryHours =
@@ -306,7 +335,7 @@ export default function Restaurant() {
                         <TableCell colSpan={10}>{t('restaurantPage.noActive')}</TableCell>
                       </TableRow>
                     )}
-                    {activeRestaurants.map((r) => {
+                    {paginatedActive.map((r) => {
                       const anyRestaurant = r as unknown as Record<string, unknown>
                       const menu = anyRestaurant.menu as any
                       return (
@@ -345,6 +374,70 @@ export default function Restaurant() {
                   </TableBody>
                 </Table>
               </div>
+
+              {activeRestaurants.length > 0 && (
+                <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-2">
+                  <div className="text-gray-600 dark:text-slate-400 text-sm mb-2 sm:mb-0">
+                    {t('common.paginationSummary', { page, totalPages, total: activeRestaurants.length })}
+                  </div>
+                  <div className="flex items-center gap-1 flex-wrap justify-center">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setPage(1)}
+                      disabled={page === 1}
+                      aria-label={t('common.firstPage')}
+                    >
+                      «
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                      aria-label={t('common.prevPage')}
+                    >
+                      ‹
+                    </Button>
+                    {pageNumbers.map((pn, idx) =>
+                      pn === 'ellipsis' ? (
+                        <span key={`ellipsis-${idx}`} className="px-2 text-gray-400 dark:text-slate-500">
+                          …
+                        </span>
+                      ) : (
+                        <Button
+                          key={pn}
+                          variant={pn === page ? 'primary' : 'default'}
+                          size="sm"
+                          onClick={() => setPage(pn as number)}
+                          disabled={pn === page}
+                          aria-current={pn === page ? 'page' : undefined}
+                        >
+                          {pn}
+                        </Button>
+                      )
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={page === totalPages}
+                      aria-label={t('common.nextPage')}
+                    >
+                      ›
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setPage(totalPages)}
+                      disabled={page === totalPages}
+                      aria-label={t('common.lastPage')}
+                    >
+                      »
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {deletedRestaurants.length > 0 && (

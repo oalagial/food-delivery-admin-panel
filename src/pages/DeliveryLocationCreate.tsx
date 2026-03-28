@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Input } from '../components/ui/input';
@@ -9,8 +9,15 @@ import { Textarea } from '../components/ui/textarea'
 import { Alert, AlertDescription } from '../components/ui/alert'
 import { Checkbox } from '../components/ui/checkbox'
 import { AlertCircle } from 'lucide-react'
-import { createDeliveryLocation, getDeliveryLocationById, updateDeliveryLocation, getRestaurantsList } from '../utils/api'
+import {
+  createDeliveryLocation,
+  getDeliveryLocationById,
+  updateDeliveryLocation,
+  updateDeliveryLocationImage,
+  getRestaurantsList,
+} from '../utils/api'
 import type { CreateDeliveryLocationPayload, Restaurant as RestaurantType } from '../utils/api'
+import { API_BASE } from '../config'
 
 const DEFAULT_MIN_DELIVERY_MINUTES = 10
 
@@ -45,6 +52,10 @@ export default function DeliveryLocationCreate() {
   })
 
   const [selectedDeliveredBy, setSelectedDeliveredBy] = useState<DeliveredByEntry[]>([])
+
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
 
   const [restaurants, setRestaurants] = useState<RestaurantType[]>([])
   const [restaurantsLoading, setRestaurantsLoading] = useState(true)
@@ -115,6 +126,28 @@ export default function DeliveryLocationCreate() {
     return () => { mounted = false }
   }, [params.id])
 
+  useEffect(() => {
+    if (!params.id) {
+      setSelectedFile(null)
+      setImagePreview(null)
+    }
+  }, [params.id])
+
+  const handleDeliveryImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        setError(t('common.selectImageFile'))
+        return
+      }
+      setError(null)
+      setSelectedFile(file)
+      const reader = new FileReader()
+      reader.onloadend = () => setImagePreview(reader.result as string)
+      reader.readAsDataURL(file)
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSubmitting(true)
@@ -162,7 +195,6 @@ export default function DeliveryLocationCreate() {
       streetNumber: String(form.streetNumber ?? '').trim(),
       city: String(form.city ?? '').trim(),
       province: String(form.province ?? '').trim(),
-      image: String(form.image ?? '').trim(),
       zipCode: String(form.zipCode ?? '').trim(),
       country: String(form.country ?? '').trim(),
       description: String(form.description ?? '').trim(),
@@ -179,10 +211,21 @@ export default function DeliveryLocationCreate() {
     }
 
     try {
+      delete (payload as { image?: string }).image
+
       if (params.id) {
         await updateDeliveryLocation(params.id, payload)
+        if (selectedFile) {
+          await updateDeliveryLocationImage(params.id, selectedFile)
+        }
       } else {
-        await createDeliveryLocation(payload)
+        const created = await createDeliveryLocation(payload)
+        const newId =
+          (created as { id?: string | number })?.id ??
+          (created as { data?: { id?: string | number } })?.data?.id
+        if (selectedFile && newId != null && String(newId) !== '') {
+          await updateDeliveryLocationImage(newId, selectedFile)
+        }
       }
       navigate('/delivery-locations')
     } catch (err: unknown) {
@@ -304,6 +347,55 @@ export default function DeliveryLocationCreate() {
               />
             </div>
 
+          </CardContent>
+        </Card>
+
+        {/* Main image — same flow as products */}
+        <Card className="shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">{t('common.image')}</CardTitle>
+            <CardDescription>{t('common.deliveryLocationPhoto')}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex flex-wrap items-center gap-4">
+              <input
+                ref={imageInputRef}
+                id="delivery-location-image-input"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleDeliveryImageSelect}
+              />
+              <Button
+                variant="primary"
+                type="button"
+                onClick={() => imageInputRef.current?.click()}
+              >
+                {t('common.chooseImage')}
+              </Button>
+              {selectedFile && (
+                <span className="text-sm text-gray-600 dark:text-slate-400">
+                  {selectedFile.name}
+                </span>
+              )}
+              {!selectedFile && form.image && (
+                <span className="text-sm text-gray-500 dark:text-slate-500">
+                  {t('common.existingImage')}
+                </span>
+              )}
+            </div>
+            {(imagePreview || form.image) && (
+              <div className="pt-1">
+                <img
+                  src={
+                    imagePreview ??
+                    (form.image ? `${API_BASE}/images/${form.image}` : '')
+                  }
+                  alt={t('common.deliveryLocationPhoto')}
+                  className="h-32 w-32 rounded-lg border border-slate-200 object-cover dark:border-slate-700"
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
 
