@@ -1,9 +1,11 @@
 import './App.css'
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { useEffect, useState, type ReactElement } from 'react'
 import Header from './components/Header'
 import Login from './pages/Login'
 import SetPassword from './pages/SetPassword'
+import ResetPassword from './pages/ResetPassword'
+import ForgotPassword from './pages/ForgotPassword'
 import RequireAuth from './components/RequireAuth'
 import RequireRouteAccess from './components/RequireRouteAccess'
 import { getToken, syncPermissionsFromServer } from './utils/api'
@@ -80,6 +82,12 @@ const routes: RouteConfig[] = [
   { path: '/', element: <Dashboard />, protected: true },
 ]
 
+const PUBLIC_AUTH_PATHS = ['/set-password', '/reset-password', '/forgot-password'] as const
+
+function isPublicAuthPath(pathname: string): boolean {
+  return (PUBLIC_AUTH_PATHS as readonly string[]).includes(pathname)
+}
+
 function AuthenticatedLayout() {
   const location = useLocation()
   // On mobile start closed; on desktop (md+) start open so sidebar is visible
@@ -142,7 +150,7 @@ const PERMISSIONS_SYNC_THROTTLE_MS = 2500
 function AppRoutes(): ReactElement {
   const location = useLocation()
   const [token, setToken] = useState<string | null>(getToken())
-  const onSetPassword = location.pathname === '/set-password'
+  const onPublicAuthPage = isPublicAuthPath(location.pathname)
 
   useEffect(() => {
     const update = () => setToken(getToken())
@@ -155,12 +163,12 @@ function AppRoutes(): ReactElement {
   }, [])
 
   useEffect(() => {
-    if (!token || onSetPassword) return
+    if (!token || onPublicAuthPage) return
     void syncPermissionsFromServer()
-  }, [token, onSetPassword])
+  }, [token, onPublicAuthPage])
 
   useEffect(() => {
-    if (!token || onSetPassword) return
+    if (!token || onPublicAuthPage) return
     let last = 0
     const run = () => {
       const now = Date.now()
@@ -177,12 +185,15 @@ function AppRoutes(): ReactElement {
       window.removeEventListener('focus', run)
       document.removeEventListener('visibilitychange', onVis)
     }
-  }, [token, onSetPassword])
+  }, [token, onPublicAuthPage])
 
-  if (onSetPassword) {
+  if (onPublicAuthPage) {
     return (
       <Routes>
         <Route path="/set-password" element={<SetPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     )
   }

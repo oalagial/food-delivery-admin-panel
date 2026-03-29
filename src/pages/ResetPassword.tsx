@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Input } from '../components/ui/input'
 import { Button } from '../components/ui/button'
@@ -10,13 +10,14 @@ import { AlertCircle } from 'lucide-react'
 import { API_BASE } from '../config'
 import { clearToken } from '../utils/api'
 
-export default function SetPassword() {
+export default function ResetPassword() {
   const { t } = useTranslation()
   const [searchParams] = useSearchParams()
 
   useEffect(() => {
     clearToken()
   }, [])
+
   const email = searchParams.get('email') ?? ''
   const token = searchParams.get('token') ?? ''
 
@@ -46,12 +47,12 @@ export default function SetPassword() {
       return
     }
     if (!email || !token) {
-      setError(t('setPassword.errInvalidLink'))
+      setError(t('resetPassword.errInvalidLink'))
       return
     }
     setLoading(true)
     try {
-      const res = await fetch(`${API_BASE}/auth/accept-invite`, {
+      const res = await fetch(`${API_BASE}/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, token, password }),
@@ -64,7 +65,7 @@ export default function SetPassword() {
           if (Array.isArray(j.message)) msg = j.message.join(', ')
           else if (typeof j.message === 'string') msg = j.message
         } catch {
-          /* use raw text */
+          /* use raw */
         }
         throw new Error(msg)
       }
@@ -87,15 +88,15 @@ export default function SetPassword() {
           </div>
           <Card className="w-full max-w-md shadow-2xl border-0">
             <CardHeader>
-              <CardTitle className="text-center">{t('setPassword.successTitle')}</CardTitle>
-              <CardDescription className="text-center">{t('setPassword.successDesc')}</CardDescription>
+              <CardTitle className="text-center">{t('resetPassword.successTitle')}</CardTitle>
+              <CardDescription className="text-center">{t('resetPassword.successDesc')}</CardDescription>
             </CardHeader>
             <CardContent className="flex justify-center">
-              <a href="/login">
+              <Link to="/login">
                 <Button variant="primary" className="rounded-lg">
-                  {t('setPassword.goLogin')}
+                  {t('resetPassword.goLogin')}
                 </Button>
-              </a>
+              </Link>
             </CardContent>
           </Card>
         </div>
@@ -113,8 +114,8 @@ export default function SetPassword() {
         </div>
         <Card className="shadow-2xl border-0">
           <CardHeader className="space-y-3">
-            <CardTitle className="text-3xl text-center font-bold text-gray-900">{t('setPassword.title')}</CardTitle>
-            <CardDescription className="text-center text-gray-600">{t('setPassword.subtitle')}</CardDescription>
+            <CardTitle className="text-3xl text-center font-bold text-gray-900">{t('resetPassword.title')}</CardTitle>
+            <CardDescription className="text-center text-gray-600">{t('resetPassword.subtitle')}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -128,6 +129,7 @@ export default function SetPassword() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  autoComplete="new-password"
                   placeholder={t('setPassword.passwordPh')}
                   className="w-full h-12 border-gray-300 px-4"
                 />
@@ -142,6 +144,7 @@ export default function SetPassword() {
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
                   required
+                  autoComplete="new-password"
                   placeholder={t('setPassword.confirmPh')}
                   className="w-full h-12 border-gray-300 px-4"
                 />
@@ -161,12 +164,17 @@ export default function SetPassword() {
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
                     <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    {t('setPassword.setting')}
+                    {t('resetPassword.setting')}
                   </span>
                 ) : (
-                  t('setPassword.submit')
+                  t('resetPassword.submit')
                 )}
               </Button>
+              <p className="text-center text-sm">
+                <Link to="/login" className="text-blue-600 font-semibold hover:text-blue-700">
+                  {t('forgotPassword.backToLogin')}
+                </Link>
+              </p>
             </form>
           </CardContent>
         </Card>

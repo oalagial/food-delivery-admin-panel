@@ -10,5 +10,6 @@ export const login = {
   loginFailed: 'Login failed',
   noAccount: "Don't have an account?",
   contactAdmin: 'Contact your administrator',
+  forgotPassword: 'Forgot password?',
   footer: '© 2024 Food Delivery Admin. All rights reserved.',
 } as const

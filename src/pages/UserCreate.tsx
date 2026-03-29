@@ -22,6 +22,8 @@ export default function UserCreate() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState({ email: '', username: '' })
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmNewPassword, setConfirmNewPassword] = useState('')
   const [roleIds, setRoleIds] = useState<Array<{ id?: string | number; name?: string }>>([]);
   const [roleId, setRoleId] = useState<string | number | ''>('')
 
@@ -72,6 +74,13 @@ export default function UserCreate() {
   const isEditingSelf = id != null && getCurrentUserId() != null && String(id) === String(getCurrentUserId())
   const canSave = canSubmitResourceForm('users', !!id)
 
+  function validatePasswordStrength(p: string): string | null {
+    if (p.length < 8) return t('setPassword.errMinLength')
+    if (!/[A-Z]/.test(p)) return t('setPassword.errUppercase')
+    if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(p)) return t('setPassword.errSpecial')
+    return null
+  }
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
     if (!canSave) return
@@ -89,9 +98,28 @@ export default function UserCreate() {
       }
       // Don't send roleIds when editing yourself (you can't change your own role)
       if (!isEditingSelf && roleId !== '' && roleId !== undefined) payload.roleIds = [Number(roleId)]
+
+      if (id) {
+        const np = newPassword.trim()
+        const cp = confirmNewPassword.trim()
+        if (np.length > 0 || cp.length > 0) {
+          if (np !== cp) {
+            setError(t('setPassword.errMismatch'))
+            setSaving(false)
+            return
+          }
+          const pwErr = validatePasswordStrength(np)
+          if (pwErr) {
+            setError(pwErr)
+            setSaving(false)
+            return
+          }
+          payload.password = np
+        }
+      }
+
       let res
       if (id) {
-        // if (form.password) payload.password = String(form.password)
         res = await fetch(`${API_BASE}/users/${id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -186,6 +214,42 @@ export default function UserCreate() {
               </div>
             </div>
             </FormSaveBarrier>
+
+            {id ? (
+              <div className="space-y-4 pt-4 border-t border-gray-200">
+                <p className="text-sm text-gray-600">{t('createForms.userNewPasswordHelp')}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="newPassword" className="text-sm font-medium">
+                      {t('createForms.userNewPasswordOptional')}
+                    </Label>
+                    <Input
+                      id="newPassword"
+                      type="password"
+                      className="w-full"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      autoComplete="new-password"
+                      placeholder={t('createForms.userNewPasswordPh')}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmNewPassword" className="text-sm font-medium">
+                      {t('createForms.userConfirmNewPassword')}
+                    </Label>
+                    <Input
+                      id="confirmNewPassword"
+                      type="password"
+                      className="w-full"
+                      value={confirmNewPassword}
+                      onChange={(e) => setConfirmNewPassword(e.target.value)}
+                      autoComplete="new-password"
+                      placeholder={t('createForms.userNewPasswordPh')}
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : null}
 
             <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-gray-200">
               <Link to="/users">

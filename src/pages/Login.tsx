@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { login as apiLogin } from '../utils/api'
 import { getFirstAccessiblePanelPath } from '../utils/permissions'
@@ -76,6 +76,11 @@ export default function Login() {
                   placeholder={t('login.passwordPh')}
                   className="w-full h-20 text-xl border-gray-300 px-4"
                 />
+                <div className="text-right text-base">
+                  <Link to="/forgot-password" className="text-blue-600 font-semibold hover:text-blue-700">
+                    {t('login.forgotPassword')}
+                  </Link>
+                </div>
               </div>
 
               {error && (

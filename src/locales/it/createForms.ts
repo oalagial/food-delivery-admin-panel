@@ -61,4 +61,9 @@ export const createForms = {
   menuFieldStar: 'Menu *',
   offerPriceStar: 'Prezzo (€) *',
   createCouponButton: 'Crea coupon',
+  userNewPasswordOptional: 'Nuova password (opzionale)',
+  userNewPasswordHelp:
+    'Lascia vuoto per mantenere la password attuale. Una nuova password disconnette l’utente da tutti i dispositivi.',
+  userConfirmNewPassword: 'Conferma nuova password',
+  userNewPasswordPh: 'Lascia vuoto per non cambiare',
 } as const

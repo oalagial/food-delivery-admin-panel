@@ -60,4 +60,9 @@ export const createForms = {
   menuFieldStar: 'Menu *',
   offerPriceStar: 'Price (€) *',
   createCouponButton: 'Create coupon',
+  userNewPasswordOptional: 'New password (optional)',
+  userNewPasswordHelp:
+    'Leave blank to keep the current password. Setting a new password signs the user out on all devices.',
+  userConfirmNewPassword: 'Confirm new password',
+  userNewPasswordPh: 'Leave blank to keep current',
 } as const

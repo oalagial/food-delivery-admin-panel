@@ -10,5 +10,6 @@ export const login = {
   loginFailed: 'Accesso non riuscito',
   noAccount: 'Non hai un account?',
   contactAdmin: 'Contatta il tuo amministratore',
+  forgotPassword: 'Password dimenticata?',
   footer: '© 2024 Food Delivery Admin. Tutti i diritti riservati.',
 } as const
