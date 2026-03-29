@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '../components/ui/button'
 import { Link } from 'react-router-dom'
 import { Skeleton } from '../components/ui/skeleton'
-import { FiPlus, FiEdit, FiUserMinus, FiUserPlus } from 'react-icons/fi'
+import { FiPlus, FiEdit, FiUserMinus, FiUserPlus, FiTrash2 } from 'react-icons/fi'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 
 type User = {
@@ -15,7 +15,7 @@ type User = {
 }
 
 import { API_BASE } from '../config'
-import { getRolesList, setUserActive, getCurrentUserId } from '../utils/api'
+import { getRolesList, setUserActive, getCurrentUserId, deleteUser } from '../utils/api'
 import { perm } from '../utils/permissions'
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert'
 import { AlertCircle } from 'lucide-react'
@@ -33,6 +33,8 @@ export default function Users() {
   const [userToDeactivate, setUserToDeactivate] = useState<User | null>(null)
   const [deactivating, setDeactivating] = useState(false)
   const [activatingId, setActivatingId] = useState<string | number | null>(null)
+  const [userToDelete, setUserToDelete] = useState<User | null>(null)
+  const [deletingUser, setDeletingUser] = useState(false)
   const currentUserId = getCurrentUserId()
 
   // Use dedicated create/edit page instead of inline editing
@@ -102,6 +104,15 @@ export default function Users() {
     return () => window.removeEventListener('keydown', onKey)
   }, [userToDeactivate])
 
+  useEffect(() => {
+    if (!userToDelete) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') cancelDelete()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [userToDelete])
+
   if (loading && users.length === 0) {
     return (
       <div>
@@ -118,7 +129,7 @@ export default function Users() {
               <TableHeadCell>{t('usersPage.username')}</TableHeadCell>
               <TableHeadCell>{t('usersPage.role')}</TableHeadCell>
               <TableHeadCell>{t('usersPage.created')}</TableHeadCell>
-              <TableHeadCell>{t('common.actions')}</TableHeadCell>
+              <TableHeadCell className="text-center">{t('common.actions')}</TableHeadCell>
             </tr>
           </TableHead>
           <TableBody>
@@ -182,6 +193,31 @@ export default function Users() {
     }
   }
 
+  function askDelete(user: User) {
+    setError(null)
+    setUserToDelete(user)
+  }
+
+  function cancelDelete() {
+    setUserToDelete(null)
+  }
+
+  async function confirmDelete() {
+    if (!userToDelete) return
+    setError(null)
+    setDeletingUser(true)
+    try {
+      await deleteUser(userToDelete.id)
+      setUserToDelete(null)
+      await fetchUsers()
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      setError(msg)
+    } finally {
+      setDeletingUser(false)
+    }
+  }
+
 
 
   return (
@@ -239,6 +275,33 @@ export default function Users() {
         </div>
       )}
 
+      {userToDelete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+          onClick={(e) => e.target === e.currentTarget && !deletingUser && cancelDelete()}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-user-title"
+        >
+          <Card className="w-full max-w-md shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <CardHeader>
+              <CardTitle id="delete-user-title">{t('usersPage.deleteTitle')}</CardTitle>
+              <CardDescription>
+                {t('usersPage.deleteDesc', { id: userToDelete.email ?? userToDelete.username ?? userToDelete.id })}
+              </CardDescription>
+            </CardHeader>
+            <CardFooter className="flex justify-end gap-3">
+              <Button variant="default" onClick={cancelDelete} disabled={deletingUser}>
+                {t('common.cancel')}
+              </Button>
+              <Button variant="danger" onClick={confirmDelete} disabled={deletingUser}>
+                {deletingUser ? t('usersPage.deleting') : t('usersPage.delete')}
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+      )}
+
       {/* Mobile: cards */}
       <div className="space-y-3 md:hidden">
         {users.length === 0 ? (
@@ -281,13 +344,13 @@ export default function Users() {
                     {u.username && u.username !== u.email ? u.username : roleLabel || t('common.emDash')}
                   </p>
                 </CardHeader>
-                <CardFooter className="flex justify-between items-center px-4 pb-4 pt-0 gap-2">
-                  <div className="text-[11px]">
+                <CardFooter className="flex flex-col items-center gap-3 px-4 pb-4 pt-0 sm:flex-row sm:justify-between sm:items-center">
+                  <div className="text-[11px] text-center sm:text-left">
                     {u.createdAt && (
                       <span>{t('usersPage.createdLabel')} {new Date(String(u.createdAt)).toLocaleDateString()}</span>
                     )}
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex flex-wrap justify-center gap-1">
                     {perm('users', 'update') ? (
                       <Link to={`/users/creation/${encodeURIComponent(String(u.id ?? ''))}`}>
                         <Button
@@ -323,6 +386,17 @@ export default function Users() {
                         />
                       )
                     ) : null}
+                    {perm('users', 'delete') && !isCurrent ? (
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        className="p-2 text-xs"
+                        icon={<FiTrash2 className="w-4 h-4" />}
+                        onClick={() => askDelete(u)}
+                        type="button"
+                        title={t('usersPage.deleteUserTitle')}
+                      />
+                    ) : null}
                   </div>
                 </CardFooter>
               </Card>
@@ -341,7 +415,7 @@ export default function Users() {
               <TableHeadCell>{t('usersPage.role')}</TableHeadCell>
               <TableHeadCell>{t('common.status')}</TableHeadCell>
               <TableHeadCell>{t('usersPage.created')}</TableHeadCell>
-              <TableHeadCell>{t('common.actions')}</TableHeadCell>
+              <TableHeadCell className="text-center">{t('common.actions')}</TableHeadCell>
             </tr>
           </TableHead>
           <TableBody>
@@ -376,7 +450,7 @@ export default function Users() {
                     </span>
                   </TableCell>
                   <TableCell>{u.createdAt ? new Date(String(u.createdAt)).toLocaleString() : ''}</TableCell>
-                  <TableCell className="flex items-center gap-1">
+                  <TableCell className="flex items-center justify-center gap-1">
                     {perm('users', 'update') ? (
                       <Link to={`/users/creation/${encodeURIComponent(String(u.id ?? ''))}`}>
                         <Button variant="ghost" className="p-2" size="sm" icon={<FiEdit className="w-4 h-4" />} title={t('usersPage.editTitle')} />
@@ -388,6 +462,9 @@ export default function Users() {
                       ) : (
                         <Button variant="primary" size="sm" className="p-2" icon={<FiUserPlus className="w-4 h-4" />} onClick={() => handleActivate(u)} type="button" disabled={activatingId === u.id} title={t('usersPage.activateUserTitle')} />
                       )
+                    ) : null}
+                    {perm('users', 'delete') && !(currentUserId != null && String(u.id) === String(currentUserId)) ? (
+                      <Button variant="danger" size="sm" className="p-2" icon={<FiTrash2 className="w-4 h-4" />} onClick={() => askDelete(u)} type="button" title={t('usersPage.deleteUserTitle')} />
                     ) : null}
                   </TableCell>
                 </TableRow>

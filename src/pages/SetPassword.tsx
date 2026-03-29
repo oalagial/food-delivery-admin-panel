@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Input } from '../components/ui/input'
@@ -8,10 +8,15 @@ import { Label } from '../components/ui/label'
 import { Alert, AlertDescription } from '../components/ui/alert'
 import { AlertCircle } from 'lucide-react'
 import { API_BASE } from '../config'
+import { clearToken } from '../utils/api'
 
 export default function SetPassword() {
   const { t } = useTranslation()
   const [searchParams] = useSearchParams()
+
+  useEffect(() => {
+    clearToken()
+  }, [])
   const email = searchParams.get('email') ?? ''
   const token = searchParams.get('token') ?? ''
 

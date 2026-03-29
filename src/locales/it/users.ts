@@ -19,4 +19,10 @@ export const usersPage = {
   deactivateUserTitle: 'Disattiva utente',
   activateUserTitle: 'Attiva utente',
   createdLabel: 'Creato:',
+  deleteTitle: 'Eliminare definitivamente l’utente?',
+  deleteDesc:
+    'Verranno rimossi {{id}} e le assegnazioni di ruolo. Operazione irreversibile.',
+  delete: 'Elimina',
+  deleting: 'Eliminazione…',
+  deleteUserTitle: 'Elimina utente',
 } as const

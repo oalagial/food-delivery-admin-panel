@@ -1,6 +1,6 @@
 import './App.css'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactElement } from 'react'
 import Header from './components/Header'
 import Login from './pages/Login'
 import SetPassword from './pages/SetPassword'
@@ -139,8 +139,10 @@ function AuthenticatedLayout() {
 
 const PERMISSIONS_SYNC_THROTTLE_MS = 2500
 
-function App() {
+function AppRoutes(): ReactElement {
+  const location = useLocation()
   const [token, setToken] = useState<string | null>(getToken())
+  const onSetPassword = location.pathname === '/set-password'
 
   useEffect(() => {
     const update = () => setToken(getToken())
@@ -153,12 +155,12 @@ function App() {
   }, [])
 
   useEffect(() => {
-    if (!token) return
+    if (!token || onSetPassword) return
     void syncPermissionsFromServer()
-  }, [token])
+  }, [token, onSetPassword])
 
   useEffect(() => {
-    if (!token) return
+    if (!token || onSetPassword) return
     let last = 0
     const run = () => {
       const now = Date.now()
@@ -175,23 +177,32 @@ function App() {
       window.removeEventListener('focus', run)
       document.removeEventListener('visibilitychange', onVis)
     }
-  }, [token])
+  }, [token, onSetPassword])
 
-  if (!token) {
+  if (onSetPassword) {
     return (
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/set-password" element={<SetPassword />} />
-          <Route path="/*" element={<Login />} />
-        </Routes>
-      </BrowserRouter>
+      <Routes>
+        <Route path="/set-password" element={<SetPassword />} />
+      </Routes>
     )
   }
 
+  if (!token) {
+    return (
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/*" element={<Login />} />
+      </Routes>
+    )
+  }
+
+  return <AuthenticatedLayout />
+}
+
+function App() {
   return (
     <BrowserRouter>
-      <AuthenticatedLayout />
+      <AppRoutes />
     </BrowserRouter>
   )
 }

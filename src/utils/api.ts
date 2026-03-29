@@ -504,8 +504,8 @@ export async function deleteUser(id: string | number): Promise<void> {
   if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
   const res = await authFetch(`/users/${encodeURIComponent(String(id))}`, { method: 'DELETE' })
   if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    throw new Error(text || `Delete user failed (${res.status})`)
+    const bodyText = parseErrorJson(await res.json().catch(() => null)) || (await res.text().catch(() => ''))
+    throw new Error(bodyText || `DELETE /users/${id} failed (${res.status})`)
   }
 }
 
