@@ -16,4 +16,5 @@ export const header = {
   username: 'Nome utente',
   role: 'Ruolo',
   loadingUser: 'Caricamento…',
+  editProfile: 'Modifica profilo',
 } as const

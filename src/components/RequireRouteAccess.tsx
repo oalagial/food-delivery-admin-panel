@@ -1,22 +1,19 @@
 import type { ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Navigate, useLocation } from 'react-router-dom'
-import { getCurrentUserRole } from '../utils/api'
 import { canAccessPath, getFirstAccessiblePanelPath } from '../utils/permissions'
-import { isDashboardPath, roleHasFullPanelAccess } from '../utils/userRoles'
 
-/**
- * After auth: CHEF and DELIVERY_MAN may only open dashboard URLs; others get full panel.
- * With DB permissions stored after login, routes also require matching `*.read` / `*.create|update`.
- */
+/** After auth: routes require matching RBAC permissions (`*.access`, `*.read`, etc.). */
 export default function RequireRouteAccess({ children }: { children: ReactNode }) {
   const { t } = useTranslation()
   const location = useLocation()
-  const role = getCurrentUserRole()
-
-  if (!roleHasFullPanelAccess(role) && !isDashboardPath(location.pathname)) {
-    return <Navigate to="/dashboard" replace />
-  }
+  const [, setPermVersion] = useState(0)
+  useEffect(() => {
+    const bump = () => setPermVersion((v) => v + 1)
+    window.addEventListener('auth', bump)
+    return () => window.removeEventListener('auth', bump)
+  }, [])
 
   if (!canAccessPath(location.pathname)) {
     const next = getFirstAccessiblePanelPath()

@@ -9,6 +9,7 @@ import ForgotPassword from './pages/ForgotPassword'
 import RequireAuth from './components/RequireAuth'
 import RequireRouteAccess from './components/RequireRouteAccess'
 import { getToken, syncPermissionsFromServer } from './utils/api'
+import { getStoredPermissions } from './utils/permissions'
 import { Sidebar } from './components/Sidebar'
 import Dashboard from './pages/Dashboard'
 import Stats from './pages/Stats'
@@ -90,6 +91,18 @@ function isPublicAuthPath(pathname: string): boolean {
 
 function AuthenticatedLayout() {
   const location = useLocation()
+  const [permissionsReady, setPermissionsReady] = useState(
+    () => typeof window !== 'undefined' && getStoredPermissions() !== null,
+  )
+
+  useEffect(() => {
+    if (getStoredPermissions() !== null) {
+      setPermissionsReady(true)
+      return
+    }
+    void syncPermissionsFromServer().finally(() => setPermissionsReady(true))
+  }, [])
+
   // On mobile start closed; on desktop (md+) start open so sidebar is visible
   const [sidebarOpen, setSidebarOpen] = useState(
     () => typeof window !== 'undefined' && window.innerWidth >= 768
@@ -107,6 +120,16 @@ function AuthenticatedLayout() {
       setSidebarOpen(false)
     }
   }, [location.pathname])
+
+  if (!permissionsReady) {
+    return (
+      <div className="app-root">
+        <main className="main">
+          <div className="panel p-8 text-center text-muted-foreground">{/* i18n optional */}Loading…</div>
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div className="app-root">

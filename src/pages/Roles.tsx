@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { Button } from '../components/ui/button'
-import { FiPlus, FiEdit, FiTrash } from 'react-icons/fi'
+import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert'
+import { FiAlertCircle, FiPlus, FiEdit, FiTrash } from 'react-icons/fi'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { Skeleton } from '../components/ui/skeleton'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/card'
@@ -16,13 +17,19 @@ type Role = {
   [key: string]: unknown
 }
 
-import { getRolesList } from '../utils/api'
+import { deleteRole, getRolesList } from '../utils/api'
 import { perm } from '../utils/permissions'
 
 export default function Roles() {
   const { t } = useTranslation()
   const [roles, setRoles] = useState<Role[]>([])
   const [loading, setLoading] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | number | null>(null)
+  const [confirmDialog, setConfirmDialog] = useState<{
+    show: boolean
+    id: string | number | null
+    name: string | null
+  }>({ show: false, id: null, name: null })
   const [error, setError] = useState<string | null>(null)
 
   // Editing handled by dedicated create/edit page
@@ -45,25 +52,74 @@ export default function Roles() {
     void fetchRoles()
   }, [])
 
-  // async function handleDelete(id: number | string) {
-  //   if (!confirm('Delete this role?')) return
-  //   setError(null)
-  //   try {
-  //     const res = await fetch(`${API_BASE}/roles/delete/${id}`, { method: 'DELETE' })
-  //     if (!res.ok) throw new Error(`Delete failed ${res.status}`)
-  //     await fetchRoles()
-  //   } catch (err: unknown) {
-  //     const msg = err instanceof Error ? err.message : String(err)
-  //     setError(msg)
-  //   }
-  // }
+  function openConfirmDialog(r: Role) {
+    const id = r.id
+    const name = String(r.name ?? '').trim() || `#${String(id)}`
+    setConfirmDialog({ show: true, id, name })
+  }
 
-  // Editing handled by `/roles/creation/:id`
+  function closeConfirmDialog() {
+    setConfirmDialog({ show: false, id: null, name: null })
+  }
+
+  async function handleConfirmDelete() {
+    const id = confirmDialog.id
+    if (id === null || id === undefined) return
+    setError(null)
+    setDeletingId(id)
+    try {
+      await deleteRole(id)
+      await fetchRoles()
+      closeConfirmDialog()
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      setError(msg)
+      closeConfirmDialog()
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
 
 
   return (
     <div className="space-y-6">
+      {confirmDialog.show && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70"
+          onClick={closeConfirmDialog}
+        >
+          <div
+            className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full mx-4 border border-slate-200 dark:border-slate-700"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6">
+              <Alert variant="destructive">
+                <FiAlertCircle className="h-4 w-4" />
+                <AlertTitle>{t('rolesPage.deleteTitle')}</AlertTitle>
+                <AlertDescription>
+                  {t('rolesPage.deleteConfirm', {
+                    name: confirmDialog.name ?? '',
+                  })}
+                </AlertDescription>
+              </Alert>
+              <div className="flex justify-end gap-3 mt-6">
+                <Button variant="ghost" onClick={closeConfirmDialog} disabled={deletingId !== null}>
+                  {t('common.cancel')}
+                </Button>
+                <Button
+                  variant="danger"
+                  onClick={() => void handleConfirmDelete()}
+                  disabled={deletingId !== null}
+                >
+                  {t('common.delete')}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{t('rolesPage.title')}</h1>
@@ -152,6 +208,9 @@ export default function Roles() {
                           size="sm"
                           className="p-2 text-xs"
                           icon={<FiTrash className="w-4 h-4" />}
+                          disabled={deletingId !== null}
+                          aria-label={t('rolesPage.deleteTitle')}
+                          onClick={() => openConfirmDialog(r)}
                         />
                       ) : null}
                     </CardFooter>
@@ -189,7 +248,15 @@ export default function Roles() {
                           <Link to={`/roles/creation/${encodeURIComponent(String(r.id ?? ''))}`} className='mr-2' ><Button variant="ghost" className='p-2' size="sm" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
                         ) : null}
                         {perm('roles', 'delete') ? (
-                          <Button variant="danger" size="sm" className='p-2' icon={<FiTrash className="w-4 h-4" />}></Button>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            className="p-2"
+                            icon={<FiTrash className="w-4 h-4" />}
+                            disabled={deletingId !== null}
+                            aria-label={t('rolesPage.deleteTitle')}
+                            onClick={() => openConfirmDialog(r)}
+                          />
                         ) : null}
                       </TableCell>
                     </TableRow>

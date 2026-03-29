@@ -15,7 +15,10 @@ type LoginResponse = {
 export async function syncPermissionsFromServer(): Promise<void> {
   if (!getToken()) return
   const res = await authFetch('/me/permissions')
-  if (!res.ok) return
+  if (!res.ok) {
+    setStoredPermissions([])
+    return
+  }
   const data = (await res.json().catch(() => null)) as Record<string, unknown> | null
   const permsRaw = data?.permissions
   if (Array.isArray(permsRaw)) {
@@ -490,6 +493,15 @@ export async function updateRole(id: string | number, payload: SaveRolePayload) 
     throw new Error(bodyText || `PUT /roles/update failed (${res.status})`)
   }
   return res.json().catch(() => null)
+}
+
+export async function deleteRole(id: string | number): Promise<void> {
+  if (id === undefined || id === null || String(id) === '') throw new Error('id is required')
+  const res = await authFetch(`/roles/delete/${encodeURIComponent(String(id))}`, { method: 'DELETE' })
+  if (!res.ok) {
+    const bodyText = parseErrorJson(await res.json().catch(() => null)) || (await res.text().catch(() => ''))
+    throw new Error(bodyText || `DELETE /roles/delete/${id} failed (${res.status})`)
+  }
 }
 
 /** Backend has no GET /roles/:id; load list and pick one. */

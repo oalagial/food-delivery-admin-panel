@@ -8,9 +8,12 @@ import { Skeleton } from '../components/ui/skeleton'
 import { OrderDetailsPanel } from '../components/OrderDetailsPanel'
 
 import { API_BASE } from '../config'
-import { getCurrentUserRole, OrderStatus, updateOrder } from '../utils/api'
-import { hasOrdersMutationUiAccess } from '../utils/permissions'
-import { UserRole } from '../utils/userRoles'
+import { OrderStatus, updateOrder } from '../utils/api'
+import {
+  canDashboardOrdersDelivery,
+  canDashboardOrdersMarkReady,
+  canDashboardShowAdminOrderActions,
+} from '../utils/permissions'
 import { OrderTableSortHeadCell } from '../components/OrderTableSortHeadCell'
 import {
   sortOrdersByColumn,
@@ -250,9 +253,9 @@ export default function Dashboard() {
 
   const cancelOrder = (id: string) => patchOrderStatus(id, OrderStatus.CANCELLED)
 
-  const isChef = getCurrentUserRole() === UserRole.CHEF
-  const isDeliveryMan = getCurrentUserRole() === UserRole.DELIVERY_MAN
-  const canMutateOrders = hasOrdersMutationUiAccess()
+  const showKitchenReady = canDashboardOrdersMarkReady()
+  const showDeliveryActions = canDashboardOrdersDelivery()
+  const showAdminOrderActions = canDashboardShowAdminOrderActions()
 
   const deliveryCanMarkOnTheWay = (status: string | undefined) => (status ?? '') === OrderStatus.READY
 
@@ -497,7 +500,7 @@ export default function Dashboard() {
                         </div>
                         <div>
                           <div className="flex flex-nowrap items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                            {canMutateOrders && isChef ? (
+                            {showKitchenReady ? (
                               <Button
                                 variant="primary"
                                 size="sm"
@@ -507,7 +510,7 @@ export default function Dashboard() {
                               >
                                 {t('dashboardPage.ready')}
                               </Button>
-                            ) : canMutateOrders && isDeliveryMan ? (
+                            ) : showDeliveryActions ? (
                               <>
                                 <Button
                                   variant="primary"
@@ -532,7 +535,7 @@ export default function Dashboard() {
                                   {t('dashboardPage.delivered')}
                                 </Button>
                               </>
-                            ) : canMutateOrders ? (
+                            ) : showAdminOrderActions ? (
                               <>
                                 <Button
                                   variant="primary"
@@ -684,7 +687,7 @@ export default function Dashboard() {
                             onClick={(e) => e.stopPropagation()}
                             role="presentation"
                           >
-                            {canMutateOrders && isChef ? (
+                            {showKitchenReady ? (
                               <Button
                                 variant="primary"
                                 size="sm"
@@ -694,7 +697,7 @@ export default function Dashboard() {
                               >
                                 {t('dashboardPage.ready')}
                               </Button>
-                            ) : canMutateOrders && isDeliveryMan ? (
+                            ) : showDeliveryActions ? (
                               <>
                                 <Button
                                   variant="primary"
@@ -719,7 +722,7 @@ export default function Dashboard() {
                                   {t('dashboardPage.delivered')}
                                 </Button>
                               </>
-                            ) : canMutateOrders ? (
+                            ) : showAdminOrderActions ? (
                               <>
                                 <Button
                                   variant="primary"

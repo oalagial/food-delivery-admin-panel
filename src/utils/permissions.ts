@@ -9,7 +9,7 @@ export function setStoredPermissions(perms: string[]) {
   }
 }
 
-/** `null` = never set (legacy session); `[]` = logged in with no DB permissions (enum-based backend access). */
+/** `null` = not loaded / logged out; `[]` = no permissions (deny). */
 export function getStoredPermissions(): string[] | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
@@ -31,22 +31,16 @@ export function clearStoredPermissions() {
   }
 }
 
-/** When true, sidebar / route guard use permission strings; when false, only JWT role (chef/delivery) rules apply. */
-export function usesPermissionBasedUi(): boolean {
-  const p = getStoredPermissions()
-  return p !== null && p.length > 0
-}
-
 export function hasPermission(action: string): boolean {
   const p = getStoredPermissions()
-  if (p === null || p.length === 0) return true
+  if (p === null || p.length === 0) return false
   if (p.includes('*')) return true
   return p.includes(action)
 }
 
 export function hasAnyPermission(actions: string[]): boolean {
   const p = getStoredPermissions()
-  if (p === null || p.length === 0) return true
+  if (p === null || p.length === 0) return false
   if (p.includes('*')) return true
   return actions.some((a) => p.includes(a))
 }
@@ -59,7 +53,7 @@ export type ResourceCrudOp =
   | 'delete'
   | 'restore'
 
-/** UI guard for `${resource}.${op}` (e.g. `products.update`). Legacy sessions without stored perms → allow. */
+/** UI guard for `${resource}.${op}` (e.g. `products.update`). */
 export function perm(resource: string, op: ResourceCrudOp): boolean {
   return hasPermission(`${resource}.${op}`)
 }
@@ -97,7 +91,7 @@ export function canSubmitResourceForm(resource: string, isEditMode: boolean): bo
 /** Any permission that allows opening the orders list (narrow or broad). */
 export function hasOrdersReadUiAccess(): boolean {
   const p = getStoredPermissions()
-  if (p === null || p.length === 0) return true
+  if (p === null || p.length === 0) return false
   if (p.includes('*') || p.includes('orders.read')) return true
   return p.some(
     (x) =>
@@ -108,7 +102,7 @@ export function hasOrdersReadUiAccess(): boolean {
 /** Create / update orders in UI (broad or status/payment-scoped update). */
 export function hasOrdersMutationUiAccess(): boolean {
   const p = getStoredPermissions()
-  if (p === null || p.length === 0) return true
+  if (p === null || p.length === 0) return false
   if (p.includes('*')) return true
   if (p.includes('orders.create') || p.includes('orders.update')) return true
   return p.some(
@@ -116,6 +110,40 @@ export function hasOrdersMutationUiAccess(): boolean {
       x.startsWith('orders.update_status.') ||
       x.startsWith('orders.update_payment.'),
   )
+}
+
+/**
+ * Dashboard: "Ready" (kitchen) — only scoped confirmed/preparing updates, no wildcard/broad/pending.
+ */
+export function canDashboardOrdersMarkReady(): boolean {
+  if (!hasOrdersMutationUiAccess()) return false
+  const p = getStoredPermissions()
+  if (p === null || p.length === 0) return false
+  if (p.includes('*') || p.includes('orders.update')) return false
+  return p.includes('orders.update_status.confirmed') || p.includes('orders.update_status.preparing')
+}
+
+/**
+ * Dashboard: delivery actions — only ready/on_the_way scoped updates.
+ */
+export function canDashboardOrdersDelivery(): boolean {
+  if (!hasOrdersMutationUiAccess()) return false
+  const p = getStoredPermissions()
+  if (p === null || p.length === 0) return false
+  if (p.includes('*') || p.includes('orders.update')) return false
+  return p.includes('orders.update_status.ready') || p.includes('orders.update_status.on_the_way')
+}
+
+/**
+ * Dashboard: confirm/cancel (and other admin order actions) when not kitchen-only or delivery-only.
+ */
+export function canDashboardShowAdminOrderActions(): boolean {
+  if (!hasOrdersMutationUiAccess()) return false
+  if (canDashboardOrdersMarkReady()) return false
+  if (canDashboardOrdersDelivery()) return false
+  const p = getStoredPermissions()
+  if (p === null || p.length === 0) return false
+  return true
 }
 
 /**
@@ -164,7 +192,6 @@ const PANEL_PATH_PRIORITY: readonly string[] = [
 ]
 
 export function getFirstAccessiblePanelPath(): string | null {
-  if (!usesPermissionBasedUi()) return '/dashboard'
   for (const path of PANEL_PATH_PRIORITY) {
     if (canAccessPath(path)) return path
   }
@@ -175,10 +202,8 @@ export function getFirstAccessiblePanelPath(): string | null {
 export function canSeeNavPath(to: string): boolean {
   const norm = (to.replace(/\/+$/, '') || '/').toLowerCase()
   if (norm === '/' || norm === '/dashboard') {
-    if (!usesPermissionBasedUi()) return true
     return perm('dashboard', 'access')
   }
-  if (!usesPermissionBasedUi()) return true
 
   if (norm === '/orders' || norm.startsWith('/orders/')) {
     return perm('orders', 'access')
@@ -193,8 +218,6 @@ export function canSeeNavPath(to: string): boolean {
 }
 
 export function canAccessPath(pathname: string): boolean {
-  if (!usesPermissionBasedUi()) return true
-
   const norm = (pathname.replace(/\/+$/, '') || '/').toLowerCase()
   if (norm === '/' || norm === '/dashboard') {
     return perm('dashboard', 'access')
