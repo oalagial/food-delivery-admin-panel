@@ -1582,6 +1582,40 @@ export async function getCustomersList(params?: { page?: number; limit?: number 
   }
 }
 
+/** Triggers browser download of full customer list as CSV (requires `customers.read`). Pass current UI language (e.g. i18n.language). */
+export async function downloadCustomersCsv(lang?: string): Promise<void> {
+  const base = (lang ?? 'en').split(/[-_]/)[0] ?? 'en'
+  const search = new URLSearchParams({ lang: base })
+  const res = await authFetch(`/customers/export-csv?${search}`)
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(text || `GET /customers/export-csv failed (${res.status})`)
+  }
+  const blob = await res.blob()
+  const disposition = res.headers.get('Content-Disposition')
+  let filename = 'customers.csv'
+  const match = disposition && /filename\*?=(?:UTF-8''|"?)([^";\n]+)/i.exec(disposition)
+  if (match) {
+    try {
+      filename = decodeURIComponent(match[1].replace(/^"|"$/g, ''))
+    } catch {
+      filename = match[1].replace(/^"|"$/g, '')
+    }
+  }
+  const url = URL.createObjectURL(blob)
+  try {
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    a.rel = 'noopener'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+  } finally {
+    URL.revokeObjectURL(url)
+  }
+}
+
 // Opening Hours API
 export type OpeningHourItem = {
   id?: number | string

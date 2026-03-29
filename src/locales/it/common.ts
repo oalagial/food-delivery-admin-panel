@@ -381,6 +381,7 @@ export const common = {
   noDescription: 'Nessuna descrizione',
   unnamedCustomer: 'Cliente senza nome',
   searchCustomersPh: 'Cerca clienti…',
+  exportCustomersCsv: 'Scarica CSV',
   paginationSummary: 'Pagina {{page}} di {{totalPages}} | Totale: {{total}}',
   minOrderLabel: 'Min',
   noneLinked: 'Nessuno',

@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { Skeleton } from '../components/ui/skeleton'
-import { authFetch } from '../utils/api'
+import { authFetch, downloadCustomersCsv } from '../utils/api'
+import { perm } from '../utils/permissions'
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
 import { Input } from '../components/ui/input'
 import { Button } from '../components/ui/button'
@@ -19,7 +20,7 @@ type Customer = {
 
 
 export default function CustomerCollection() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -28,6 +29,8 @@ export default function CustomerCollection() {
   const [limit] = useState(10)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
+  const [exportingCsv, setExportingCsv] = useState(false)
+  const canExportCsv = perm('customers', 'read')
 
   async function fetchCustomers(pageNum = 1) {
     setLoading(true)
@@ -59,6 +62,19 @@ export default function CustomerCollection() {
     }
   }
 
+  async function handleExportCsv() {
+    if (!canExportCsv) return
+    setExportingCsv(true)
+    setError(null)
+    try {
+      await downloadCustomersCsv(i18n.language)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      setError(msg)
+    } finally {
+      setExportingCsv(false)
+    }
+  }
 
   useEffect(() => {
     void fetchCustomers(page)
@@ -83,13 +99,25 @@ export default function CustomerCollection() {
           <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{t('common.customersTitle')}</h1>
           <p className="text-gray-600 mt-1 dark:text-slate-400">{t('common.customersSubtitle')}</p>
         </div>
-        <div className="w-full sm:w-64">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
+          {canExportCsv && (
+            <Button
+              type="button"
+              variant="default"
+              size="sm"
+              disabled={exportingCsv}
+              onClick={() => void handleExportCsv()}
+              className="whitespace-nowrap"
+            >
+              {exportingCsv ? '…' : t('common.exportCustomersCsv')}
+            </Button>
+          )}
           <Input
             type="text"
             placeholder={t('common.searchCustomersPh')}
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full"
+            className="w-full sm:w-64"
           />
         </div>
       </div>

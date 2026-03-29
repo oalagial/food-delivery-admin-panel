@@ -190,98 +190,98 @@ export default function RoleCreate() {
             )}
 
             <FormSaveBarrier canSave={canSave}>
-            <div>
-              <Label htmlFor="name">{t('common.roleName')} *</Label>
-              <Input
-                id="name"
-                className="mt-2 w-full"
-                value={form.name}
-                onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
-                placeholder={t('common.roleNamePh')}
-                required
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="description">{t('common.description')}</Label>
-              <Textarea
-                id="description"
-                className="mt-2 w-full"
-                value={form.description}
-                onChange={(e) => setForm((s) => ({ ...s, description: e.target.value }))}
-                placeholder={t('common.roleDescPh')}
-              />
-            </div>
-
-            <div className="space-y-3 border-t pt-6">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold">{t('common.permissionMatrix')}</h3>
-                  <p className="text-sm text-muted-foreground">{t('common.permissionMatrixDesc')}</p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button type="button" variant="default" size="sm" onClick={selectAllInCatalog} disabled={catalogLoading}>
-                    {t('common.selectAllPermissions')}
-                  </Button>
-                  <Button type="button" variant="default" size="sm" onClick={selectAllReadPermissions} disabled={catalogLoading}>
-                    {t('common.selectAllReadPermissions')}
-                  </Button>
-                  <Button type="button" variant="default" size="sm" onClick={clearAllPermissions} disabled={catalogLoading}>
-                    {t('common.clearPermissions')}
-                  </Button>
-                </div>
+              <div>
+                <Label htmlFor="name">{t('common.roleName')} *</Label>
+                <Input
+                  id="name"
+                  className="mt-2 w-full"
+                  value={form.name}
+                  onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
+                  placeholder={t('common.roleNamePh')}
+                  required
+                />
               </div>
 
-              {catalogLoading && (
-                <p className="text-sm text-muted-foreground">{t('common.loadingPermissions')}</p>
-              )}
+              <div>
+                <Label htmlFor="description">{t('common.description')}</Label>
+                <Textarea
+                  id="description"
+                  className="mt-2 w-full"
+                  value={form.description}
+                  onChange={(e) => setForm((s) => ({ ...s, description: e.target.value }))}
+                  placeholder={t('common.roleDescPh')}
+                />
+              </div>
 
-              {!catalogLoading && starDef && (
-                <label className="flex cursor-pointer items-start gap-3 rounded-md border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/40">
-                  <Checkbox
-                    checked={selectedIds.has(starDef.id)}
-                    onCheckedChange={(v) => toggleId(starDef.id, v)}
-                  />
-                  <span>
-                    <span className="font-medium">{starDef.action}</span>
-                    {starDef.description ? (
-                      <span className="ml-2 text-sm text-muted-foreground">{starDef.description}</span>
-                    ) : null}
-                  </span>
-                </label>
-              )}
+              <div className="space-y-3 border-t pt-6">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold">{t('common.permissionMatrix')}</h3>
+                    <p className="text-sm text-muted-foreground">{t('common.permissionMatrixDesc')}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" variant="default" size="sm" onClick={selectAllInCatalog} disabled={catalogLoading}>
+                      {t('common.selectAllPermissions')}
+                    </Button>
+                    <Button type="button" variant="default" size="sm" onClick={selectAllReadPermissions} disabled={catalogLoading}>
+                      {t('common.selectAllReadPermissions')}
+                    </Button>
+                    <Button type="button" variant="default" size="sm" onClick={clearAllPermissions} disabled={catalogLoading}>
+                      {t('common.clearPermissions')}
+                    </Button>
+                  </div>
+                </div>
 
-              {!catalogLoading &&
-                grouped.map(([resource, defs]) => {
-                  const withoutStar = defs.filter((d) => d.action !== '*')
-                  if (withoutStar.length === 0) return null
-                  return (
-                    <div key={resource} className="rounded-md border p-4">
-                      <h4 className="mb-3 text-sm font-bold uppercase tracking-wide text-blue-800 dark:text-blue-300">
-                        {resource.replace(/_/g, ' ')}
-                      </h4>
-                      <ul className="grid gap-2 sm:grid-cols-2">
-                        {withoutStar.map((def) => (
-                          <li key={def.id}>
-                            <label className="flex cursor-pointer items-start gap-2 text-sm">
-                              <Checkbox
-                                checked={selectedIds.has(def.id)}
-                                onCheckedChange={(v) => toggleId(def.id, v)}
-                              />
-                              <span>
-                                <span className="font-mono text-xs">{def.action}</span>
-                                {def.description ? (
-                                  <span className="mt-0.5 block text-muted-foreground">{def.description}</span>
-                                ) : null}
-                              </span>
-                            </label>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )
-                })}
-            </div>
+                {catalogLoading && (
+                  <p className="text-sm text-muted-foreground">{t('common.loadingPermissions')}</p>
+                )}
+
+                {!catalogLoading && starDef && (
+                  <label className="flex cursor-pointer items-start gap-3 rounded-md border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/40">
+                    <Checkbox
+                      checked={selectedIds.has(starDef.id)}
+                      onCheckedChange={(v) => toggleId(starDef.id, v)}
+                    />
+                    <span>
+                      <span className="font-medium">{starDef.action}</span>
+                      {starDef.description ? (
+                        <span className="ml-2 text-sm text-muted-foreground">{starDef.description}</span>
+                      ) : null}
+                    </span>
+                  </label>
+                )}
+
+                {!catalogLoading &&
+                  grouped.map(([resource, defs]) => {
+                    const withoutStar = defs.filter((d) => d.action !== '*')
+                    if (withoutStar.length === 0) return null
+                    return (
+                      <div key={resource} className="rounded-md border p-4">
+                        <h4 className="mb-3 text-sm font-bold uppercase tracking-wide text-blue-800 dark:text-blue-300">
+                          {resource.replace(/_/g, ' ')}
+                        </h4>
+                        <ul className="grid gap-2 sm:grid-cols-2">
+                          {withoutStar.map((def) => (
+                            <li key={def.id}>
+                              <label className="flex cursor-pointer items-start gap-2 text-sm">
+                                <Checkbox
+                                  checked={selectedIds.has(def.id)}
+                                  onCheckedChange={(v) => toggleId(def.id, v)}
+                                />
+                                <span>
+                                  <span className="font-mono text-xs">{def.action}</span>
+                                  {def.description ? (
+                                    <span className="mt-0.5 block text-muted-foreground">{def.description}</span>
+                                  ) : null}
+                                </span>
+                              </label>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )
+                  })}
+              </div>
             </FormSaveBarrier>
 
             <div className="flex justify-end gap-3 pt-4">
