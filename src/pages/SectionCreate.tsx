@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Label } from '../components/ui/label'
 import { Textarea } from '../components/ui/textarea'
 import { Alert, AlertDescription } from '../components/ui/alert'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, ChevronDown, ChevronUp } from 'lucide-react'
 import { getSectionById, createSection, updateSection, getTypesList, getProductsList } from '../utils/api'
 import { canSubmitResourceForm } from '../utils/permissions'
 import { FormSaveBarrier } from '../components/FormSaveBarrier'
@@ -28,6 +28,22 @@ export default function SectionCreate(){
   const [error, setError] = useState<string | null>(null)
   const [types, setTypes] = useState<TypeItem[]>([])
   const [products, setProducts] = useState<Product[]>([])
+
+  const selectedProducts = productsIds
+    .map((productId) => products.find((product) => Number(product.id) === Number(productId)))
+    .filter((product): product is Product => Boolean(product))
+
+  const moveProduct = (index: number, direction: -1 | 1) => {
+    setProductsIds((currentIds) => {
+      const nextIndex = index + direction
+      if (nextIndex < 0 || nextIndex >= currentIds.length) return currentIds
+
+      const nextIds = [...currentIds]
+      const [moved] = nextIds.splice(index, 1)
+      nextIds.splice(nextIndex, 0, moved)
+      return nextIds
+    })
+  }
 
   useEffect(()=>{
     let mounted = true
@@ -57,7 +73,16 @@ export default function SectionCreate(){
     if (!canSave) return
     setLoading(true)
     setError(null)
-    const payload = { name, description: String(description || ''), typeId: typeof typeId === 'string' ? Number(typeId) : typeId, productsIds }
+    const payload = {
+      name,
+      description: String(description || ''),
+      typeId: typeof typeId === 'string' ? Number(typeId) : typeId,
+      productsIds,
+      orderedProducts: productsIds.map((productId, index) => ({
+        productId: Number(productId),
+        sortOrder: index + 1,
+      })),
+    }
     try{
       if(params.id){
         await updateSection(Number(params.id), payload)
@@ -178,30 +203,57 @@ export default function SectionCreate(){
                     {productsIds.length === 0 && (
                       <div className="text-xs text-gray-400">{t('createForms.noProductsSelected')}</div>
                     )}
-                    {products.filter(p => productsIds.includes(p.id)).map(p => (
+                    {selectedProducts.map((p, index) => (
                       <div
                         key={p.id}
                         className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded cursor-pointer group"
                       >
-                        <span>{p.name ?? String(p.id)}</span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="ml-2 text-red-600 hover:text-red-800 text-xs font-bold opacity-80 group-hover:opacity-100"
-                          onClick={() =>
-                            setProductsIds(ids => ids.filter(id => id !== p.id))
-                          }
-                        >
-                          {t('common.remove')}
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <span className="min-w-5 text-xs font-semibold text-gray-500">
+                            {index + 1}.
+                          </span>
+                          <span>{p.name ?? String(p.id)}</span>
+                        </div>
+                        <div className="ml-2 flex items-center gap-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="px-2"
+                            disabled={index === 0}
+                            onClick={() => moveProduct(index, -1)}
+                          >
+                            <ChevronUp className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="px-2"
+                            disabled={index === selectedProducts.length - 1}
+                            onClick={() => moveProduct(index, 1)}
+                          >
+                            <ChevronDown className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:text-red-800 text-xs font-bold opacity-80 group-hover:opacity-100"
+                            onClick={() =>
+                              setProductsIds(ids => ids.filter(id => id !== p.id))
+                            }
+                          >
+                            {t('common.remove')}
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
               <p className="mt-1 text-xs text-gray-500">
-                {t('common.pickerHintAddRemove')}
+                {t('common.pickerHintAddRemoveReorder')}
               </p>
             </div>
 

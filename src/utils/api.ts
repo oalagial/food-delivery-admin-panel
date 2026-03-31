@@ -1434,6 +1434,10 @@ export type MenuItem = {
   name?: string;
   description?: string;
   sectionIds?: Array<number | string>;
+  orderedSections?: Array<{
+    sectionId: number | string;
+    sortOrder: number;
+  }>;
   restaurants?: Array<number>;
   createdAt?: string | number;
   [k: string]: unknown;
@@ -1443,6 +1447,10 @@ export type CreateMenuPayload = {
   name: string;
   description?: string;
   sectionIds?: Array<number | string>;
+  orderedSections?: Array<{
+    sectionId: number | string;
+    sortOrder: number;
+  }>;
   restaurantId?: number | string;
   [k: string]: unknown;
 };
@@ -2111,6 +2119,10 @@ export type SectionItem = {
   description?: string;
   typeId?: number | string;
   productsIds?: Array<number | string>;
+  orderedProducts?: Array<{
+    productId: number | string;
+    sortOrder: number;
+  }>;
   createdAt?: string | number;
   [k: string]: unknown;
 };
@@ -2120,6 +2132,10 @@ export type CreateSectionPayload = {
   description?: string;
   typeId?: number | string;
   productsIds?: Array<number | string>;
+  orderedProducts?: Array<{
+    productId: number | string;
+    sortOrder: number;
+  }>;
   [k: string]: unknown;
 };
 

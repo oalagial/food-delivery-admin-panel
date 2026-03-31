@@ -398,6 +398,8 @@ export const common = {
   update: 'Update',
   typeDescOptionalCard: 'Optional details to better describe this type',
   pickerHintAddRemove: 'Click “Add” to select, “Remove” to unselect.',
+  pickerHintAddRemoveReorder:
+    'Click “Add” to select, use arrows to reorder, and “Remove” to unselect.',
   menuNameRequired: 'Name is required',
   idDisplay: 'ID {{id}}',
   restaurantWithId: 'Restaurant {{id}}',

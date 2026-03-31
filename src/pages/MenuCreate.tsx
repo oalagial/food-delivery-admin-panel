@@ -6,7 +6,7 @@ import { Button } from '../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 import { Label } from '../components/ui/label'
 import { Alert, AlertDescription } from '../components/ui/alert'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, ChevronDown, ChevronUp } from 'lucide-react'
 import { getRestaurantsList, getSectionsList, getMenuById, createMenu, updateMenu } from '../utils/api'
 import { canSubmitResourceForm } from '../utils/permissions'
 import { FormSaveBarrier } from '../components/FormSaveBarrier'
@@ -31,6 +31,22 @@ export default function MenuCreate() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const selectedSections = sectionIds
+    .map((sectionId) => sections.find((section) => Number(section.id) === Number(sectionId)))
+    .filter((section): section is SectionItem => Boolean(section))
+
+  const moveSection = (index: number, direction: -1 | 1) => {
+    setSectionIds((currentIds) => {
+      const nextIndex = index + direction
+      if (nextIndex < 0 || nextIndex >= currentIds.length) return currentIds
+
+      const nextIds = [...currentIds]
+      const [moved] = nextIds.splice(index, 1)
+      nextIds.splice(nextIndex, 0, moved)
+      return nextIds
+    })
+  }
 
   useEffect(() => {
     let mounted = true
@@ -73,6 +89,10 @@ export default function MenuCreate() {
       name: String(name).trim(),
       description: description || undefined,
       sectionIds: sectionIds.map(Number),
+      orderedSections: sectionIds.map((sectionId, index) => ({
+        sectionId: Number(sectionId),
+        sortOrder: index + 1,
+      })),
       restaurantId: restaurantId ? Number(restaurantId) : undefined,
     }
     try {
@@ -204,34 +224,59 @@ export default function MenuCreate() {
                     {sectionIds.length === 0 && (
                       <div className="text-xs text-gray-400">{t('common.noSectionsSelected')}</div>
                     )}
-                    {sections
-                      .filter((s) => sectionIds.includes(Number(s.id)))
-                      .map((s) => (
+                    {selectedSections.map((s, index) => (
                         <div
                           key={s.id}
                           className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded cursor-pointer group"
                         >
-                          <span>{s.name || s.id}</span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="ml-2 text-red-600 hover:text-red-800 text-xs font-bold opacity-80 group-hover:opacity-100"
-                            onClick={() =>
-                              setSectionIds((ids) =>
-                                ids.map(Number).filter((id) => id !== Number(s.id)),
-                              )
-                            }
-                          >
-                            {t('common.remove')}
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            <span className="min-w-5 text-xs font-semibold text-gray-500">
+                              {index + 1}.
+                            </span>
+                            <span>{s.name || s.id}</span>
+                          </div>
+                          <div className="ml-2 flex items-center gap-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="px-2"
+                              disabled={index === 0}
+                              onClick={() => moveSection(index, -1)}
+                            >
+                              <ChevronUp className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="px-2"
+                              disabled={index === selectedSections.length - 1}
+                              onClick={() => moveSection(index, 1)}
+                            >
+                              <ChevronDown className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-600 hover:text-red-800 text-xs font-bold opacity-80 group-hover:opacity-100"
+                              onClick={() =>
+                                setSectionIds((ids) =>
+                                  ids.map(Number).filter((id) => id !== Number(s.id)),
+                                )
+                              }
+                            >
+                              {t('common.remove')}
+                            </Button>
+                          </div>
                         </div>
                       ))}
                   </div>
                 </div>
               </div>
               <p className="mt-1 text-xs text-gray-500">
-                {t('common.pickerHintAddRemove')}
+                {t('common.pickerHintAddRemoveReorder')}
               </p>
 
               {error && (
