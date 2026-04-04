@@ -125,6 +125,10 @@ export default function RestaurantCreate() {
   const [removeProductIngredients, setRemoveProductIngredients] = useState(false)
   const [kitchenPrinterIp, setKitchenPrinterIp] = useState('')
   const [kitchenPrinterPort, setKitchenPrinterPort] = useState('')
+  const [fiscalPrinterIp, setFiscalPrinterIp] = useState('')
+  const [fiscalPrinterPort, setFiscalPrinterPort] = useState('')
+  const [companyName, setCompanyName] = useState('')
+  const [companyAfm, setCompanyAfm] = useState('')
   const loadedConfigRef = useRef<RestaurantConfig>({})
 
   async function handleCreate(e: React.FormEvent) {
@@ -200,6 +204,35 @@ export default function RestaurantCreate() {
     } else {
       delete nextConfig.kitchenPrinterPort
     }
+
+    const fiscalIp = String(fiscalPrinterIp || '').trim()
+    if (fiscalIp) nextConfig.fiscalPrinterIp = fiscalIp
+    else delete nextConfig.fiscalPrinterIp
+
+    const fiscalPortRaw = String(fiscalPrinterPort || '').trim()
+    if (fiscalPortRaw !== '') {
+      const fiscalPortNum = Number(fiscalPortRaw)
+      if (
+        !Number.isInteger(fiscalPortNum) ||
+        fiscalPortNum < 1 ||
+        fiscalPortNum > 65535
+      ) {
+        setCreateError(t('common.fiscalPrinterPortInvalid'))
+        setCreating(false)
+        return
+      }
+      nextConfig.fiscalPrinterPort = fiscalPortNum
+    } else {
+      delete nextConfig.fiscalPrinterPort
+    }
+
+    const companyNameTrimmed = String(companyName || '').trim()
+    if (companyNameTrimmed) nextConfig.companyName = companyNameTrimmed
+    else delete nextConfig.companyName
+
+    const companyAfmTrimmed = String(companyAfm || '').trim()
+    if (companyAfmTrimmed) nextConfig.companyAfm = companyAfmTrimmed
+    else delete nextConfig.companyAfm
 
     if (Object.keys(nextConfig).length > 0) {
       payload.config = nextConfig
@@ -293,6 +326,14 @@ export default function RestaurantCreate() {
           setKitchenPrinterPort(
             cfg.kitchenPrinterPort != null ? String(cfg.kitchenPrinterPort) : '',
           )
+          setFiscalPrinterIp(
+            cfg.fiscalPrinterIp != null ? String(cfg.fiscalPrinterIp).trim() : '',
+          )
+          setFiscalPrinterPort(
+            cfg.fiscalPrinterPort != null ? String(cfg.fiscalPrinterPort) : '',
+          )
+          setCompanyName(cfg.companyName != null ? String(cfg.companyName).trim() : '')
+          setCompanyAfm(cfg.companyAfm != null ? String(cfg.companyAfm).trim() : '')
           setForm((s) => ({
             ...s,
             name: String(data.name ?? ''),
@@ -341,6 +382,10 @@ export default function RestaurantCreate() {
     setRemoveProductIngredients(false)
     setKitchenPrinterIp('')
     setKitchenPrinterPort('')
+    setFiscalPrinterIp('')
+    setFiscalPrinterPort('')
+    setCompanyName('')
+    setCompanyAfm('')
     setSelectedFile(null)
     setImagePreview(null)
   }, [id])
@@ -729,6 +774,44 @@ export default function RestaurantCreate() {
 
                 <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-4 dark:border-slate-600 dark:bg-slate-900/35">
                   <p className="text-base font-medium text-gray-900 dark:text-slate-100">
+                    {t('common.companyDetailsSection')}
+                  </p>
+                  <p className="mt-1 text-sm text-gray-600 dark:text-slate-400">
+                    {t('common.companyDetailsHint')}
+                  </p>
+                  <div className="mt-4 grid grid-cols-1 gap-3 min-[420px]:grid-cols-[minmax(0,1fr)_11rem] sm:gap-4">
+                    <div className="min-w-0 space-y-1.5">
+                      <Label htmlFor="company-name">{t('common.companyName')}</Label>
+                      <Input
+                        id="company-name"
+                        type="text"
+                        className="w-full"
+                        autoComplete="organization"
+                        placeholder={t('common.companyNamePh')}
+                        value={companyName}
+                        onChange={(e) => setCompanyName(e.target.value)}
+                      />
+                    </div>
+                    <div className="min-w-0 space-y-1.5">
+                      <Label htmlFor="company-afm" className="whitespace-nowrap">
+                        {t('common.companyAfm')}
+                      </Label>
+                      <Input
+                        id="company-afm"
+                        type="text"
+                        className="w-full"
+                        inputMode="numeric"
+                        autoComplete="off"
+                        placeholder={t('common.companyAfmPh')}
+                        value={companyAfm}
+                        onChange={(e) => setCompanyAfm(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-4 dark:border-slate-600 dark:bg-slate-900/35">
+                  <p className="text-base font-medium text-gray-900 dark:text-slate-100">
                     {t('common.kitchenPrinterSection')}
                   </p>
                   <p className="mt-1 text-sm text-gray-600 dark:text-slate-400">
@@ -760,6 +843,44 @@ export default function RestaurantCreate() {
                         placeholder={t('common.kitchenPrinterPortPh')}
                         value={kitchenPrinterPort}
                         onChange={(e) => setKitchenPrinterPort(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-4 dark:border-slate-600 dark:bg-slate-900/35">
+                  <p className="text-base font-medium text-gray-900 dark:text-slate-100">
+                    {t('common.fiscalPrinterSection')}
+                  </p>
+                  <p className="mt-1 text-sm text-gray-600 dark:text-slate-400">
+                    {t('common.fiscalPrinterSectionHint')}
+                  </p>
+                  <div className="mt-4 grid grid-cols-1 gap-3 min-[420px]:grid-cols-[minmax(0,1fr)_7rem] sm:gap-4">
+                    <div className="min-w-0 space-y-1.5">
+                      <Label htmlFor="fiscal-printer-ip">{t('common.fiscalPrinterIp')}</Label>
+                      <Input
+                        id="fiscal-printer-ip"
+                        type="text"
+                        className="w-full"
+                        autoComplete="off"
+                        placeholder={t('common.fiscalPrinterIpPh')}
+                        value={fiscalPrinterIp}
+                        onChange={(e) => setFiscalPrinterIp(e.target.value)}
+                      />
+                    </div>
+                    <div className="min-w-0 space-y-1.5">
+                      <Label htmlFor="fiscal-printer-port" className="whitespace-nowrap">
+                        {t('common.fiscalPrinterPort')}
+                      </Label>
+                      <Input
+                        id="fiscal-printer-port"
+                        type="text"
+                        className="w-full"
+                        inputMode="numeric"
+                        autoComplete="off"
+                        placeholder={t('common.fiscalPrinterPortPh')}
+                        value={fiscalPrinterPort}
+                        onChange={(e) => setFiscalPrinterPort(e.target.value)}
                       />
                     </div>
                   </div>

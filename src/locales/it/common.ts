@@ -212,6 +212,22 @@ export const common = {
   kitchenPrinterPortPh: 'es. 9100',
   kitchenPrinterPortInvalid:
     'La porta della stampante cucina deve essere un numero intero tra 1 e 65535',
+  fiscalPrinterSection: 'Stampante fiscale',
+  fiscalPrinterSectionHint:
+    'Opzionale. Indirizzo TCP per stampante fiscale / registratore di cassa di rete.',
+  fiscalPrinterIp: 'IP stampante fiscale',
+  fiscalPrinterIpPh: 'es. 192.168.1.60',
+  fiscalPrinterPort: 'Porta stampante fiscale',
+  fiscalPrinterPortPh: 'es. 9100',
+  fiscalPrinterPortInvalid:
+    'La porta della stampante fiscale deve essere un numero intero tra 1 e 65535',
+  companyDetailsSection: 'Azienda',
+  companyDetailsHint:
+    'Opzionale. Ragione sociale e codice fiscale / partita IVA (fatture o dispositivi fiscali).',
+  companyName: 'Ragione sociale',
+  companyNamePh: 'es. Esempio Food Services Srl',
+  companyAfm: 'P. IVA / codice fiscale',
+  companyAfmPh: 'es. 12345678901',
   paymentMethodPlaceholder: 'Seleziona…',
   paymentMethodCash: 'Contanti',
   paymentMethodCard: 'Carta',

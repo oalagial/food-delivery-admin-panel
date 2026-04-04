@@ -358,6 +358,12 @@ export type RestaurantConfig = {
   /** Network kitchen / receipt printer (e.g. ESC/POS over TCP) */
   kitchenPrinterIp?: string;
   kitchenPrinterPort?: number;
+  fiscalPrinterIp?: string;
+  fiscalPrinterPort?: number;
+  /** Legal / invoicing company name */
+  companyName?: string;
+  /** Tax registration (e.g. Greek ΑΦΜ) */
+  companyAfm?: string;
   [k: string]: unknown;
 };
 
