@@ -355,6 +355,9 @@ export type RestaurantConfig = {
   paymentMethod?: PaymentMethod;
   /** When true, product ingredients are removed/deducted (e.g. on order fulfilment) */
   removeProductIngredients?: boolean;
+  /** Network kitchen / receipt printer (e.g. ESC/POS over TCP) */
+  kitchenPrinterIp?: string;
+  kitchenPrinterPort?: number;
   [k: string]: unknown;
 };
 

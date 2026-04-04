@@ -123,6 +123,8 @@ export default function RestaurantCreate() {
   const [loadingMenus, setLoadingMenus] = useState(false)
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
   const [removeProductIngredients, setRemoveProductIngredients] = useState(false)
+  const [kitchenPrinterIp, setKitchenPrinterIp] = useState('')
+  const [kitchenPrinterPort, setKitchenPrinterPort] = useState('')
   const loadedConfigRef = useRef<RestaurantConfig>({})
 
   async function handleCreate(e: React.FormEvent) {
@@ -177,6 +179,27 @@ export default function RestaurantCreate() {
     else if (hadPaymentConfig) nextConfig.paymentMethods = []
 
     nextConfig.removeProductIngredients = removeProductIngredients
+
+    const kitchenIp = String(kitchenPrinterIp || '').trim()
+    if (kitchenIp) nextConfig.kitchenPrinterIp = kitchenIp
+    else delete nextConfig.kitchenPrinterIp
+
+    const kitchenPortRaw = String(kitchenPrinterPort || '').trim()
+    if (kitchenPortRaw !== '') {
+      const portNum = Number(kitchenPortRaw)
+      if (
+        !Number.isInteger(portNum) ||
+        portNum < 1 ||
+        portNum > 65535
+      ) {
+        setCreateError(t('common.kitchenPrinterPortInvalid'))
+        setCreating(false)
+        return
+      }
+      nextConfig.kitchenPrinterPort = portNum
+    } else {
+      delete nextConfig.kitchenPrinterPort
+    }
 
     if (Object.keys(nextConfig).length > 0) {
       payload.config = nextConfig
@@ -264,6 +287,12 @@ export default function RestaurantCreate() {
             parseConfigBoolean(cfg.removeProductIngredients) ||
               parseConfigBoolean((cfg as { deductMaterialsFromProducts?: unknown }).deductMaterialsFromProducts),
           )
+          setKitchenPrinterIp(
+            cfg.kitchenPrinterIp != null ? String(cfg.kitchenPrinterIp).trim() : '',
+          )
+          setKitchenPrinterPort(
+            cfg.kitchenPrinterPort != null ? String(cfg.kitchenPrinterPort) : '',
+          )
           setForm((s) => ({
             ...s,
             name: String(data.name ?? ''),
@@ -310,6 +339,8 @@ export default function RestaurantCreate() {
     loadedConfigRef.current = {}
     setPaymentMethods([])
     setRemoveProductIngredients(false)
+    setKitchenPrinterIp('')
+    setKitchenPrinterPort('')
     setSelectedFile(null)
     setImagePreview(null)
   }, [id])
@@ -651,45 +682,89 @@ export default function RestaurantCreate() {
             <CardTitle className="text-lg">{t('common.restaurantConfigTitle')}</CardTitle>
             <CardDescription>{t('common.restaurantConfigDesc')}</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3 max-w-md">
-            <Label htmlFor="restaurant-payment-methods" className="text-base">
-              {t('common.restaurantPaymentMethods')}
-            </Label>
-            <p className="text-sm text-gray-600 dark:text-slate-400">
-              {t('common.restaurantPaymentMethodsHint')}
-            </p>
-            <MultiSelectDropdown
-              id="restaurant-payment-methods"
-              className="mt-1.5"
-              options={PAYMENT_METHODS.map((m) => ({
-                value: m,
-                label: t(PAYMENT_METHOD_I18N[m]),
-              }))}
-              value={paymentMethods}
-              onChange={(next) => setPaymentMethods(sortPaymentMethods(next))}
-              placeholder={t('common.paymentMethodPlaceholder')}
-            />
-
-            <div className="border-t border-slate-200 pt-4 dark:border-slate-700">
-              <label
-                htmlFor="remove-product-ingredients"
-                className="flex cursor-pointer items-start gap-3"
-              >
-                <Checkbox
-                  id="remove-product-ingredients"
-                  className="mt-0.5"
-                  checked={removeProductIngredients}
-                  onCheckedChange={(c) => setRemoveProductIngredients(!!c)}
+          <CardContent>
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-10 lg:items-start">
+              <section className="min-w-0 space-y-3">
+                <Label htmlFor="restaurant-payment-methods" className="text-base">
+                  {t('common.restaurantPaymentMethods')}
+                </Label>
+                <p className="text-sm text-gray-600 dark:text-slate-400">
+                  {t('common.restaurantPaymentMethodsHint')}
+                </p>
+                <MultiSelectDropdown
+                  id="restaurant-payment-methods"
+                  className="mt-1.5 w-full max-w-full"
+                  options={PAYMENT_METHODS.map((m) => ({
+                    value: m,
+                    label: t(PAYMENT_METHOD_I18N[m]),
+                  }))}
+                  value={paymentMethods}
+                  onChange={(next) => setPaymentMethods(sortPaymentMethods(next))}
+                  placeholder={t('common.paymentMethodPlaceholder')}
                 />
-                <span>
-                  <span className="block text-base font-medium text-gray-900 dark:text-slate-100">
-                    {t('common.removeProductIngredients')}
-                  </span>
-                  <span className="mt-0.5 block text-sm text-gray-600 dark:text-slate-400">
-                    {t('common.removeProductIngredientsHint')}
-                  </span>
-                </span>
-              </label>
+              </section>
+
+              <section className="min-w-0 space-y-6 border-t border-slate-200 pt-8 dark:border-slate-700 lg:border-l lg:border-t-0 lg:pl-10 lg:pt-0 dark:lg:border-slate-700">
+                <div>
+                  <label
+                    htmlFor="remove-product-ingredients"
+                    className="flex cursor-pointer items-start gap-3"
+                  >
+                    <Checkbox
+                      id="remove-product-ingredients"
+                      className="mt-0.5"
+                      checked={removeProductIngredients}
+                      onCheckedChange={(c) => setRemoveProductIngredients(!!c)}
+                    />
+                    <span>
+                      <span className="block text-base font-medium text-gray-900 dark:text-slate-100">
+                        {t('common.removeProductIngredients')}
+                      </span>
+                      <span className="mt-0.5 block text-sm text-gray-600 dark:text-slate-400">
+                        {t('common.removeProductIngredientsHint')}
+                      </span>
+                    </span>
+                  </label>
+                </div>
+
+                <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-4 dark:border-slate-600 dark:bg-slate-900/35">
+                  <p className="text-base font-medium text-gray-900 dark:text-slate-100">
+                    {t('common.kitchenPrinterSection')}
+                  </p>
+                  <p className="mt-1 text-sm text-gray-600 dark:text-slate-400">
+                    {t('common.kitchenPrinterSectionHint')}
+                  </p>
+                  <div className="mt-4 grid grid-cols-1 gap-3 min-[420px]:grid-cols-[minmax(0,1fr)_7rem] sm:gap-4">
+                    <div className="min-w-0 space-y-1.5">
+                      <Label htmlFor="kitchen-printer-ip">{t('common.kitchenPrinterIp')}</Label>
+                      <Input
+                        id="kitchen-printer-ip"
+                        type="text"
+                        className="w-full"
+                        autoComplete="off"
+                        placeholder={t('common.kitchenPrinterIpPh')}
+                        value={kitchenPrinterIp}
+                        onChange={(e) => setKitchenPrinterIp(e.target.value)}
+                      />
+                    </div>
+                    <div className="min-w-0 space-y-1.5">
+                      <Label htmlFor="kitchen-printer-port" className="whitespace-nowrap">
+                        {t('common.kitchenPrinterPort')}
+                      </Label>
+                      <Input
+                        id="kitchen-printer-port"
+                        type="text"
+                        className="w-full"
+                        inputMode="numeric"
+                        autoComplete="off"
+                        placeholder={t('common.kitchenPrinterPortPh')}
+                        value={kitchenPrinterPort}
+                        onChange={(e) => setKitchenPrinterPort(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </section>
             </div>
           </CardContent>
         </Card>

@@ -203,6 +203,14 @@ export const common = {
   removeProductIngredients: 'Remove product ingredients',
   removeProductIngredientsHint:
     'When enabled, fulfilling orders removes or deducts ingredients linked to each product.',
+  kitchenPrinterSection: 'Kitchen printer',
+  kitchenPrinterSectionHint:
+    'Optional. TCP address for a network receipt/kitchen printer (e.g. ESC/POS).',
+  kitchenPrinterIp: 'Kitchen printer IP',
+  kitchenPrinterIpPh: 'e.g. 192.168.1.50',
+  kitchenPrinterPort: 'Kitchen printer port',
+  kitchenPrinterPortPh: 'e.g. 9100',
+  kitchenPrinterPortInvalid: 'Kitchen printer port must be a whole number from 1 to 65535',
   paymentMethodPlaceholder: 'Select…',
   paymentMethodCash: 'Cash',
   paymentMethodCard: 'Card',

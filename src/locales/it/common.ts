@@ -203,6 +203,15 @@ export const common = {
   removeProductIngredients: 'Rimuovi ingredienti dai prodotti',
   removeProductIngredientsHint:
     'Se attivo, evadere gli ordini rimuove o scala gli ingredienti collegati a ogni prodotto.',
+  kitchenPrinterSection: 'Stampante cucina',
+  kitchenPrinterSectionHint:
+    'Opzionale. Indirizzo TCP per stampante di comanda/scontrino di rete (es. ESC/POS).',
+  kitchenPrinterIp: 'IP stampante cucina',
+  kitchenPrinterIpPh: 'es. 192.168.1.50',
+  kitchenPrinterPort: 'Porta stampante cucina',
+  kitchenPrinterPortPh: 'es. 9100',
+  kitchenPrinterPortInvalid:
+    'La porta della stampante cucina deve essere un numero intero tra 1 e 65535',
   paymentMethodPlaceholder: 'Seleziona…',
   paymentMethodCash: 'Contanti',
   paymentMethodCard: 'Carta',
