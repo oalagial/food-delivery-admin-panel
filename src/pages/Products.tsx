@@ -115,8 +115,15 @@ function ProductRow({ product, isOpen, onToggle, isDeleted = false, onRestore, o
         </TableCell>
         <TableCell className={isDeleted ? "text-gray-600" : ""}>
           {product.vatRate ? (
-            product.vatRate === 'TEN' ? '10%' :
-              product.vatRate === 'TWENTY_TWO' ? '22%' : product.vatRate
+            product.vatRate === 'FOUR'
+              ? '4%'
+              : product.vatRate === 'FIVE'
+                ? '5%'
+                : product.vatRate === 'TEN'
+                  ? '10%'
+                  : product.vatRate === 'TWENTY_TWO'
+                    ? '22%'
+                    : product.vatRate
           ) : '-'}
         </TableCell>
         <TableCell className={`text-center ${isDeleted ? "text-gray-600" : ""}`}>
@@ -457,11 +464,15 @@ export default function Products() {
                 ) : (
                   paginatedItems.map((p) => {
                     const vatLabel = p.vatRate
-                      ? p.vatRate === 'TEN'
-                        ? '10%'
-                        : p.vatRate === 'TWENTY_TWO'
-                          ? '22%'
-                          : String(p.vatRate)
+                      ? p.vatRate === 'FOUR'
+                        ? '4%'
+                        : p.vatRate === 'FIVE'
+                          ? '5%'
+                          : p.vatRate === 'TEN'
+                            ? '10%'
+                            : p.vatRate === 'TWENTY_TWO'
+                              ? '22%'
+                              : String(p.vatRate)
                       : '-'
 
                     return (

@@ -9,7 +9,7 @@ import { Label } from '../components/ui/label'
 import { Alert, AlertDescription } from '../components/ui/alert'
 import { AlertCircle } from 'lucide-react'
 import { createProduct, getProductById, updateProduct, updateProductImage, getTypesList, getExtrasByProduct, getProductDiscount, ProductAllergy } from '../utils/api'
-import type { CreateProductPayload, ProductDiscount, ProductExtra } from '../utils/api'
+import type { CreateProductPayload, ProductDiscount, ProductExtra, ProductVatRate } from '../utils/api'
 import { Checkbox } from '../components/ui/checkbox'
 
 const ProductLabel = {
@@ -506,7 +506,13 @@ export default function ProductCreate() {
                     id="vatRate"
                     className="mt-1.5 w-full"
                     value={form.vatRate || ''}
-                    onChange={(e) => setForm(s => ({ ...s, vatRate: e.target.value ? e.target.value as 'FOUR' | 'FIVE' | 'TEN' | 'TWENTY_TWO' : undefined }))}
+                    onChange={(e) => {
+                      const v = e.target.value
+                      setForm((s) => ({
+                        ...s,
+                        vatRate: v === '' ? undefined : (v as ProductVatRate),
+                      }))
+                    }}
                   >
                     <option value="">{tr('common.selectVat')}</option>
                     <option value="FOUR">4%</option>

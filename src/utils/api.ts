@@ -99,12 +99,12 @@ function handleUnauthorized() {
       // notify listeners
       try {
         window.dispatchEvent(new Event("auth"));
-      } catch {}
+      } catch { }
       // avoid redirect loop if already on /login
       try {
         const current = window.location.pathname || "";
         if (!current.startsWith("/login")) window.location.href = "/login";
-      } catch {}
+      } catch { }
     }
   } catch {
     // ignore
@@ -396,7 +396,7 @@ export async function getRestaurantsList(
     const text = await res.text().catch(() => "");
     throw new Error(
       text ||
-        `GET /restaurants${query ? `?${query}` : ""} failed (${res.status})`,
+      `GET /restaurants${query ? `?${query}` : ""} failed (${res.status})`,
     );
   }
   const data = await res.json().catch(() => null);
@@ -808,6 +808,8 @@ export const ProductAllergy = {
 export type ProductAllergy =
   (typeof ProductAllergy)[keyof typeof ProductAllergy];
 
+export type ProductVatRate = "FOUR" | "FIVE" | "TEN" | "TWENTY_TWO";
+
 export type Product = {
   id?: string | number;
   name?: string;
@@ -820,7 +822,7 @@ export type Product = {
   price?: number;
   isAvailable?: boolean;
   extras?: ProductExtra[];
-  vatRate?: "TEN" | "TWENTY_TWO";
+  vatRate?: ProductVatRate;
   createdAt?: string | number;
   [k: string]: unknown;
 };
@@ -836,7 +838,7 @@ export type CreateProductPayload = {
   price?: number;
   isAvailable?: boolean;
   stockQuantity?: number | null;
-  vatRate?: "TEN" | "TWENTY_TWO";
+  vatRate?: ProductVatRate;
   extras?: Array<{ id?: number; name: string; price: number }>;
   discounts?: Array<{
     id?: number;
@@ -1139,7 +1141,7 @@ export async function updateDeliveryLocationImage(
 
     throw new Error(
       bodyText ||
-        `PUT /delivery-locations/update/${id} (image) failed (${res.status})`,
+      `PUT /delivery-locations/update/${id} (image) failed (${res.status})`,
     );
   }
 
@@ -2645,7 +2647,7 @@ export async function deleteDeliveryLocation(id: string | number) {
     }
     throw new Error(
       bodyText ||
-        `DELETE /delivery-locations/delete/${id} failed (${res.status})`,
+      `DELETE /delivery-locations/delete/${id} failed (${res.status})`,
     );
   }
   return res.json().catch(() => null);
@@ -2675,7 +2677,7 @@ export async function updateRestaurant(
               typeof e === "string"
                 ? e
                 : (e && (e as Record<string, unknown>).message) ||
-                  JSON.stringify(e),
+                JSON.stringify(e),
             )
             .join("; ");
         } else if (typeof json.message === "string") {
