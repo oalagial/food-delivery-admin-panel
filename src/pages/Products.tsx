@@ -115,10 +115,8 @@ function ProductRow({ product, isOpen, onToggle, isDeleted = false, onRestore, o
         </TableCell>
         <TableCell className={isDeleted ? "text-gray-600" : ""}>
           {product.vatRate ? (
-            product.vatRate === 'FOUR' ? '4%' :
-              product.vatRate === 'FIVE' ? '5%' :
-                product.vatRate === 'TEN' ? '10%' :
-                  product.vatRate === 'TWENTY_TWO' ? '22%' : product.vatRate
+            product.vatRate === 'TEN' ? '10%' :
+              product.vatRate === 'TWENTY_TWO' ? '22%' : product.vatRate
           ) : '-'}
         </TableCell>
         <TableCell className={`text-center ${isDeleted ? "text-gray-600" : ""}`}>
@@ -459,15 +457,11 @@ export default function Products() {
                 ) : (
                   paginatedItems.map((p) => {
                     const vatLabel = p.vatRate
-                      ? p.vatRate === 'FOUR'
-                        ? '4%'
-                        : p.vatRate === 'FIVE'
-                          ? '5%'
-                          : p.vatRate === 'TEN'
-                            ? '10%'
-                            : p.vatRate === 'TWENTY_TWO'
-                              ? '22%'
-                              : String(p.vatRate)
+                      ? p.vatRate === 'TEN'
+                        ? '10%'
+                        : p.vatRate === 'TWENTY_TWO'
+                          ? '22%'
+                          : String(p.vatRate)
                       : '-'
 
                     return (
@@ -492,8 +486,8 @@ export default function Products() {
                           </div>
                           <span
                             className={`inline-flex flex-shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${p.isAvailable
-                                ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'
-                                : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
+                              ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'
+                              : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
                               }`}
                           >
                             {p.isAvailable ? t('common.available') : t('common.unavailable')}

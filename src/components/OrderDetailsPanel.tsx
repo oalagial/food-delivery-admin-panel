@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import i18n from '../i18n'
 
 export type OrderDetailsPanelProductExtra = {
   id?: string | number
@@ -8,6 +9,12 @@ export type OrderDetailsPanelProductExtra = {
 }
 
 export type OrderDetailsPanelOrder = {
+  id?: string | number
+  orderNumber?: number | string
+  orderDate?: string
+  createdAt?: string | number
+  restaurant?: { name?: string }
+  deliveryLocation?: { name?: string }
   paymentMethod?: string
   paymentStatus?: string
   deliveryFee?: number | string | null
@@ -49,23 +56,100 @@ function formatMoney(value?: number | string | null): string {
   return Number.isFinite(n) ? `€${n.toFixed(2)}` : '-'
 }
 
+function formatBusinessDate(value: string | number | undefined | null): string {
+  const dash = i18n.t('common.emDash')
+  if (value == null || value === '') return dash
+  const d = new Date(String(value))
+  return Number.isNaN(d.getTime()) ? dash : d.toLocaleDateString()
+}
+
 export function OrderDetailsPanel({ order }: { order: OrderDetailsPanelOrder }) {
   const { t } = useTranslation()
 
   return (
     <div className="p-4 space-y-4 text-sm text-left">
-      <div className="grid grid-cols-2 sm:grid-cols-6 gap-3 pb-3 border-b">
+      <div className="space-y-3 rounded-lg border border-slate-200/90 bg-slate-50/80 p-3 dark:border-slate-600 dark:bg-slate-800/40">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400">
+          {t('orderDetails.summaryHeading')}
+        </p>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              {t('ordersPage.orderId')}
+            </p>
+            <p className="mt-0.5 font-semibold text-slate-900 dark:text-slate-100">
+              {order.id != null && String(order.id) !== '' ? String(order.id) : i18n.t('common.emDash')}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              {t('ordersPage.orderNumber')}
+            </p>
+            <p className="mt-0.5 font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+              {order.orderNumber != null ? String(order.orderNumber) : i18n.t('common.emDash')}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              {t('ordersPage.orderDate')}
+            </p>
+            <p className="mt-0.5 font-medium text-slate-900 dark:text-slate-100">
+              {formatBusinessDate(order.orderDate)}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              {t('orderDetails.receivedAt')}
+            </p>
+            <p className="mt-0.5 font-medium text-slate-900 dark:text-slate-100">
+              {order.createdAt ? new Date(String(order.createdAt)).toLocaleString() : i18n.t('common.emDash')}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              {t('ordersPage.restaurant')}
+            </p>
+            <p className="mt-0.5 font-medium text-slate-900 dark:text-slate-100">
+              {order.restaurant?.name ?? i18n.t('common.emDash')}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              {t('ordersPage.deliveryLocation')}
+            </p>
+            <p className="mt-0.5 font-medium text-slate-900 dark:text-slate-100">
+              {order.deliveryLocation?.name ?? i18n.t('common.emDash')}
+            </p>
+          </div>
+        </div>
+        <div className="border-t border-slate-200 pt-3 dark:border-slate-600">
+          <p className="text-xs uppercase font-semibold tracking-wide text-slate-500 dark:text-slate-400">
+            {t('orderDetails.customer')}
+          </p>
+          <p className="mt-1 font-semibold text-base text-slate-900 dark:text-slate-100">
+            {order.customer?.name ?? order.customerName ?? i18n.t('common.emDash')}
+          </p>
+          <p className="text-xs text-slate-600 dark:text-slate-300">
+            {order.customer?.email ?? order.email ?? i18n.t('common.emDash')}
+          </p>
+          <p className="text-xs text-slate-600 dark:text-slate-300">
+            {order.customer?.phone ?? i18n.t('common.emDash')}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 border-b pb-3 sm:grid-cols-5">
         <div className="text-center">
           <p className="text-xs uppercase tracking-wide text-slate-600 dark:text-slate-400">
             {t('orderDetails.payment')}
           </p>
-          <p className="text-sm font-semibold mt-0.5">{order.paymentMethod ?? '-'}</p>
+          <p className="mt-0.5 text-sm font-semibold">{order.paymentMethod ?? '-'}</p>
         </div>
         <div className="text-center">
           <p className="text-xs uppercase tracking-wide text-slate-600 dark:text-slate-400">
             {t('orderDetails.paymentStatus')}
           </p>
-          <span className="text-xs font-semibold px-2.5 py-1 rounded bg-yellow-100 text-yellow-800 inline-block mt-0.5">
+          <span className="mt-0.5 inline-block rounded bg-yellow-100 px-2.5 py-1 text-xs font-semibold text-yellow-800">
             {order.paymentStatus ?? '-'}
           </span>
         </div>
@@ -73,31 +157,23 @@ export function OrderDetailsPanel({ order }: { order: OrderDetailsPanelOrder }) 
           <p className="text-xs uppercase tracking-wide text-slate-600 dark:text-slate-400">
             {t('orderDetails.fee')}
           </p>
-          <p className="text-sm font-semibold mt-0.5">{formatMoney(order.deliveryFee)}</p>
+          <p className="mt-0.5 text-sm font-semibold">{formatMoney(order.deliveryFee)}</p>
         </div>
         <div className="text-center">
           <p className="text-xs uppercase tracking-wide text-slate-600 dark:text-slate-400">
             {t('orderDetails.discount')}
           </p>
-          <p className="text-sm font-semibold text-red-600 mt-0.5">{formatMoney(order.discount)}</p>
+          <p className="mt-0.5 text-sm font-semibold text-red-600">{formatMoney(order.discount)}</p>
         </div>
-        <div className="text-left">
-          <p className="text-xs uppercase font-semibold mb-1 tracking-wide text-slate-600 dark:text-slate-400">
-            {t('orderDetails.customer')}
-          </p>
-          <p className="font-semibold text-base">{order.customer?.name ?? order.customerName ?? '-'}</p>
-          <p className="text-xs mt-0.5">{order.customer?.email ?? order.email ?? '-'}</p>
-          <p className="text-xs">{order.customer?.phone ?? '-'}</p>
-        </div>
-        <div className="text-left">
-          <p className="text-xs uppercase font-semibold mb-1 tracking-wide text-slate-600 dark:text-slate-400">
+        <div className="text-left sm:col-span-1">
+          <p className="text-xs uppercase font-semibold tracking-wide text-slate-600 dark:text-slate-400">
             {t('orderDetails.delivery')}
           </p>
-          <p className="font-semibold text-sm">
+          <p className="mt-0.5 font-semibold text-sm">
             {order.deliveryTime ? new Date(order.deliveryTime).toLocaleString() : '-'}
           </p>
           {order.notes ? (
-            <p className="text-xs italic mt-1">{t('orderDetails.noteWithText', { text: order.notes })}</p>
+            <p className="mt-1 text-xs italic">{t('orderDetails.noteWithText', { text: order.notes })}</p>
           ) : null}
         </div>
       </div>

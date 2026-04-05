@@ -1,10 +1,12 @@
 export const orderDetails = {
+  summaryHeading: 'Dettagli ordine',
   payment: 'Pagamento',
   paymentStatus: 'Stato pagamento',
   fee: 'Commissione',
   discount: 'Sconto',
   customer: 'Cliente',
   delivery: 'Consegna',
+  receivedAt: 'Ricevuto alle',
   notePrefix: 'Nota:',
   noteWithText: 'Nota: {{text}}',
   productsSection: 'Prodotti ({{count}})',
@@ -26,6 +28,8 @@ export const ordersPage = {
   customer: 'Cliente',
   price: 'Prezzo',
   status: 'Stato',
+  changeStatusAria: 'Cambia stato ordine',
+  statusUpdating: 'Aggiornamento…',
   detailsCol: 'Dettagli',
   print: 'Stampa',
   printing: 'Stampa in corso…',
@@ -37,12 +41,15 @@ export const ordersPage = {
   totalLine: 'Totale:',
   subtotalParen: '(Subtotale €{{amount}})',
   pagination: 'Pagina {{page}} di {{totalPages}} | Totale: {{total}}',
+  noOrdersMatchFilters: 'Nessun ordine corrisponde alla ricerca o al filtro stato',
 } as const
 
 export const dashboardPage = {
   title: 'Ordini di oggi',
+  subtitle: 'Visualizza e gestisci gli ordini dei clienti di oggi',
   noOrdersToday: 'Nessun ordine per oggi',
   noOrdersForStatus: 'Nessun ordine con questo stato oggi',
+  noOrdersMatchFilters: 'Nessun ordine corrisponde alla ricerca o al filtro stato',
   filterByStatus: 'Stato',
   statusAll: 'Tutti',
   statusPending: 'In attesa',

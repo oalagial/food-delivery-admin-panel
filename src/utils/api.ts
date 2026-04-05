@@ -820,7 +820,7 @@ export type Product = {
   price?: number;
   isAvailable?: boolean;
   extras?: ProductExtra[];
-  vatRate?: "FOUR" | "FIVE" | "TEN" | "TWENTY_TWO";
+  vatRate?: "TEN" | "TWENTY_TWO";
   createdAt?: string | number;
   [k: string]: unknown;
 };
@@ -836,7 +836,7 @@ export type CreateProductPayload = {
   price?: number;
   isAvailable?: boolean;
   stockQuantity?: number | null;
-  vatRate?: "FOUR" | "FIVE" | "TEN" | "TWENTY_TWO";
+  vatRate?: "TEN" | "TWENTY_TWO";
   extras?: Array<{ id?: number; name: string; price: number }>;
   discounts?: Array<{
     id?: number;
@@ -2339,6 +2339,7 @@ export async function getOrdersList(
   page = 1,
   limit = 10,
   sort?: { sortField?: string; sortDir?: "asc" | "desc" },
+  filters?: { status?: string; search?: string },
 ): Promise<any> {
   const params = new URLSearchParams({
     page: String(page),
@@ -2346,6 +2347,9 @@ export async function getOrdersList(
   });
   if (sort?.sortField) params.set("sortField", sort.sortField);
   if (sort?.sortDir) params.set("sortDir", sort.sortDir);
+  if (filters?.status) params.set("status", filters.status);
+  const q = filters?.search?.trim();
+  if (q) params.set("search", q);
   const res = await authFetch(`/orders?${params}`);
   if (!res.ok) {
     const text = await res.text().catch(() => "");
@@ -2354,6 +2358,62 @@ export async function getOrdersList(
   const data = await res.json().catch(() => null);
   // Return paginated response as-is for consumers to handle
   return data;
+}
+
+/** Item from GET /orders/statuses (e.g. `{ slug: "pending", status: "PENDING" }`). */
+export type OrderStatusDescriptor = {
+  slug: string;
+  status: string;
+};
+
+function extractOrderStatusesArray(data: unknown): unknown[] {
+  if (Array.isArray(data)) return data;
+  if (data && typeof data === "object") {
+    const obj = data as { data?: unknown; statuses?: unknown };
+    const arr = obj.data ?? obj.statuses;
+    if (Array.isArray(arr)) return arr;
+  }
+  return [];
+}
+
+export function parseOrderStatusDescriptors(items: unknown[]): OrderStatusDescriptor[] {
+  const out: OrderStatusDescriptor[] = [];
+  for (const x of items) {
+    if (typeof x === "string" && x.trim()) {
+      const status = x.trim();
+      out.push({ slug: status.toLowerCase(), status });
+      continue;
+    }
+    if (x && typeof x === "object" && "status" in x) {
+      const status = (x as { status?: unknown }).status;
+      const slugRaw = (x as { slug?: unknown }).slug;
+      if (typeof status === "string" && status) {
+        const slug =
+          typeof slugRaw === "string" && slugRaw.trim()
+            ? slugRaw.trim()
+            : status.toLowerCase();
+        out.push({ slug, status });
+      }
+    }
+  }
+  return out;
+}
+
+/** GET /orders/statuses — `{ slug, status }[]` or legacy string[]. */
+export async function getOrderStatusDescriptors(): Promise<OrderStatusDescriptor[]> {
+  const res = await authFetch("/orders/statuses");
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(text || `GET /orders/statuses failed (${res.status})`);
+  }
+  const data = await res.json().catch(() => null);
+  return parseOrderStatusDescriptors(extractOrderStatusesArray(data));
+}
+
+/** Status codes only (for filters / query params), same order as API. */
+export async function getOrderStatuses(): Promise<string[]> {
+  const descriptors = await getOrderStatusDescriptors();
+  return descriptors.map((d) => d.status);
 }
 
 export async function getOrderById(

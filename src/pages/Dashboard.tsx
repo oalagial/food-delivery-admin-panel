@@ -6,13 +6,19 @@ import { Card, CardContent } from '../components/ui/card'
 import Table, { TableBody, TableHead, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { Skeleton } from '../components/ui/skeleton'
 import { OrderDetailsPanel } from '../components/OrderDetailsPanel'
+import { OrderRowStatusSelect } from '../components/OrderRowStatusSelect'
 
 import { API_BASE } from '../config'
-import { OrderStatus, updateOrder } from '../utils/api'
+import { getOrderStatuses, OrderStatus, updateOrder } from '../utils/api'
+import {
+  ORDER_STATUS_FILTER_FALLBACK,
+  orderStatusFilterOptionLabel,
+} from '../utils/orderStatusFilter'
 import {
   canDashboardOrdersDelivery,
   canDashboardOrdersMarkReady,
   canDashboardShowAdminOrderActions,
+  hasOrdersMutationUiAccess,
 } from '../utils/permissions'
 import { OrderTableSortHeadCell } from '../components/OrderTableSortHeadCell'
 import {
@@ -92,36 +98,25 @@ function isToday(value?: string): boolean {
   )
 }
 
-function statusClass(status?: string): string {
-  if (status === 'DELIVERED') return 'bg-green-100 text-green-800'
-  if (status === 'PENDING') return 'bg-yellow-100 text-yellow-800'
-  if (status === 'CANCELLED' || status === 'REJECTED') return 'bg-red-100 text-red-800'
-  if (status === 'CONFIRMED') return 'bg-blue-100 text-blue-800'
-  return 'bg-blue-100 text-blue-800'
-}
-
-const DASHBOARD_STATUS_FILTER_ORDER = [
-  OrderStatus.PENDING,
-  OrderStatus.CONFIRMED,
-  OrderStatus.PREPARING,
-  OrderStatus.READY,
-  OrderStatus.ON_THE_WAY,
-  OrderStatus.DELIVERED,
-  OrderStatus.CANCELLED,
-  OrderStatus.REJECTED,
-] as const
-
 const DASHBOARD_PAGE_SIZE = 10
 
-const DASHBOARD_STATUS_LABEL_KEY: Record<(typeof DASHBOARD_STATUS_FILTER_ORDER)[number], string> = {
-  [OrderStatus.PENDING]: 'dashboardPage.statusPending',
-  [OrderStatus.CONFIRMED]: 'dashboardPage.statusConfirmed',
-  [OrderStatus.PREPARING]: 'dashboardPage.statusPreparing',
-  [OrderStatus.READY]: 'dashboardPage.statusReady',
-  [OrderStatus.ON_THE_WAY]: 'dashboardPage.statusOnTheWay',
-  [OrderStatus.DELIVERED]: 'dashboardPage.statusDelivered',
-  [OrderStatus.CANCELLED]: 'dashboardPage.statusCancelled',
-  [OrderStatus.REJECTED]: 'dashboardPage.statusRejected',
+function dashboardOrderSearchHaystack(o: DashboardOrder): string {
+  return [
+    String(o.id ?? ''),
+    String(o.orderNumber ?? ''),
+    o.restaurant?.name,
+    o.deliveryLocation?.name,
+    o.customerName,
+    o.customer?.name,
+    o.customer?.email,
+    o.customer?.phone,
+    o.email,
+    o.status,
+    o.notes,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
 }
 
 function formatMoney(value?: number | string | null): string {
@@ -144,20 +139,29 @@ export default function Dashboard() {
   const [todayOrders, setTodayOrders] = useState<DashboardOrder[]>([])
   const [error, setError] = useState<string | null>(null)
   const [openRowId, setOpenRowId] = useState<string | null>(null)
-  const [sortKey, setSortKey] = useState<OrderTableSortKey>('createdAt')
+  const [sortKey, setSortKey] = useState<OrderTableSortKey>('orderNumber')
   const [sortDir, setSortDir] = useState<OrderTableSortDir>('desc')
   const [patchingOrderId, setPatchingOrderId] = useState<string | null>(null)
   const [orderActionError, setOrderActionError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<string>('')
+  const [statusFilterOptions, setStatusFilterOptions] = useState<string[]>(() => [
+    ...ORDER_STATUS_FILTER_FALLBACK,
+  ])
+  const [searchInput, setSearchInput] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [listPage, setListPage] = useState(1)
   const previousTodayCountRef = useRef<number | null>(null)
   const audioCtxRef = useRef<AudioContext | null>(null)
   const refreshTodayOrdersRef = useRef<() => Promise<void>>(() => Promise.resolve())
 
   const filteredTodayOrders = useMemo(() => {
-    if (!statusFilter) return todayOrders
-    return todayOrders.filter((o) => String(o.status ?? '') === statusFilter)
-  }, [todayOrders, statusFilter])
+    const q = debouncedSearch.trim().toLowerCase()
+    return todayOrders.filter((o) => {
+      if (statusFilter && String(o.status ?? '') !== statusFilter) return false
+      if (!q) return true
+      return dashboardOrderSearchHaystack(o).includes(q)
+    })
+  }, [todayOrders, statusFilter, debouncedSearch])
 
   const displayedOrders = useMemo(
     () => sortOrdersByColumn(filteredTodayOrders, sortKey, sortDir),
@@ -167,8 +171,13 @@ export default function Dashboard() {
   const totalListPages = Math.max(1, Math.ceil(displayedOrders.length / DASHBOARD_PAGE_SIZE))
 
   useEffect(() => {
+    const id = window.setTimeout(() => setDebouncedSearch(searchInput.trim()), 300)
+    return () => window.clearTimeout(id)
+  }, [searchInput])
+
+  useEffect(() => {
     setListPage(1)
-  }, [statusFilter])
+  }, [statusFilter, debouncedSearch])
 
   useEffect(() => {
     setListPage((p) => Math.min(p, totalListPages))
@@ -232,6 +241,20 @@ export default function Dashboard() {
     }
   }
 
+  const commitDashboardOrderStatus = async (id: string, next: string) => {
+    if (!id) return
+    setPatchingOrderId(id)
+    setOrderActionError(null)
+    try {
+      await updateOrder(id, { status: next })
+      setTodayOrders((prev) => prev.map((o) => (String(o.id) === id ? { ...o, status: next } : o)))
+    } catch (e) {
+      setOrderActionError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setPatchingOrderId(null)
+    }
+  }
+
   const patchOrderStatusWithRefresh = async (
     id: string,
     status: typeof OrderStatus.ON_THE_WAY | typeof OrderStatus.DELIVERED,
@@ -256,6 +279,7 @@ export default function Dashboard() {
   const showKitchenReady = canDashboardOrdersMarkReady()
   const showDeliveryActions = canDashboardOrdersDelivery()
   const showAdminOrderActions = canDashboardShowAdminOrderActions()
+  const canEditOrderStatus = hasOrdersMutationUiAccess()
 
   const deliveryCanMarkOnTheWay = (status: string | undefined) => (status ?? '') === OrderStatus.READY
 
@@ -326,6 +350,21 @@ export default function Dashboard() {
 
   useEffect(() => {
     let mounted = true
+    void getOrderStatuses()
+      .then((list) => {
+        if (!mounted || !list.length) return
+        setStatusFilterOptions(list)
+      })
+      .catch(() => {
+        /* keep fallback DASHBOARD_STATUS_FILTER_ORDER */
+      })
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  useEffect(() => {
+    let mounted = true
 
     const refreshTodayOrders = async () => {
       try {
@@ -372,12 +411,32 @@ export default function Dashboard() {
   }, [])
 
   const noOrdersLabel =
-    todayOrders.length === 0 ? t('dashboardPage.noOrdersToday') : t('dashboardPage.noOrdersForStatus')
+    todayOrders.length === 0
+      ? t('dashboardPage.noOrdersToday')
+      : t('dashboardPage.noOrdersMatchFilters')
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100">{t('dashboardPage.title')}</h1>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{t('dashboardPage.title')}</h1>
+        <p className="mt-1 text-gray-600 dark:text-slate-400">{t('dashboardPage.subtitle')}</p>
+      </div>
+
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-3">
+        <div className="flex min-w-0 flex-1 flex-col gap-1 sm:min-w-[12rem] sm:max-w-md">
+          <label htmlFor="dashboard-order-search" className="text-xs font-medium text-slate-600 dark:text-slate-400">
+            {t('common.search')}
+          </label>
+          <input
+            id="dashboard-order-search"
+            type="search"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder={t('common.searchOrdersPh')}
+            autoComplete="off"
+            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/60 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
+          />
+        </div>
         <div className="flex w-full flex-col gap-1 sm:w-auto sm:min-w-[11rem]">
           <label htmlFor="dashboard-status-filter" className="text-xs font-medium text-slate-600 dark:text-slate-400">
             {t('dashboardPage.filterByStatus')}
@@ -389,9 +448,9 @@ export default function Dashboard() {
             className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500/60 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
           >
             <option value="">{t('dashboardPage.statusAll')}</option>
-            {DASHBOARD_STATUS_FILTER_ORDER.map((s) => (
+            {statusFilterOptions.map((s) => (
               <option key={s} value={s}>
-                {t(DASHBOARD_STATUS_LABEL_KEY[s])}
+                {orderStatusFilterOptionLabel(s, t)}
               </option>
             ))}
           </select>
@@ -412,12 +471,9 @@ export default function Dashboard() {
           <Table>
             <TableHead>
               <tr>
-                <TableHeadCell>{t('ordersPage.orderId')}</TableHeadCell>
                 <TableHeadCell>{t('ordersPage.orderNumber')}</TableHeadCell>
                 <TableHeadCell>{t('ordersPage.orderDate')}</TableHeadCell>
-                <TableHeadCell>{t('ordersPage.restaurant')}</TableHeadCell>
                 <TableHeadCell>{t('ordersPage.deliveryLocation')}</TableHeadCell>
-                <TableHeadCell>{t('ordersPage.customer')}</TableHeadCell>
                 <TableHeadCell>{t('ordersPage.price')}</TableHeadCell>
                 <TableHeadCell>{t('ordersPage.status')}</TableHeadCell>
                 <TableHeadCell>{t('dashboardPage.actions')}</TableHeadCell>
@@ -426,7 +482,7 @@ export default function Dashboard() {
             <TableBody>
               {Array.from({ length: 5 }).map((_, r) => (
                 <TableRow key={r} className="animate-pulse">
-                  {Array.from({ length: 9 }).map((__, c) => (
+                  {Array.from({ length: 6 }).map((__, c) => (
                     <TableCell key={c}>
                       <Skeleton className="h-4 w-full bg-gray-200" />
                     </TableCell>
@@ -444,10 +500,7 @@ export default function Dashboard() {
                 <div className="p-4 text-sm text-slate-500 dark:text-slate-400">{noOrdersLabel}</div>
               ) : (
                 paginatedOrders.map((o, i) => {
-                  const id = String(o.id ?? '')
-                  const restaurant = o.restaurant?.name ?? '-'
                   const deliveryLocation = o.deliveryLocation?.name ?? '-'
-                  const customer = o.customerName ?? o.customer?.name ?? o.email ?? '-'
                   const total = formatMoney(o.total ?? o.amount)
                   const subtotal = formatMoney(o.subtotal)
                   const created = o.createdAt ? new Date(String(o.createdAt)).toLocaleTimeString() : ''
@@ -473,23 +526,24 @@ export default function Dashboard() {
                           aria-expanded={openRowId === String(o.id ?? '')}
                         >
                           <div className="flex items-center justify-between gap-2">
-                            <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                              Order id {id || '—'}
+                            <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 tabular-nums">
+                              {o.orderNumber != null ? String(o.orderNumber) : dash}
                             </div>
-                            {status ? (
-                              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusClass(status)}`}>
-                                {status}
-                              </span>
-                            ) : null}
+                            <OrderRowStatusSelect
+                              orderId={o.id}
+                              value={status || undefined}
+                              options={statusFilterOptions}
+                              getOptionLabel={(s) => orderStatusFilterOptionLabel(s, t)}
+                              canEdit={canEditOrderStatus}
+                              locked={!!patchingOrderId && patchingOrderId !== String(o.id ?? '')}
+                              saving={patchingOrderId === String(o.id ?? '')}
+                              onCommit={commitDashboardOrderStatus}
+                            />
                           </div>
-                          <div className="text-xs text-slate-600 dark:text-slate-300">{restaurant} • {deliveryLocation}</div>
+                          <div className="text-xs text-slate-600 dark:text-slate-300">{deliveryLocation}</div>
                           <div className="text-xs text-slate-600 dark:text-slate-400">
-                            {t('dashboardPage.orderNumberMobile', {
-                              num: o.orderNumber != null ? String(o.orderNumber) : dash,
-                              date: formatOrderBusinessDate(o.orderDate),
-                            })}
+                            {formatOrderBusinessDate(o.orderDate)}
                           </div>
-                          <div className="text-sm text-slate-700 dark:text-slate-200 truncate">{customer}</div>
                           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                             <span className="font-medium text-slate-900 dark:text-slate-100">
                               {total}{' '}
@@ -577,13 +631,6 @@ export default function Dashboard() {
                 <TableHead>
                   <tr>
                     <OrderTableSortHeadCell
-                      label={t('ordersPage.orderId')}
-                      colKey="createdAt"
-                      activeKey={sortKey}
-                      dir={sortDir}
-                      onSort={onSortColumn}
-                    />
-                    <OrderTableSortHeadCell
                       label={t('ordersPage.orderNumber')}
                       colKey="orderNumber"
                       activeKey={sortKey}
@@ -598,22 +645,8 @@ export default function Dashboard() {
                       onSort={onSortColumn}
                     />
                     <OrderTableSortHeadCell
-                      label={t('ordersPage.restaurant')}
-                      colKey="restaurant"
-                      activeKey={sortKey}
-                      dir={sortDir}
-                      onSort={onSortColumn}
-                    />
-                    <OrderTableSortHeadCell
                       label={t('ordersPage.deliveryLocation')}
                       colKey="deliveryLocation"
-                      activeKey={sortKey}
-                      dir={sortDir}
-                      onSort={onSortColumn}
-                    />
-                    <OrderTableSortHeadCell
-                      label={t('ordersPage.customer')}
-                      colKey="customer"
                       activeKey={sortKey}
                       dir={sortDir}
                       onSort={onSortColumn}
@@ -638,7 +671,7 @@ export default function Dashboard() {
                 <TableBody>
                   {displayedOrders.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={9}>{noOrdersLabel}</TableCell>
+                      <TableCell colSpan={6}>{noOrdersLabel}</TableCell>
                     </TableRow>
                   )}
                   {paginatedOrders.map((o, i) => (
@@ -656,30 +689,34 @@ export default function Dashboard() {
                         className="cursor-pointer hover:bg-blue-50 dark:hover:bg-slate-700/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
                       >
                         <TableCell>
-                          <div className="text-sm font-semibold">{String(o.id ?? '')}</div>
-                          <div className="text-xs text-slate-500">{o.createdAt ? new Date(String(o.createdAt)).toLocaleTimeString() : ''}</div>
-                        </TableCell>
-                        <TableCell>
                           <span className="text-sm font-semibold tabular-nums">
                             {o.orderNumber != null ? o.orderNumber : dash}
                           </span>
+                          <div className="text-xs text-slate-500">
+                            {o.createdAt ? new Date(String(o.createdAt)).toLocaleTimeString() : ''}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <span className="text-sm">{formatOrderBusinessDate(o.orderDate)}</span>
                         </TableCell>
-                        <TableCell>{o.restaurant?.name ?? '-'}</TableCell>
                         <TableCell>{o.deliveryLocation?.name ?? '-'}</TableCell>
-                        <TableCell>{o.customerName ?? o.customer?.name ?? o.email ?? '-'}</TableCell>
                         <TableCell>
                           <p className="font-semibold">{formatMoney(o.total ?? o.amount)}</p>
                           <p className="text-xs">
                             {t('common.subtotal')}: {formatMoney(o.subtotal)}
                           </p>
                         </TableCell>
-                        <TableCell>
-                          <span className={`px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${statusClass(o.status)}`}>
-                            {o.status ?? ''}
-                          </span>
+                        <TableCell className="relative" onClick={(e) => e.stopPropagation()}>
+                          <OrderRowStatusSelect
+                            orderId={o.id}
+                            value={o.status}
+                            options={statusFilterOptions}
+                            getOptionLabel={(s) => orderStatusFilterOptionLabel(s, t)}
+                            canEdit={canEditOrderStatus}
+                            locked={!!patchingOrderId && patchingOrderId !== String(o.id ?? '')}
+                            saving={patchingOrderId === String(o.id ?? '')}
+                            onCommit={commitDashboardOrderStatus}
+                          />
                         </TableCell>
                         <TableCell>
                           <div
@@ -747,7 +784,7 @@ export default function Dashboard() {
                       </TableRow>
                       {openRowId === String(o.id ?? '') && (
                         <TableRow>
-                          <TableCell colSpan={9} className="text-left align-top">
+                          <TableCell colSpan={6} className="text-left align-top">
                             <OrderDetailsPanel order={o} />
                           </TableCell>
                         </TableRow>

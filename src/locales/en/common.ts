@@ -30,6 +30,7 @@ export const common = {
   confirm: 'Confirm',
   close: 'Close',
   search: 'Search',
+  searchOrdersPh: 'Customer, restaurant, order #…',
   day: 'Day',
   open: 'Open',
   closeHours: 'Close',

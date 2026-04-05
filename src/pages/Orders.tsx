@@ -1,18 +1,24 @@
 import { useEffect, useState, type MouseEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../components/ui/button'
-import { getOrdersList, printOrder } from '../utils/api'
+import { getOrderStatuses, getOrdersList, printOrder, updateOrder } from '../utils/api'
 import type { OrderItem } from '../utils/api'
+import {
+  ORDER_STATUS_FILTER_FALLBACK,
+  orderStatusFilterOptionLabel,
+} from '../utils/orderStatusFilter'
 import { Skeleton } from '../components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../components/ui/card'
 import { Table, TableBody, TableHead, TableRow, TableCell, TableHeadCell } from '../components/ui/table'
 import { OrderTableSortHeadCell } from '../components/OrderTableSortHeadCell'
 import { OrderDetailsPanel } from '../components/OrderDetailsPanel'
+import { OrderRowStatusSelect } from '../components/OrderRowStatusSelect'
 import {
   toggleOrderTableSort,
   type OrderTableSortDir,
   type OrderTableSortKey,
 } from '../utils/orderTableSort'
+import { hasOrdersMutationUiAccess } from '../utils/permissions'
 import i18n from '../i18n'
 
 function formatOrderBusinessDate(value: string | number | undefined | null): string {
@@ -26,6 +32,10 @@ type OrderRowProps = {
   order: OrderItem
   isOpen: boolean
   onToggle: () => void
+  statusOptions: string[]
+  canEditStatus: boolean
+  statusPatchingId: string | null
+  onStatusCommit: (id: string, status: string) => Promise<void>
 }
 
 type OrderCardProps = OrderRowProps
@@ -66,7 +76,15 @@ function OrderPrintButton({ orderId }: { orderId: string | number | undefined })
   )
 }
 
-function OrderRow({ order, isOpen, onToggle }: OrderRowProps) {
+function OrderRow({
+  order,
+  isOpen,
+  onToggle,
+  statusOptions,
+  canEditStatus,
+  statusPatchingId,
+  onStatusCommit,
+}: OrderRowProps) {
   const { t } = useTranslation()
   const dash = t('common.emDash')
   return (
@@ -95,27 +113,21 @@ function OrderRow({ order, isOpen, onToggle }: OrderRowProps) {
           <p className="font-semibold">€{order.total}</p>
           <p className="text-xs">{t('ordersPage.subtotalLine', { amount: order.subtotal })}</p>
         </TableCell>
-        <TableCell>
-          <span
-            className={`px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
-              order.status === 'DELIVERED'
-                ? 'bg-green-100 text-green-800'
-                : order.status === 'PENDING'
-                  ? 'bg-yellow-100 text-yellow-800'
-                  : order.status === 'CANCELLED'
-                    ? 'bg-red-100 text-red-800'
-                    : 'bg-blue-100 text-blue-800'
-            }`}
-          >
-            {order.status}
-          </span>
+        <TableCell onClick={(e) => e.stopPropagation()}>
+          <OrderRowStatusSelect
+            orderId={order.id}
+            value={order.status}
+            options={statusOptions}
+            getOptionLabel={(s) => orderStatusFilterOptionLabel(s, t)}
+            canEdit={canEditStatus}
+            locked={!!statusPatchingId && statusPatchingId !== String(order.id ?? '')}
+            saving={statusPatchingId === String(order.id ?? '')}
+            onCommit={onStatusCommit}
+          />
         </TableCell>
         <TableCell>
-          <div className="flex justify-center items-start gap-2" onClick={(e) => e.stopPropagation()}>
+          <div className="flex justify-center items-start" onClick={(e) => e.stopPropagation()}>
             <OrderPrintButton orderId={order.id} />
-            <Button variant="ghost" size="sm" onClick={onToggle}>
-              {isOpen ? t('common.hide') : t('common.details')}
-            </Button>
           </div>
         </TableCell>
       </TableRow>
@@ -131,7 +143,15 @@ function OrderRow({ order, isOpen, onToggle }: OrderRowProps) {
   )
 }
 
-function OrderCard({ order, isOpen, onToggle }: OrderCardProps) {
+function OrderCard({
+  order,
+  isOpen,
+  onToggle,
+  statusOptions,
+  canEditStatus,
+  statusPatchingId,
+  onStatusCommit,
+}: OrderCardProps) {
   const { t } = useTranslation()
   const dash = t('common.emDash')
   return (
@@ -157,19 +177,19 @@ function OrderCard({ order, isOpen, onToggle }: OrderCardProps) {
             })}
           </p>
         </div>
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
-            order.status === 'DELIVERED'
-              ? 'bg-green-100 text-green-800'
-              : order.status === 'PENDING'
-                ? 'bg-yellow-100 text-yellow-800'
-                : order.status === 'CANCELLED'
-                  ? 'bg-red-100 text-red-800'
-                  : 'bg-blue-100 text-blue-800'
-          }`}
-        >
-          {order.status}
-        </span>
+        <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+          <OrderRowStatusSelect
+            orderId={order.id}
+            value={order.status}
+            options={statusOptions}
+            getOptionLabel={(s) => orderStatusFilterOptionLabel(s, t)}
+            canEdit={canEditStatus}
+            locked={!!statusPatchingId && statusPatchingId !== String(order.id ?? '')}
+            saving={statusPatchingId === String(order.id ?? '')}
+            onCommit={onStatusCommit}
+            triggerClassName="max-w-[11rem]"
+          />
+        </div>
       </CardHeader>
 
       <CardContent className="px-4 pb-2 pt-0 space-y-1" onClick={onToggle}>
@@ -183,11 +203,8 @@ function OrderCard({ order, isOpen, onToggle }: OrderCardProps) {
         </p>
       </CardContent>
 
-      <CardFooter className="flex justify-start items-center gap-2 px-4 pb-4 pt-0" onClick={(e) => e.stopPropagation()}>
+      <CardFooter className="flex justify-start items-center px-4 pb-4 pt-0" onClick={(e) => e.stopPropagation()}>
         <OrderPrintButton orderId={order.id} />
-        <Button variant="ghost" size="sm" onClick={onToggle}>
-          {isOpen ? t('common.hideDetails') : t('common.details')}
-        </Button>
       </CardFooter>
 
       {isOpen && (
@@ -211,6 +228,53 @@ export default function Orders() {
   const [total, setTotal] = useState(0)
   const [sortKey, setSortKey] = useState<OrderTableSortKey>('createdAt')
   const [sortDir, setSortDir] = useState<OrderTableSortDir>('desc')
+  const [statusFilter, setStatusFilter] = useState('')
+  const [statusFilterOptions, setStatusFilterOptions] = useState<string[]>(() => [
+    ...ORDER_STATUS_FILTER_FALLBACK,
+  ])
+  const [searchInput, setSearchInput] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [orderStatusPatchId, setOrderStatusPatchId] = useState<string | null>(null)
+  const [orderStatusError, setOrderStatusError] = useState<string | null>(null)
+
+  const canEditOrderStatus = hasOrdersMutationUiAccess()
+
+  const commitOrderListStatus = async (id: string, status: string) => {
+    setOrderStatusPatchId(id)
+    setOrderStatusError(null)
+    try {
+      await updateOrder(id, { status })
+      setItems((prev) =>
+        prev.map((o) => (String(o.id) === id ? { ...o, status: status as OrderItem['status'] } : o)),
+      )
+    } catch (e) {
+      setOrderStatusError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setOrderStatusPatchId(null)
+    }
+  }
+
+  useEffect(() => {
+    let mounted = true
+    void getOrderStatuses()
+      .then((list) => {
+        if (!mounted || !list.length) return
+        setStatusFilterOptions(list)
+      })
+      .catch(() => {})
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  useEffect(() => {
+    const id = window.setTimeout(() => setDebouncedSearch(searchInput.trim()), 300)
+    return () => window.clearTimeout(id)
+  }, [searchInput])
+
+  useEffect(() => {
+    setPage(1)
+  }, [statusFilter, debouncedSearch])
 
   const onSortColumn = (k: OrderTableSortKey) => {
     const next = toggleOrderTableSort(sortKey, sortDir, k)
@@ -227,7 +291,15 @@ export default function Orders() {
     let mounted = true
     setLoading(true)
     setError(null)
-    getOrdersList(page, limit, { sortField: sortKey, sortDir })
+    getOrdersList(
+      page,
+      limit,
+      { sortField: sortKey, sortDir },
+      {
+        status: statusFilter || undefined,
+        search: debouncedSearch || undefined,
+      },
+    )
       .then((res: unknown) => {
         if (!mounted) return
         let data: OrderItem[]
@@ -258,7 +330,9 @@ export default function Orders() {
     return () => {
       mounted = false
     }
-  }, [page, limit, sortKey, sortDir])
+  }, [page, limit, sortKey, sortDir, statusFilter, debouncedSearch])
+
+  const hasActiveFilters = Boolean(statusFilter || debouncedSearch)
 
   return (
     <div className="space-y-6">
@@ -266,6 +340,50 @@ export default function Orders() {
         <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{t('ordersPage.title')}</h1>
         <p className="text-gray-600 mt-1 dark:text-slate-400">{t('ordersPage.subtitle')}</p>
       </div>
+
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-3">
+        <div className="flex flex-1 flex-col gap-1 sm:min-w-[12rem] sm:max-w-md">
+          <label htmlFor="orders-list-search" className="text-xs font-medium text-slate-600 dark:text-slate-400">
+            {t('common.search')}
+          </label>
+          <input
+            id="orders-list-search"
+            type="search"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder={t('common.searchOrdersPh')}
+            autoComplete="off"
+            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/60 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
+          />
+        </div>
+        <div className="flex w-full flex-col gap-1 sm:w-auto sm:min-w-[11rem]">
+          <label htmlFor="orders-status-filter" className="text-xs font-medium text-slate-600 dark:text-slate-400">
+            {t('dashboardPage.filterByStatus')}
+          </label>
+          <select
+            id="orders-status-filter"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500/60 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+          >
+            <option value="">{t('dashboardPage.statusAll')}</option>
+            {statusFilterOptions.map((s) => (
+              <option key={s} value={s}>
+                {orderStatusFilterOptionLabel(s, t)}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {orderStatusError ? (
+        <div
+          role="alert"
+          className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/50 dark:text-red-200"
+        >
+          {orderStatusError}
+        </div>
+      ) : null}
 
       {loading ? (
         <Table>
@@ -279,7 +397,7 @@ export default function Orders() {
               <TableHeadCell>{t('ordersPage.customer')}</TableHeadCell>
               <TableHeadCell>{t('ordersPage.price')}</TableHeadCell>
               <TableHeadCell>{t('ordersPage.status')}</TableHeadCell>
-              <TableHeadCell>{t('ordersPage.detailsCol')}</TableHeadCell>
+              <TableHeadCell>{t('ordersPage.print')}</TableHeadCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -301,7 +419,7 @@ export default function Orders() {
       ) : items.length === 0 ? (
         <Card>
           <CardContent className="p-8 text-center">
-            <p>{t('ordersPage.noOrders')}</p>
+            <p>{hasActiveFilters ? t('ordersPage.noOrdersMatchFilters') : t('ordersPage.noOrders')}</p>
           </CardContent>
         </Card>
       ) : (
@@ -313,6 +431,10 @@ export default function Orders() {
                 order={it}
                 isOpen={openRowId === String(it.id)}
                 onToggle={() => toggleRow(it.id ?? '')}
+                statusOptions={statusFilterOptions}
+                canEditStatus={canEditOrderStatus}
+                statusPatchingId={orderStatusPatchId}
+                onStatusCommit={commitOrderListStatus}
               />
             ))}
           </div>
@@ -377,7 +499,7 @@ export default function Orders() {
                     dir={sortDir}
                     onSort={onSortColumn}
                   />
-                  <TableHeadCell>{t('ordersPage.detailsCol')}</TableHeadCell>
+                  <TableHeadCell>{t('ordersPage.print')}</TableHeadCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -387,6 +509,10 @@ export default function Orders() {
                     order={it}
                     isOpen={openRowId === String(it.id)}
                     onToggle={() => toggleRow(it.id ?? '')}
+                    statusOptions={statusFilterOptions}
+                    canEditStatus={canEditOrderStatus}
+                    statusPatchingId={orderStatusPatchId}
+                    onStatusCommit={commitOrderListStatus}
                   />
                 ))}
               </TableBody>
