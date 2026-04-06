@@ -11,6 +11,8 @@ import type { Restaurant as RestaurantType, OpeningHour } from '../utils/api'
 import { Skeleton } from '../components/ui/skeleton'
 import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/card'
+import { TableItemsPerPageSelect, DEFAULT_TABLE_PAGE_SIZE } from '../components/TableItemsPerPageSelect'
+import { PageHeader, PageToolbarCard } from '../components/page-layout'
 
 function HoursTooltip({ hours, t }: { hours: OpeningHour[]; t: (key: string, opts?: Record<string, unknown>) => string }) {
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
@@ -41,14 +43,13 @@ function HoursTooltip({ hours, t }: { hours: OpeningHour[]; t: (key: string, opt
   )
 }
 
-const ACTIVE_PAGE_SIZE = 10
-
 export default function Restaurant() {
   const { t } = useTranslation()
   const [restaurants, setRestaurants] = useState<RestaurantType[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(DEFAULT_TABLE_PAGE_SIZE)
   const [confirmDialog, setConfirmDialog] = useState<{
     show: boolean
     type: 'delete' | 'restore' | null
@@ -87,16 +88,20 @@ export default function Restaurant() {
   const deletedRestaurants = restaurants.filter((r) => r.deletedBy)
   const canSeeDeletedRestaurants = perm('restaurants', 'restore')
 
-  const totalPages = Math.max(1, Math.ceil(activeRestaurants.length / ACTIVE_PAGE_SIZE))
+  const totalPages = Math.max(1, Math.ceil(activeRestaurants.length / pageSize))
+
+  useEffect(() => {
+    setPage(1)
+  }, [pageSize])
 
   useEffect(() => {
     setPage((p) => Math.min(p, totalPages))
   }, [totalPages])
 
   const paginatedActive = useMemo(() => {
-    const start = (page - 1) * ACTIVE_PAGE_SIZE
-    return activeRestaurants.slice(start, start + ACTIVE_PAGE_SIZE)
-  }, [activeRestaurants, page])
+    const start = (page - 1) * pageSize
+    return activeRestaurants.slice(start, start + pageSize)
+  }, [activeRestaurants, page, pageSize])
 
   const pageNumbers = useMemo(() => {
     return Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -200,21 +205,27 @@ export default function Restaurant() {
       )}
 
       <div className="space-y-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{t('restaurantPage.title')}</h1>
-            <p className="text-gray-600 mt-1 dark:text-slate-400">{t('restaurantPage.subtitle')}</p>
-          </div>
+        <div className="space-y-5">
+          <PageHeader
+            title={t('restaurantPage.title')}
+            subtitle={t('restaurantPage.subtitle')}
+            helpTooltip={t('common.toolbarHintDefault')}
+            helpAriaLabel={t('common.moreInfo')}
+          />
           {perm('restaurants', 'create') ? (
-            <Link to="/restaurant/creation" className="w-full sm:w-auto">
-              <Button
-                variant="primary"
-                icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
-                className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
-              >
-                <span className="sm:inline">{t('restaurantPage.create')}</span>
-              </Button>
-            </Link>
+            <PageToolbarCard>
+              <div className="flex flex-wrap justify-end gap-3">
+                <Link to="/restaurant/creation" className="w-full sm:w-auto">
+                  <Button
+                    variant="primary"
+                    icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
+                    className="h-9 w-full justify-center px-4 text-sm sm:w-auto sm:px-6"
+                  >
+                    <span className="sm:inline">{t('restaurantPage.create')}</span>
+                  </Button>
+                </Link>
+              </div>
+            </PageToolbarCard>
           ) : null}
         </div>
         {loading && (
@@ -395,8 +406,15 @@ export default function Restaurant() {
 
               {activeRestaurants.length > 0 && (
                 <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-2">
-                  <div className="text-gray-600 dark:text-slate-400 text-sm mb-2 sm:mb-0">
-                    {t('common.paginationSummary', { page, totalPages, total: activeRestaurants.length })}
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+                    <div className="text-gray-600 dark:text-slate-400 text-sm">
+                      {t('common.paginationSummary', { page, totalPages, total: activeRestaurants.length })}
+                    </div>
+                    <TableItemsPerPageSelect
+                      id="restaurants-page-size"
+                      value={pageSize}
+                      onChange={setPageSize}
+                    />
                   </div>
                   <div className="flex items-center gap-1 flex-wrap justify-center">
                     <Button

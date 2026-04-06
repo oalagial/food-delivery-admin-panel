@@ -13,10 +13,17 @@ import type { CreateProductPayload, ProductDiscount, ProductExtra, ProductVatRat
 import { Checkbox } from '../components/ui/checkbox'
 
 const ProductLabel = {
-  GLUTEN_FREE: 'GLUTEN_FREE',
-  LACTOSE_FREE: 'LACTOSE_FREE',
-  VEGAN: 'VEGAN',
-  VEGETARIAN: 'VEGETARIAN',
+  SENZA_GLUTINE: 'SENZA_GLUTINE',
+  SENZA_LATTE: 'SENZA_LATTE',
+  SENZA_LATTOSIO: 'SENZA_LATTOSIO',
+  VEGANO: 'VEGANO',
+  VEGETARIANO: 'VEGETARIANO',
+  SENZA_FRUTTA_A_GUSCIO: 'SENZA_FRUTTA_A_GUSCIO',
+  SENZA_ZUCCHERO: 'SENZA_ZUCCHERO',
+  BIOLOGICO: 'BIOLOGICO',
+  PICCANTE: 'PICCANTE',
+  HALAL: 'HALAL',
+  KOSHER: 'KOSHER',
 } as const;
 
 type ProductLabel = typeof ProductLabel[keyof typeof ProductLabel];

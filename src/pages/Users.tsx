@@ -20,8 +20,8 @@ import { perm } from '../utils/permissions'
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert'
 import { AlertCircle } from 'lucide-react'
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card'
-
-const PAGE_SIZE = 10
+import { TableItemsPerPageSelect, DEFAULT_TABLE_PAGE_SIZE } from '../components/TableItemsPerPageSelect'
+import { PageHeader, PageToolbarCard } from '../components/page-layout'
 
 export default function Users() {
   const { t } = useTranslation()
@@ -30,6 +30,7 @@ export default function Users() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(DEFAULT_TABLE_PAGE_SIZE)
   const [userToDeactivate, setUserToDeactivate] = useState<User | null>(null)
   const [deactivating, setDeactivating] = useState(false)
   const [activatingId, setActivatingId] = useState<string | number | null>(null)
@@ -69,16 +70,20 @@ export default function Users() {
     void fetchUsers()
   }, [])
 
-  const totalPages = Math.max(1, Math.ceil(users.length / PAGE_SIZE))
+  const totalPages = Math.max(1, Math.ceil(users.length / pageSize))
+
+  useEffect(() => {
+    setPage(1)
+  }, [pageSize])
 
   useEffect(() => {
     setPage((p) => Math.min(p, totalPages))
   }, [totalPages])
 
   const paginatedUsers = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE
-    return users.slice(start, start + PAGE_SIZE)
-  }, [users, page])
+    const start = (page - 1) * pageSize
+    return users.slice(start, start + pageSize)
+  }, [users, page, pageSize])
 
   const pageNumbers = useMemo(() => {
     return Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -222,21 +227,27 @@ export default function Users() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{t('usersPage.title')}</h1>
-          <p className="text-gray-600 mt-1 dark:text-slate-400">{t('usersPage.subtitle')}</p>
-        </div>
+      <div className="space-y-5">
+        <PageHeader
+          title={t('usersPage.title')}
+          subtitle={t('usersPage.subtitle')}
+          helpTooltip={t('common.toolbarHintDefault')}
+          helpAriaLabel={t('common.moreInfo')}
+        />
         {perm('users', 'create') ? (
-          <Link to="/users/creation" className="w-full sm:w-auto">
-            <Button
-              variant="primary"
-              icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
-              className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
-            >
-              <span className="sm:inline">{t('usersPage.createUser')}</span>
-            </Button>
-          </Link>
+          <PageToolbarCard>
+            <div className="flex flex-wrap justify-end gap-3">
+              <Link to="/users/creation" className="w-full sm:w-auto">
+                <Button
+                  variant="primary"
+                  icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
+                  className="h-9 w-full justify-center px-4 text-sm sm:w-auto sm:px-6"
+                >
+                  <span className="sm:inline">{t('usersPage.createUser')}</span>
+                </Button>
+              </Link>
+            </div>
+          </PageToolbarCard>
         ) : null}
       </div>
 
@@ -476,8 +487,15 @@ export default function Users() {
 
       {users.length > 0 && (
         <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-2">
-          <div className="text-gray-600 dark:text-slate-400 text-sm mb-2 sm:mb-0">
-            {t('common.paginationSummary', { page, totalPages, total: users.length })}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+            <div className="text-gray-600 dark:text-slate-400 text-sm">
+              {t('common.paginationSummary', { page, totalPages, total: users.length })}
+            </div>
+            <TableItemsPerPageSelect
+              id="users-page-size"
+              value={pageSize}
+              onChange={setPageSize}
+            />
           </div>
           <div className="flex items-center gap-1 flex-wrap justify-center">
             <Button

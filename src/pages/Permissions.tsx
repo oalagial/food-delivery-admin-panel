@@ -12,6 +12,9 @@ import {
   type RoleItem,
 } from '../utils/api'
 import { hasPermission } from '../utils/permissions'
+import { PageHeader, PageToolbarCard } from '../components/page-layout'
+import { Input } from '../components/ui/input'
+import { Label } from '../components/ui/label'
 
 function resourceKey(action: string): string {
   const i = action.indexOf('.')
@@ -89,21 +92,21 @@ export default function Permissions() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">
-            {t('permissionsPage.title')}
-          </h1>
-          <p className="mt-1 text-gray-600 dark:text-slate-400">{t('permissionsPage.subtitle')}</p>
-        </div>
-        {hasPermission('roles.read') ? (
-          <Link to="/roles" className="shrink-0">
-            <Button variant="primary" className="w-full sm:w-auto">
-              {t('permissionsPage.manageRoles')}
-            </Button>
-          </Link>
-        ) : null}
-      </div>
+      <PageHeader
+        title={t('permissionsPage.title')}
+        subtitle={t('permissionsPage.subtitle')}
+        helpTooltip={t('common.toolbarHintDefault')}
+        helpAriaLabel={t('common.moreInfo')}
+        actions={
+          hasPermission('roles.read') ? (
+            <Link to="/roles" className="shrink-0">
+              <Button variant="primary" className="h-9 w-full sm:w-auto">
+                {t('permissionsPage.manageRoles')}
+              </Button>
+            </Link>
+          ) : null
+        }
+      />
 
       <Card className="border-blue-100 bg-blue-50/80 dark:border-blue-900 dark:bg-blue-950/30">
         <CardHeader className="pb-2">
@@ -114,23 +117,25 @@ export default function Permissions() {
         </CardHeader>
       </Card>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <label className="flex w-full max-w-md flex-col gap-1 text-sm">
-          <span className="font-medium text-gray-700 dark:text-slate-300">
-            {t('permissionsPage.search')}
-          </span>
-          <input
-            type="search"
-            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900"
-            placeholder={t('permissionsPage.searchPh')}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        </label>
-        <p className="text-sm text-muted-foreground">
-          {t('permissionsPage.count', { n: filtered.length, total: defs.length })}
-        </p>
-      </div>
+      <PageToolbarCard>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex w-full max-w-md flex-col gap-1.5">
+            <Label htmlFor="perm-search" className="text-sm font-medium text-slate-700 dark:text-slate-200">
+              {t('permissionsPage.search')}
+            </Label>
+            <Input
+              id="perm-search"
+              type="search"
+              placeholder={t('permissionsPage.searchPh')}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            {t('permissionsPage.count', { n: filtered.length, total: defs.length })}
+          </p>
+        </div>
+      </PageToolbarCard>
 
       {error && (
         <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">

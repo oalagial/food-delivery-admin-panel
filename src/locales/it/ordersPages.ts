@@ -29,6 +29,7 @@ export const ordersPage = {
   price: 'Prezzo',
   status: 'Stato',
   changeStatusAria: 'Cambia stato ordine',
+  changePaymentStatusAria: 'Cambia stato pagamento',
   statusUpdating: 'Aggiornamento…',
   detailsCol: 'Dettagli',
   print: 'Stampa',

@@ -10,6 +10,7 @@ import type { MenuItem } from '../utils/api'
 import { Skeleton } from '../components/ui/skeleton'
 import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/card'
+import { PageHeader, PageToolbarCard } from '../components/page-layout'
 
 export default function Menus() {
   const { t } = useTranslation()
@@ -136,21 +137,27 @@ export default function Menus() {
       )}
 
       <div className="space-y-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{t('menusPage.title')}</h1>
-            <p className="text-gray-600 mt-1 dark:text-slate-400">{t('menusPage.subtitle')}</p>
-          </div>
+        <div className="space-y-5">
+          <PageHeader
+            title={t('menusPage.title')}
+            subtitle={t('menusPage.subtitle')}
+            helpTooltip={t('common.toolbarHintDefault')}
+            helpAriaLabel={t('common.moreInfo')}
+          />
           {perm('menus', 'create') ? (
-            <Link to="/menus/creation" className="w-full sm:w-auto">
-              <Button
-                variant="primary"
-                icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
-                className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
-              >
-                <span className="sm:inline">{t('menusPage.create')}</span>
-              </Button>
-            </Link>
+            <PageToolbarCard>
+              <div className="flex flex-wrap justify-end gap-3">
+                <Link to="/menus/creation" className="w-full sm:w-auto">
+                  <Button
+                    variant="primary"
+                    icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
+                    className="h-9 w-full justify-center px-4 text-sm sm:w-auto sm:px-6"
+                  >
+                    <span className="sm:inline">{t('menusPage.create')}</span>
+                  </Button>
+                </Link>
+              </div>
+            </PageToolbarCard>
           ) : null}
         </div>
 

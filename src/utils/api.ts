@@ -789,20 +789,20 @@ export async function deleteType(id: string | number) {
 
 // Product types + APIs
 export const ProductAllergy = {
-  GLUTEN: "GLUTEN",
-  DAIRY: "DAIRY",
-  EGGS: "EGGS",
-  FISH: "FISH",
-  SHELLFISH: "SHELLFISH",
-  TREE_NUTS: "TREE_NUTS",
-  PEANUTS: "PEANUTS",
-  SOY: "SOY",
-  SESAME: "SESAME",
-  SULPHITES: "SULPHITES",
-  LUPIN: "LUPIN",
-  MOLLUSCS: "MOLLUSCS",
-  MUSTARD: "MUSTARD",
-  CELERY: "CELERY",
+  GLUTINE: "GLUTINE",
+  LATTE: "LATTE",
+  UOVA: "UOVA",
+  PESCE: "PESCE",
+  CROSTACEI: "CROSTACEI",
+  FRUTTA_A_GUSCIO: "FRUTTA_A_GUSCIO",
+  ARACHIDI: "ARACHIDI",
+  SOIA: "SOIA",
+  SESAMO: "SESAMO",
+  SOLFITI: "SOLFITI",
+  LUPINO: "LUPINO",
+  MOLLUSCHI: "MOLLUSCHI",
+  SENAPE: "SENAPE",
+  SEDANO: "SEDANO",
 } as const;
 
 export type ProductAllergy =
@@ -1965,10 +1965,18 @@ export type CustomerListItem = {
 export async function getCustomersList(params?: {
   page?: number;
   limit?: number;
+  /** Partial match (backend: contains, case-insensitive) */
+  name?: string;
+  /** Partial match (backend: contains, case-insensitive) */
+  email?: string;
 }): Promise<{ data: CustomerListItem[]; total: number; totalPages: number }> {
   const search = new URLSearchParams();
   if (params?.page != null) search.set("page", String(params.page));
   if (params?.limit != null) search.set("limit", String(params.limit));
+  const name = params?.name?.trim();
+  const email = params?.email?.trim();
+  if (name) search.set("name", name);
+  if (email) search.set("email", email);
   const res = await authFetch(`/customers?${search}`);
   if (!res.ok) {
     const text = await res.text().catch(() => "");
@@ -2341,7 +2349,17 @@ export async function getOrdersList(
   page = 1,
   limit = 10,
   sort?: { sortField?: string; sortDir?: "asc" | "desc" },
-  filters?: { status?: string; search?: string },
+  filters?: {
+    status?: string;
+    /** Legacy single search string. */
+    search?: string;
+    /** Customer name partial match — query: `customerName`. */
+    customerName?: string;
+    /** Customer email partial match — query: `customerEmail`. */
+    customerEmail?: string;
+    deliveryLocationId?: string | number;
+    paymentStatus?: string;
+  },
 ): Promise<any> {
   const params = new URLSearchParams({
     page: String(page),
@@ -2350,6 +2368,16 @@ export async function getOrdersList(
   if (sort?.sortField) params.set("sortField", sort.sortField);
   if (sort?.sortDir) params.set("sortDir", sort.sortDir);
   if (filters?.status) params.set("status", filters.status);
+  const customerName = filters?.customerName?.trim();
+  const customerEmail = filters?.customerEmail?.trim();
+  if (customerName) params.set("customerName", customerName);
+  if (customerEmail) params.set("customerEmail", customerEmail);
+  const locId = filters?.deliveryLocationId;
+  if (locId !== undefined && locId !== null && String(locId).trim() !== "") {
+    params.set("deliveryLocationId", String(locId).trim());
+  }
+  const ps = filters?.paymentStatus?.trim();
+  if (ps) params.set("paymentStatus", ps);
   const q = filters?.search?.trim();
   if (q) params.set("search", q);
   const res = await authFetch(`/orders?${params}`);
@@ -2415,6 +2443,23 @@ export async function getOrderStatusDescriptors(): Promise<OrderStatusDescriptor
 /** Status codes only (for filters / query params), same order as API. */
 export async function getOrderStatuses(): Promise<string[]> {
   const descriptors = await getOrderStatusDescriptors();
+  return descriptors.map((d) => d.status);
+}
+
+/** GET /orders/payment-statuses — same response shape as `/orders/statuses`. */
+export async function getPaymentStatusDescriptors(): Promise<OrderStatusDescriptor[]> {
+  const res = await authFetch("/orders/payment-statuses");
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(text || `GET /orders/payment-statuses failed (${res.status})`);
+  }
+  const data = await res.json().catch(() => null);
+  return parseOrderStatusDescriptors(extractOrderStatusesArray(data));
+}
+
+/** Payment status codes only (for filters), same order as API. */
+export async function getPaymentStatuses(): Promise<string[]> {
+  const descriptors = await getPaymentStatusDescriptors();
   return descriptors.map((d) => d.status);
 }
 

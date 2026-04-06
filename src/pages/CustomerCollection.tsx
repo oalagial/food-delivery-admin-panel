@@ -1,12 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { FiDownload } from 'react-icons/fi'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { Skeleton } from '../components/ui/skeleton'
-import { authFetch, downloadCustomersCsv } from '../utils/api'
+import { getCustomersList, downloadCustomersCsv } from '../utils/api'
 import { perm } from '../utils/permissions'
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card'
-import { Input } from '../components/ui/input'
 import { Button } from '../components/ui/button'
+import { TableItemsPerPageSelect, DEFAULT_TABLE_PAGE_SIZE } from '../components/TableItemsPerPageSelect'
+import { PageHeader, PageToolbarCard } from '../components/page-layout'
+import { SearchFilterField, SEARCH_FILTER_DEBOUNCE_MS } from '../components/SearchFilterField'
 
 type Customer = {
   id?: number | string
@@ -17,50 +20,78 @@ type Customer = {
   [key: string]: unknown
 }
 
-
-
 export default function CustomerCollection() {
   const { t, i18n } = useTranslation()
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [search, setSearch] = useState('')
+  const [nameInput, setNameInput] = useState('')
+  const [emailInput, setEmailInput] = useState('')
+  const [debouncedName, setDebouncedName] = useState('')
+  const [debouncedEmail, setDebouncedEmail] = useState('')
+  const filtersRef = useRef({ name: '', email: '' })
   const [page, setPage] = useState(1)
-  const [limit] = useState(10)
+  const [limit, setLimit] = useState(DEFAULT_TABLE_PAGE_SIZE)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
   const [exportingCsv, setExportingCsv] = useState(false)
   const canExportCsv = perm('customers', 'read')
 
-  async function fetchCustomers(pageNum = 1) {
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      setDebouncedName(nameInput.trim())
+    }, SEARCH_FILTER_DEBOUNCE_MS)
+    return () => window.clearTimeout(id)
+  }, [nameInput])
+
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      setDebouncedEmail(emailInput.trim())
+    }, SEARCH_FILTER_DEBOUNCE_MS)
+    return () => window.clearTimeout(id)
+  }, [emailInput])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const filtersChanged =
+      filtersRef.current.name !== debouncedName ||
+      filtersRef.current.email !== debouncedEmail
+
+    if (filtersChanged) {
+      filtersRef.current = { name: debouncedName, email: debouncedEmail }
+      if (page !== 1) {
+        setPage(1)
+        return
+      }
+    }
+
     setLoading(true)
     setError(null)
-    try {
-      const params = new URLSearchParams({ page: String(pageNum), limit: String(limit) })
-      const res = await authFetch(`/customers?${params}`)
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json = await res.json()
-      // Support both paginated and non-paginated responses
-      let data, totalItems, totalPagesVal
-      if (json && typeof json === 'object' && 'data' in json && 'totalPages' in json) {
-        data = json.data
-        totalItems = json.total
-        totalPagesVal = json.totalPages
-      } else {
-        data = Array.isArray(json) ? json : json?.data ?? Object.values(json ?? {})
-        totalItems = data.length
-        totalPagesVal = 1
-      }
-      setCustomers(data)
-      setTotal(totalItems)
-      setTotalPages(totalPagesVal)
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err)
-      setError(msg)
-    } finally {
-      setLoading(false)
+    void getCustomersList({
+      page,
+      limit,
+      name: debouncedName || undefined,
+      email: debouncedEmail || undefined,
+    })
+      .then((res) => {
+        if (cancelled) return
+        setCustomers(res.data as Customer[])
+        setTotal(res.total)
+        setTotalPages(res.totalPages)
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return
+        const msg = err instanceof Error ? err.message : String(err)
+        setError(msg)
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
     }
-  }
+  }, [page, limit, debouncedName, debouncedEmail])
 
   async function handleExportCsv() {
     if (!canExportCsv) return
@@ -76,60 +107,67 @@ export default function CustomerCollection() {
     }
   }
 
-  useEffect(() => {
-    void fetchCustomers(page)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page])
-
-  // Filter customers based on search query (client-side)
-  const filteredCustomers = customers.filter((customer) => {
-    const q = search.trim().toLowerCase()
-    if (!q) return true
-    return (
-      (customer.name && String(customer.name).toLowerCase().includes(q)) ||
-      (customer.email && String(customer.email).toLowerCase().includes(q)) ||
-      (customer.phone && String(customer.phone).toLowerCase().includes(q))
-    )
-  })
+  const showSkeleton = loading && customers.length === 0
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{t('common.customersTitle')}</h1>
-          <p className="text-gray-600 mt-1 dark:text-slate-400">{t('common.customersSubtitle')}</p>
-        </div>
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
-          {canExportCsv && (
-            <Button
-              type="button"
-              variant="default"
-              size="sm"
-              disabled={exportingCsv}
-              onClick={() => void handleExportCsv()}
-              className="whitespace-nowrap"
-            >
-              {exportingCsv ? '…' : t('common.exportCustomersCsv')}
-            </Button>
-          )}
-          <Input
-            type="text"
-            placeholder={t('common.searchCustomersPh')}
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full sm:w-64"
-          />
-        </div>
+      <div className="space-y-5">
+        <PageHeader
+          title={t('common.customersTitle')}
+          subtitle={t('common.customersSubtitle')}
+          helpTooltip={t('common.toolbarHintCustomers')}
+          helpAriaLabel={t('common.moreInfo')}
+        />
+
+        <PageToolbarCard>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-12 sm:items-end sm:gap-5">
+            {canExportCsv && (
+              <div className="flex flex-col gap-1.5 sm:col-span-3">
+                <span className="invisible block text-sm font-medium leading-none select-none" aria-hidden>
+                  .
+                </span>
+                <Button
+                  type="button"
+                  variant="default"
+                  disabled={exportingCsv}
+                  onClick={() => void handleExportCsv()}
+                  className="h-9 w-full shrink-0 justify-center gap-2 px-3 text-sm font-medium"
+                  icon={<FiDownload className="h-4 w-4" aria-hidden />}
+                >
+                  {exportingCsv ? '…' : t('common.exportCustomersCsv')}
+                </Button>
+              </div>
+            )}
+            <div className={canExportCsv ? 'sm:col-span-4' : 'sm:col-span-6'}>
+              <SearchFilterField
+                id="customer-search-name"
+                label={t('common.name')}
+                value={nameInput}
+                onChange={setNameInput}
+                placeholder={t('common.customerSearchNamePh')}
+              />
+            </div>
+            <div className={canExportCsv ? 'sm:col-span-5' : 'sm:col-span-6'}>
+              <SearchFilterField
+                id="customer-search-email"
+                label={t('common.email')}
+                value={emailInput}
+                onChange={setEmailInput}
+                placeholder={t('common.customerSearchEmailPh')}
+                inputMode="email"
+              />
+            </div>
+          </div>
+        </PageToolbarCard>
       </div>
 
       {error && (
-        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950/40 dark:border-red-800 dark:text-red-200">
           <strong className="font-semibold">{t('common.error')}:</strong> {error}
         </div>
       )}
 
-      {/* Loading skeleton (shared) */}
-      {loading && customers.length === 0 && (
+      {showSkeleton && (
         <Table>
           <TableHead>
             <tr>
@@ -137,14 +175,13 @@ export default function CustomerCollection() {
               <TableHeadCell>{t('common.email')}</TableHeadCell>
               <TableHeadCell>{t('common.phone')}</TableHeadCell>
               <TableHeadCell>{t('common.created')}</TableHeadCell>
-              <TableHeadCell>{t('common.actions')}</TableHeadCell>
             </tr>
           </TableHead>
           <TableBody>
             {Array.from({ length: 6 }).map((_, r) => (
               <TableRow key={r} className="animate-pulse">
-                {Array.from({ length: 5 }).map((__, c) => (
-                  <TableCell key={c}><Skeleton className="h-4 w-full bg-gray-200" /></TableCell>
+                {Array.from({ length: 4 }).map((__, c) => (
+                  <TableCell key={c}><Skeleton className="h-4 w-full bg-gray-200 dark:bg-slate-700" /></TableCell>
                 ))}
               </TableRow>
             ))}
@@ -152,14 +189,14 @@ export default function CustomerCollection() {
         </Table>
       )}
 
-      {!loading && (
-        <>
+      {!showSkeleton && (
+        <div className={loading ? 'opacity-60 transition-opacity' : ''}>
           {/* Mobile: cards */}
           <div className="space-y-3 md:hidden">
-            {filteredCustomers.length === 0 ? (
-              <p className="text-sm text-gray-500 dark:text-slate-50">{t('common.noCustomers')}</p>
+            {customers.length === 0 ? (
+              <p className="text-sm text-gray-500 dark:text-slate-400">{t('common.noCustomers')}</p>
             ) : (
-              filteredCustomers.map((customer) => (
+              customers.map((customer) => (
                 <Card key={customer.id ?? `${customer.name}-${customer.email}`} className="shadow-sm">
                   <CardHeader className="p-4 pb-2">
                     <CardTitle className="text-base font-semibold">
@@ -192,7 +229,7 @@ export default function CustomerCollection() {
           </div>
 
           {/* Desktop: table */}
-          <div className="hidden md:block">
+          <div className="hidden overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 md:block">
             <Table>
               <TableHead>
                 <tr>
@@ -200,43 +237,49 @@ export default function CustomerCollection() {
                   <TableHeadCell>{t('common.email')}</TableHeadCell>
                   <TableHeadCell>{t('common.phone')}</TableHeadCell>
                   <TableHeadCell>{t('common.created')}</TableHeadCell>
-                  <TableHeadCell>{t('common.actions')}</TableHeadCell>
                 </tr>
               </TableHead>
               <TableBody>
-                {filteredCustomers.length === 0 && (
+                {customers.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5}>{t('common.noCustomers')}</TableCell>
+                    <TableCell colSpan={4}>{t('common.noCustomers')}</TableCell>
                   </TableRow>
                 )}
-                {filteredCustomers.map((customer) => (
+                {customers.map((customer) => (
                   <TableRow key={customer.id}>
                     <TableCell>{String(customer.name ?? t('common.emDash'))}</TableCell>
                     <TableCell>{String(customer.email ?? t('common.emDash'))}</TableCell>
                     <TableCell>{String(customer.phone ?? t('common.emDash'))}</TableCell>
                     <TableCell>{customer.createdAt ? new Date(String(customer.createdAt)).toLocaleString() : t('common.emDash')}</TableCell>
-                    <TableCell>
-                      {/* Actions can be added here if needed */}
-                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </div>
-        </>
+        </div>
       )}
 
       {/* Enhanced Pagination Controls */}
       <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-2">
-        <div className="text-gray-600 text-sm mb-2 sm:mb-0">
-          {t('common.paginationSummary', { page, totalPages, total })}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+          <div className="text-gray-600 dark:text-slate-400 text-sm">
+            {t('common.paginationSummary', { page, totalPages, total })}
+          </div>
+          <TableItemsPerPageSelect
+            id="customers-page-size"
+            value={limit}
+            onChange={(n) => {
+              setLimit(n)
+              setPage(1)
+            }}
+          />
         </div>
         <div className="flex items-center gap-1 flex-wrap">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setPage(1)}
-            disabled={page === 1}
+            disabled={page === 1 || loading}
             aria-label={t('common.firstPage')}
           >
             «
@@ -245,12 +288,11 @@ export default function CustomerCollection() {
             variant="ghost"
             size="sm"
             onClick={() => setPage(p => Math.max(1, p - 1))}
-            disabled={page === 1}
+            disabled={page === 1 || loading}
             aria-label={t('common.prevPage')}
           >
             ‹
           </Button>
-          {/* Numbered page buttons, show up to 5 around current */}
           {Array.from({ length: totalPages }, (_, i) => i + 1)
             .filter(pn =>
               pn === 1 ||
@@ -264,14 +306,14 @@ export default function CustomerCollection() {
             }, [] as (number | 'ellipsis')[])
             .map((pn, idx) =>
               pn === 'ellipsis' ? (
-                <span key={"ellipsis-" + idx} className="px-2 text-gray-400">…</span>
+                <span key={"ellipsis-" + idx} className="px-2 text-gray-400 dark:text-slate-500">…</span>
               ) : (
                 <Button
                   key={pn}
                   variant={pn === page ? 'primary' : 'default'}
                   size="sm"
                   onClick={() => setPage(pn as number)}
-                  disabled={pn === page}
+                  disabled={pn === page || loading}
                   aria-current={pn === page ? 'page' : undefined}
                 >
                   {pn}
@@ -282,7 +324,7 @@ export default function CustomerCollection() {
             variant="ghost"
             size="sm"
             onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
+            disabled={page === totalPages || loading}
             aria-label={t('common.nextPage')}
           >
             ›
@@ -291,7 +333,7 @@ export default function CustomerCollection() {
             variant="ghost"
             size="sm"
             onClick={() => setPage(totalPages)}
-            disabled={page === totalPages}
+            disabled={page === totalPages || loading}
             aria-label={t('common.lastPage')}
           >
             »

@@ -112,6 +112,24 @@ export function hasOrdersMutationUiAccess(): boolean {
   )
 }
 
+/** Change order **status** in list/dashboard (broad update or `orders.update_status.*`). */
+export function hasOrdersStatusMutationUiAccess(): boolean {
+  const p = getStoredPermissions()
+  if (p === null || p.length === 0) return false
+  if (p.includes('*')) return true
+  if (p.includes('orders.update')) return true
+  return p.some((x) => x.startsWith('orders.update_status.'))
+}
+
+/** Change **payment status** in list/dashboard (broad update or `orders.update_payment.*`). */
+export function hasOrdersPaymentMutationUiAccess(): boolean {
+  const p = getStoredPermissions()
+  if (p === null || p.length === 0) return false
+  if (p.includes('*')) return true
+  if (p.includes('orders.update')) return true
+  return p.some((x) => x.startsWith('orders.update_payment.'))
+}
+
 /**
  * Dashboard: "Ready" (kitchen) — only scoped confirmed/preparing updates, no wildcard/broad/pending.
  */

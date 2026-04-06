@@ -12,6 +12,9 @@ import { API_BASE } from '../config'
 import { Input } from '../components/ui/input'
 import { Card, CardContent, CardDescription, CardTitle, CardHeader, CardFooter } from '../components/ui/card'
 import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert'
+import { TableItemsPerPageSelect, DEFAULT_TABLE_PAGE_SIZE } from '../components/TableItemsPerPageSelect'
+import { PageHeader, PageToolbarCard } from '../components/page-layout'
+import { Label } from '../components/ui/label'
 
 type ProductRowProps = {
   product: Product;
@@ -201,8 +204,6 @@ function ProductRow({ product, isOpen, onToggle, isDeleted = false, onRestore, o
   )
 }
 
-const ACTIVE_PAGE_SIZE = 10
-
 export default function Products() {
   const { t } = useTranslation()
   const [items, setItems] = useState<Product[]>([])
@@ -210,6 +211,7 @@ export default function Products() {
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(DEFAULT_TABLE_PAGE_SIZE)
   const [openRowId, setOpenRowId] = useState<string | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
     show: boolean
@@ -325,20 +327,24 @@ export default function Products() {
     )
   }, [activeProducts, search])
 
-  const totalPages = Math.max(1, Math.ceil(filteredItems.length / ACTIVE_PAGE_SIZE))
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / pageSize))
 
   useEffect(() => {
     setPage(1)
   }, [search])
 
   useEffect(() => {
+    setPage(1)
+  }, [pageSize])
+
+  useEffect(() => {
     setPage((p) => Math.min(p, totalPages))
   }, [totalPages])
 
   const paginatedItems = useMemo(() => {
-    const start = (page - 1) * ACTIVE_PAGE_SIZE
-    return filteredItems.slice(start, start + ACTIVE_PAGE_SIZE)
-  }, [filteredItems, page])
+    const start = (page - 1) * pageSize
+    return filteredItems.slice(start, start + pageSize)
+  }, [filteredItems, page, pageSize])
 
   const pageNumbers = useMemo(() => {
     return Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -396,31 +402,44 @@ export default function Products() {
       )}
 
       <div className="space-y-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{t('productsPage.title')}</h1>
-            <p className="text-gray-600 mt-1 dark:text-slate-400">{t('productsPage.subtitle')}</p>
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-            <div className="w-full sm:w-48">
-              <Input
-                placeholder={t('productsPage.searchPh')}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+        <div className="space-y-5">
+          <PageHeader
+            title={t('productsPage.title')}
+            subtitle={t('productsPage.subtitle')}
+            helpTooltip={t('common.toolbarHintDefault')}
+            helpAriaLabel={t('common.moreInfo')}
+          />
+          <PageToolbarCard>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+              <div className="flex min-w-0 flex-1 flex-col gap-1.5 sm:max-w-md">
+                <Label htmlFor="products-search" className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                  {t('common.search')}
+                </Label>
+                <Input
+                  id="products-search"
+                  placeholder={t('productsPage.searchPh')}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+              {perm('products', 'create') ? (
+                <div className="flex w-full shrink-0 flex-col gap-1.5 sm:w-auto">
+                  <span className="invisible block text-sm font-medium leading-none select-none" aria-hidden>
+                    .
+                  </span>
+                  <Link to="/products/creation" className="w-full sm:w-auto">
+                    <Button
+                      variant="primary"
+                      icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
+                      className="h-9 w-full justify-center px-4 text-sm sm:w-auto sm:px-6"
+                    >
+                      <span className="sm:inline">{t('productsPage.createProduct')}</span>
+                    </Button>
+                  </Link>
+                </div>
+              ) : null}
             </div>
-            {perm('products', 'create') ? (
-              <Link to="/products/creation" className="w-full sm:w-auto">
-                <Button
-                  variant="primary"
-                  icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
-                  className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
-                >
-                  <span className="sm:inline">{t('productsPage.createProduct')}</span>
-                </Button>
-              </Link>
-            ) : null}
-          </div>
+          </PageToolbarCard>
         </div>
 
         {loading && (
@@ -621,8 +640,15 @@ export default function Products() {
 
               {filteredItems.length > 0 && (
                 <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-2">
-                  <div className="text-gray-600 dark:text-slate-400 text-sm mb-2 sm:mb-0">
-                    {t('common.paginationSummary', { page, totalPages, total: filteredItems.length })}
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+                    <div className="text-gray-600 dark:text-slate-400 text-sm">
+                      {t('common.paginationSummary', { page, totalPages, total: filteredItems.length })}
+                    </div>
+                    <TableItemsPerPageSelect
+                      id="products-page-size"
+                      value={pageSize}
+                      onChange={setPageSize}
+                    />
                   </div>
                   <div className="flex items-center gap-1 flex-wrap justify-center">
                     <Button

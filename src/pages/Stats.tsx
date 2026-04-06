@@ -21,6 +21,7 @@ import { Select } from '../components/ui/select'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { Skeleton } from '../components/ui/skeleton'
+import { PageHeader, PageToolbarCard } from '../components/page-layout'
 import {
   getStatsOverview,
   getStatsRevenue,
@@ -191,13 +192,15 @@ export default function Stats() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100 tracking-tight">{t('common.statistics')}</h1>
-          <p className="text-xs sm:text-sm text-gray-500 mt-1">{t('common.statisticsSubtitle')}</p>
-        </div>
-        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-end gap-3 bg-white dark:bg-slate-900/80 p-3 sm:p-4 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm w-full sm:w-auto">
+      <div className="space-y-5">
+        <PageHeader
+          title={t('common.statistics')}
+          subtitle={t('common.statisticsSubtitle')}
+          helpTooltip={t('common.toolbarHintDefault')}
+          helpAriaLabel={t('common.moreInfo')}
+        />
+        <PageToolbarCard>
+          <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-end gap-3">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="from" className="text-xs font-semibold text-gray-700 dark:text-slate-100">{t('common.from')}</Label>
             <Input
@@ -247,7 +250,8 @@ export default function Stats() {
               <option value="month">{t('common.groupMonth')}</option>
             </Select>
           </div>
-        </div>
+          </div>
+        </PageToolbarCard>
       </div>
 
       {error && (

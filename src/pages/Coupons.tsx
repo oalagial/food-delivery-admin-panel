@@ -27,6 +27,8 @@ import {
 } from "../utils/api";
 import { Skeleton } from "../components/ui/skeleton";
 import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { PageHeader, PageToolbarCard } from "../components/page-layout";
 import {
   Card,
   CardContent,
@@ -35,6 +37,10 @@ import {
 } from "../components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from "../components/ui/alert";
 import { perm } from "../utils/permissions";
+import {
+  TableItemsPerPageSelect,
+  DEFAULT_TABLE_PAGE_SIZE,
+} from "../components/TableItemsPerPageSelect";
 
 function formatDiscount(coupon: Coupon): string {
   const val = Number(coupon.value);
@@ -240,7 +246,7 @@ export default function Coupons() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const [limit] = useState(20);
+  const [limit, setLimit] = useState(DEFAULT_TABLE_PAGE_SIZE);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<"general" | "per-customer">(
     "general",
@@ -274,6 +280,10 @@ export default function Coupons() {
   useEffect(() => {
     setPage(1);
   }, [search, activeTab]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [limit]);
 
   const couponTotalPages = response?.totalPages ?? 1;
 
@@ -416,35 +426,44 @@ export default function Coupons() {
         </div>
       )}
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">
-            {t("couponsPage.title")}
-          </h1>
-          <p className="text-gray-600 mt-1 dark:text-slate-400">
-            {t("createForms.couponSubtitle")}
-          </p>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-          <div className="w-full sm:w-48">
-            <Input
-              placeholder={t("couponsPage.searchPh")}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+      <div className="space-y-5">
+        <PageHeader
+          title={t("couponsPage.title")}
+          subtitle={t("createForms.couponSubtitle")}
+          helpTooltip={t("common.toolbarHintDefault")}
+          helpAriaLabel={t("common.moreInfo")}
+        />
+        <PageToolbarCard>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+            <div className="flex min-w-0 flex-1 flex-col gap-1.5 sm:max-w-md">
+              <Label htmlFor="coupons-search" className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                {t("common.search")}
+              </Label>
+              <Input
+                id="coupons-search"
+                placeholder={t("couponsPage.searchPh")}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            {perm("coupons", "create") ? (
+              <div className="flex w-full shrink-0 flex-col gap-1.5 sm:w-auto">
+                <span className="invisible block text-sm font-medium leading-none select-none" aria-hidden>
+                  .
+                </span>
+                <Link to="/coupons/creation" className="w-full sm:w-auto">
+                  <Button
+                    variant="primary"
+                    icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
+                    className="h-9 w-full justify-center px-4 text-sm sm:w-auto sm:px-6"
+                  >
+                    <span className="sm:inline">{t("createForms.newCoupon")}</span>
+                  </Button>
+                </Link>
+              </div>
+            ) : null}
           </div>
-          {perm("coupons", "create") ? (
-            <Link to="/coupons/creation" className="w-full sm:w-auto">
-              <Button
-                variant="primary"
-                icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
-                className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
-              >
-                <span className="sm:inline">{t("createForms.newCoupon")}</span>
-              </Button>
-            </Link>
-          ) : null}
-        </div>
+        </PageToolbarCard>
       </div>
 
       {error && <p className="text-red-600 dark:text-red-400">{error}</p>}
@@ -683,12 +702,19 @@ export default function Coupons() {
 
             {response && response.total > 0 && (
               <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-2">
-                <div className="text-gray-600 dark:text-slate-400 text-sm mb-2 sm:mb-0">
-                  {t("common.paginationSummary", {
-                    page: response.page,
-                    totalPages: response.totalPages,
-                    total: response.total,
-                  })}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+                  <div className="text-gray-600 dark:text-slate-400 text-sm">
+                    {t("common.paginationSummary", {
+                      page: response.page,
+                      totalPages: response.totalPages,
+                      total: response.total,
+                    })}
+                  </div>
+                  <TableItemsPerPageSelect
+                    id="coupons-page-size"
+                    value={limit}
+                    onChange={setLimit}
+                  />
                 </div>
                 <div className="flex items-center gap-1 flex-wrap justify-center">
                   <Button

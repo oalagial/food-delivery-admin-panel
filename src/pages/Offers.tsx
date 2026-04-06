@@ -10,6 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeadCell, TableRow } from 
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from "../components/ui/alert";
 import { perm } from "../utils/permissions";
+import { PageHeader, PageToolbarCard } from "../components/page-layout";
+import { TableItemsPerPageSelect, DEFAULT_TABLE_PAGE_SIZE } from "../components/TableItemsPerPageSelect";
 
 type OfferRowProps = {
   offer: any;
@@ -161,14 +163,13 @@ function OfferRow({ offer, isOpen, onToggle, onDelete, isDeleting = false, onTog
   );
 }
 
-const ACTIVE_PAGE_SIZE = 10;
-
 export default function Offers() {
   const { t } = useTranslation();
   const [offers, setOffers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_TABLE_PAGE_SIZE);
   const [openRowId, setOpenRowId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | number | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -265,16 +266,20 @@ export default function Offers() {
   });
   const canSeeDeletedOffers = perm("offers", "restore");
 
-  const totalPages = Math.max(1, Math.ceil(activeOffers.length / ACTIVE_PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(activeOffers.length / pageSize));
+
+  useEffect(() => {
+    setPage(1);
+  }, [pageSize]);
 
   useEffect(() => {
     setPage((p) => Math.min(p, totalPages));
   }, [totalPages]);
 
   const paginatedActive = useMemo(() => {
-    const start = (page - 1) * ACTIVE_PAGE_SIZE;
-    return activeOffers.slice(start, start + ACTIVE_PAGE_SIZE);
-  }, [activeOffers, page]);
+    const start = (page - 1) * pageSize;
+    return activeOffers.slice(start, start + pageSize);
+  }, [activeOffers, page, pageSize]);
 
   const pageNumbers = useMemo(() => {
     return Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -346,21 +351,27 @@ export default function Offers() {
         </div>
       )}
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{t("offersPage.title")}</h1>
-          <p className="text-gray-600 mt-1 dark:text-slate-400">{t("offersPage.subtitle")}</p>
-        </div>
+      <div className="space-y-5">
+        <PageHeader
+          title={t("offersPage.title")}
+          subtitle={t("offersPage.subtitle")}
+          helpTooltip={t("common.toolbarHintDefault")}
+          helpAriaLabel={t("common.moreInfo")}
+        />
         {perm("offers", "create") ? (
-          <Link to="/offers/creation" className="w-full sm:w-auto">
-            <Button
-              variant="primary"
-              icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
-              className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
-            >
-              <span className="sm:inline">{t("offersPage.create")}</span>
-            </Button>
-          </Link>
+          <PageToolbarCard>
+            <div className="flex flex-wrap justify-end gap-3">
+              <Link to="/offers/creation" className="w-full sm:w-auto">
+                <Button
+                  variant="primary"
+                  icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
+                  className="h-9 w-full justify-center px-4 text-sm sm:w-auto sm:px-6"
+                >
+                  <span className="sm:inline">{t("offersPage.create")}</span>
+                </Button>
+              </Link>
+            </div>
+          </PageToolbarCard>
         ) : null}
       </div>
       {loading && (
@@ -538,8 +549,15 @@ export default function Offers() {
 
             {activeOffers.length > 0 && (
               <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-2">
-                <div className="text-gray-600 dark:text-slate-400 text-sm mb-2 sm:mb-0">
-                  {t("common.paginationSummary", { page, totalPages, total: activeOffers.length })}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+                  <div className="text-gray-600 dark:text-slate-400 text-sm">
+                    {t("common.paginationSummary", { page, totalPages, total: activeOffers.length })}
+                  </div>
+                  <TableItemsPerPageSelect
+                    id="offers-page-size"
+                    value={pageSize}
+                    onChange={setPageSize}
+                  />
                 </div>
                 <div className="flex items-center gap-1 flex-wrap justify-center">
                   <Button

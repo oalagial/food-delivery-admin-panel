@@ -10,6 +10,8 @@ import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert'
 import { getDeliveryLocationsList, getRestaurantsList, updateDeliveryLocation, deleteDeliveryLocation } from '../utils/api'
 import { perm } from '../utils/permissions'
 import type { CreateDeliveryLocationPayload as DeliveryLocation, Restaurant as RestaurantType } from '../utils/api'
+import { TableItemsPerPageSelect, DEFAULT_TABLE_PAGE_SIZE } from '../components/TableItemsPerPageSelect'
+import { PageHeader, PageToolbarCard } from '../components/page-layout'
 
 function renderRestaurantsCell(
   loc: Partial<DeliveryLocation>,
@@ -63,8 +65,6 @@ function renderRestaurantsCell(
   )
 }
 
-const ACTIVE_PAGE_SIZE = 10
-
 export default function DeliveryLocations() {
   const { t } = useTranslation()
   const [locations, setLocations] = useState<Partial<DeliveryLocation>[]>([])
@@ -72,6 +72,7 @@ export default function DeliveryLocations() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(DEFAULT_TABLE_PAGE_SIZE)
   const [confirmDialog, setConfirmDialog] = useState<{ show: boolean; id: string | null; name: string | null }>({
     show: false,
     id: null,
@@ -129,16 +130,20 @@ export default function DeliveryLocations() {
   })
   const canSeeDeletedLocations = perm('delivery_locations', 'restore')
 
-  const totalPages = Math.max(1, Math.ceil(activeLocations.length / ACTIVE_PAGE_SIZE))
+  const totalPages = Math.max(1, Math.ceil(activeLocations.length / pageSize))
+
+  useEffect(() => {
+    setPage(1)
+  }, [pageSize])
 
   useEffect(() => {
     setPage((p) => Math.min(p, totalPages))
   }, [totalPages])
 
   const paginatedActive = useMemo(() => {
-    const start = (page - 1) * ACTIVE_PAGE_SIZE
-    return activeLocations.slice(start, start + ACTIVE_PAGE_SIZE)
-  }, [activeLocations, page])
+    const start = (page - 1) * pageSize
+    return activeLocations.slice(start, start + pageSize)
+  }, [activeLocations, page, pageSize])
 
   const pageNumbers = useMemo(() => {
     return Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -242,21 +247,27 @@ export default function DeliveryLocations() {
         </div>
       )}
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{t('deliveryLocationsPage.title')}</h1>
-          <p className="text-gray-600 mt-1 dark:text-slate-400">{t('deliveryLocationsPage.subtitle')}</p>
-        </div>
+      <div className="space-y-5">
+        <PageHeader
+          title={t('deliveryLocationsPage.title')}
+          subtitle={t('deliveryLocationsPage.subtitle')}
+          helpTooltip={t('common.toolbarHintDefault')}
+          helpAriaLabel={t('common.moreInfo')}
+        />
         {perm('delivery_locations', 'create') ? (
-          <Link to="/delivery-locations/creation" className="w-full sm:w-auto">
-            <Button
-              variant="primary"
-              icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
-              className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
-            >
-              <span className="sm:inline">{t('deliveryLocationsPage.create')}</span>
-            </Button>
-          </Link>
+          <PageToolbarCard>
+            <div className="flex flex-wrap justify-end gap-3">
+              <Link to="/delivery-locations/creation" className="w-full sm:w-auto">
+                <Button
+                  variant="primary"
+                  icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
+                  className="h-9 w-full justify-center px-4 text-sm sm:w-auto sm:px-6"
+                >
+                  <span className="sm:inline">{t('deliveryLocationsPage.create')}</span>
+                </Button>
+              </Link>
+            </div>
+          </PageToolbarCard>
         ) : null}
       </div>
 
@@ -437,8 +448,15 @@ export default function DeliveryLocations() {
 
             {activeLocations.length > 0 && (
               <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-2">
-                <div className="text-gray-600 dark:text-slate-400 text-sm mb-2 sm:mb-0">
-                  {t('common.paginationSummary', { page, totalPages, total: activeLocations.length })}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+                  <div className="text-gray-600 dark:text-slate-400 text-sm">
+                    {t('common.paginationSummary', { page, totalPages, total: activeLocations.length })}
+                  </div>
+                  <TableItemsPerPageSelect
+                    id="delivery-locations-page-size"
+                    value={pageSize}
+                    onChange={setPageSize}
+                  />
                 </div>
                 <div className="flex items-center gap-1 flex-wrap justify-center">
                   <Button

@@ -6,19 +6,28 @@ import { Card, CardContent } from '../components/ui/card'
 import Table, { TableBody, TableHead, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { Skeleton } from '../components/ui/skeleton'
 import { OrderDetailsPanel } from '../components/OrderDetailsPanel'
+import { OrderRowPaymentStatusSelect } from '../components/OrderRowPaymentStatusSelect'
 import { OrderRowStatusSelect } from '../components/OrderRowStatusSelect'
 
 import { API_BASE } from '../config'
-import { getOrderStatuses, OrderStatus, updateOrder } from '../utils/api'
+import {
+  getDeliveryLocationsList,
+  getOrderStatuses,
+  getPaymentStatuses,
+  OrderStatus,
+  updateOrder,
+} from '../utils/api'
 import {
   ORDER_STATUS_FILTER_FALLBACK,
   orderStatusFilterOptionLabel,
 } from '../utils/orderStatusFilter'
+import { PAYMENT_STATUS_FILTER_FALLBACK, paymentStatusFilterOptionLabel } from '../utils/paymentStatusFilter'
 import {
   canDashboardOrdersDelivery,
   canDashboardOrdersMarkReady,
   canDashboardShowAdminOrderActions,
-  hasOrdersMutationUiAccess,
+  hasOrdersPaymentMutationUiAccess,
+  hasOrdersStatusMutationUiAccess,
 } from '../utils/permissions'
 import { OrderTableSortHeadCell } from '../components/OrderTableSortHeadCell'
 import {
@@ -28,11 +37,17 @@ import {
   type OrderTableSortKey,
 } from '../utils/orderTableSort'
 import i18n from '../i18n'
+import { TableItemsPerPageSelect, DEFAULT_TABLE_PAGE_SIZE } from '../components/TableItemsPerPageSelect'
+import { PageHeader, PageToolbarCard } from '../components/page-layout'
+import { SearchFilterField, SEARCH_FILTER_DEBOUNCE_MS } from '../components/SearchFilterField'
+import { Label } from '../components/ui/label'
+import { Select } from '../components/ui/select'
 
 type DashboardOrder = {
   id?: string | number
+  deliveryLocationId?: string | number
   restaurant?: { name?: string }
-  deliveryLocation?: { name?: string }
+  deliveryLocation?: { id?: string | number; name?: string }
   customerName?: string
   customer?: { name?: string; email?: string; phone?: string }
   email?: string
@@ -98,27 +113,6 @@ function isToday(value?: string): boolean {
   )
 }
 
-const DASHBOARD_PAGE_SIZE = 10
-
-function dashboardOrderSearchHaystack(o: DashboardOrder): string {
-  return [
-    String(o.id ?? ''),
-    String(o.orderNumber ?? ''),
-    o.restaurant?.name,
-    o.deliveryLocation?.name,
-    o.customerName,
-    o.customer?.name,
-    o.customer?.email,
-    o.customer?.phone,
-    o.email,
-    o.status,
-    o.notes,
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase()
-}
-
 function formatMoney(value?: number | string | null): string {
   if (value == null) return '-'
   const n = Number(value)
@@ -130,6 +124,14 @@ function formatOrderBusinessDate(value: string | number | undefined | null): str
   if (value == null || value === '') return dash
   const d = new Date(String(value))
   return Number.isNaN(d.getTime()) ? dash : d.toLocaleDateString()
+}
+
+function orderDeliveryLocationId(o: DashboardOrder): string {
+  const direct = o.deliveryLocationId
+  if (direct != null && String(direct) !== '') return String(direct)
+  const locId = o.deliveryLocation?.id
+  if (locId != null && String(locId) !== '') return String(locId)
+  return ''
 }
 
 export default function Dashboard() {
@@ -147,46 +149,70 @@ export default function Dashboard() {
   const [statusFilterOptions, setStatusFilterOptions] = useState<string[]>(() => [
     ...ORDER_STATUS_FILTER_FALLBACK,
   ])
-  const [searchInput, setSearchInput] = useState('')
-  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [nameInput, setNameInput] = useState('')
+  const [emailInput, setEmailInput] = useState('')
+  const [debouncedName, setDebouncedName] = useState('')
+  const [debouncedEmail, setDebouncedEmail] = useState('')
+  const [deliveryLocations, setDeliveryLocations] = useState<Array<{ id?: string | number; name?: string }>>([])
+  const [locationFilter, setLocationFilter] = useState('')
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState('')
+  const [paymentStatusFilterOptions, setPaymentStatusFilterOptions] = useState<string[]>(() => [
+    ...PAYMENT_STATUS_FILTER_FALLBACK,
+  ])
   const [listPage, setListPage] = useState(1)
+  const [listPageSize, setListPageSize] = useState(DEFAULT_TABLE_PAGE_SIZE)
   const previousTodayCountRef = useRef<number | null>(null)
   const audioCtxRef = useRef<AudioContext | null>(null)
   const refreshTodayOrdersRef = useRef<() => Promise<void>>(() => Promise.resolve())
 
   const filteredTodayOrders = useMemo(() => {
-    const q = debouncedSearch.trim().toLowerCase()
+    const nameQ = debouncedName.trim().toLowerCase()
+    const emailQ = debouncedEmail.trim().toLowerCase()
     return todayOrders.filter((o) => {
       if (statusFilter && String(o.status ?? '') !== statusFilter) return false
-      if (!q) return true
-      return dashboardOrderSearchHaystack(o).includes(q)
+      if (locationFilter && orderDeliveryLocationId(o) !== locationFilter) return false
+      if (paymentStatusFilter && String(o.paymentStatus ?? '') !== paymentStatusFilter) return false
+      const custName = String(o.customer?.name ?? o.customerName ?? '').toLowerCase()
+      const custEmail = String(o.customer?.email ?? o.email ?? '').toLowerCase()
+      if (nameQ && !custName.includes(nameQ)) return false
+      if (emailQ && !custEmail.includes(emailQ)) return false
+      return true
     })
-  }, [todayOrders, statusFilter, debouncedSearch])
+  }, [todayOrders, statusFilter, debouncedName, debouncedEmail, locationFilter, paymentStatusFilter])
 
   const displayedOrders = useMemo(
     () => sortOrdersByColumn(filteredTodayOrders, sortKey, sortDir),
     [filteredTodayOrders, sortKey, sortDir]
   )
 
-  const totalListPages = Math.max(1, Math.ceil(displayedOrders.length / DASHBOARD_PAGE_SIZE))
+  const totalListPages = Math.max(1, Math.ceil(displayedOrders.length / listPageSize))
 
   useEffect(() => {
-    const id = window.setTimeout(() => setDebouncedSearch(searchInput.trim()), 300)
+    const id = window.setTimeout(() => setDebouncedName(nameInput.trim()), SEARCH_FILTER_DEBOUNCE_MS)
     return () => window.clearTimeout(id)
-  }, [searchInput])
+  }, [nameInput])
+
+  useEffect(() => {
+    const id = window.setTimeout(() => setDebouncedEmail(emailInput.trim()), SEARCH_FILTER_DEBOUNCE_MS)
+    return () => window.clearTimeout(id)
+  }, [emailInput])
 
   useEffect(() => {
     setListPage(1)
-  }, [statusFilter, debouncedSearch])
+  }, [statusFilter, debouncedName, debouncedEmail, locationFilter, paymentStatusFilter])
+
+  useEffect(() => {
+    setListPage(1)
+  }, [listPageSize])
 
   useEffect(() => {
     setListPage((p) => Math.min(p, totalListPages))
   }, [totalListPages])
 
   const paginatedOrders = useMemo(() => {
-    const start = (listPage - 1) * DASHBOARD_PAGE_SIZE
-    return displayedOrders.slice(start, start + DASHBOARD_PAGE_SIZE)
-  }, [displayedOrders, listPage])
+    const start = (listPage - 1) * listPageSize
+    return displayedOrders.slice(start, start + listPageSize)
+  }, [displayedOrders, listPage, listPageSize])
 
   const listPageNumbers = useMemo(() => {
     return Array.from({ length: totalListPages }, (_, i) => i + 1)
@@ -255,6 +281,22 @@ export default function Dashboard() {
     }
   }
 
+  const commitDashboardPaymentStatus = async (id: string, paymentStatus: string) => {
+    if (!id) return
+    setPatchingOrderId(id)
+    setOrderActionError(null)
+    try {
+      await updateOrder(id, { paymentStatus })
+      setTodayOrders((prev) =>
+        prev.map((o) => (String(o.id) === id ? { ...o, paymentStatus } : o)),
+      )
+    } catch (e) {
+      setOrderActionError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setPatchingOrderId(null)
+    }
+  }
+
   const patchOrderStatusWithRefresh = async (
     id: string,
     status: typeof OrderStatus.ON_THE_WAY | typeof OrderStatus.DELIVERED,
@@ -279,7 +321,8 @@ export default function Dashboard() {
   const showKitchenReady = canDashboardOrdersMarkReady()
   const showDeliveryActions = canDashboardOrdersDelivery()
   const showAdminOrderActions = canDashboardShowAdminOrderActions()
-  const canEditOrderStatus = hasOrdersMutationUiAccess()
+  const canEditOrderStatus = hasOrdersStatusMutationUiAccess()
+  const canEditPaymentStatus = hasOrdersPaymentMutationUiAccess()
 
   const deliveryCanMarkOnTheWay = (status: string | undefined) => (status ?? '') === OrderStatus.READY
 
@@ -365,6 +408,35 @@ export default function Dashboard() {
 
   useEffect(() => {
     let mounted = true
+    void getPaymentStatuses()
+      .then((list) => {
+        if (!mounted || !list.length) return
+        setPaymentStatusFilterOptions(list)
+      })
+      .catch(() => {})
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  useEffect(() => {
+    let mounted = true
+    void getDeliveryLocationsList()
+      .then((list) => {
+        if (!mounted) return
+        const sorted = [...list].sort((a, b) =>
+          String(a.name ?? '').localeCompare(String(b.name ?? ''), undefined, { sensitivity: 'base' }),
+        )
+        setDeliveryLocations(sorted)
+      })
+      .catch(() => {})
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  useEffect(() => {
+    let mounted = true
 
     const refreshTodayOrders = async () => {
       try {
@@ -417,44 +489,95 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{t('dashboardPage.title')}</h1>
-        <p className="mt-1 text-gray-600 dark:text-slate-400">{t('dashboardPage.subtitle')}</p>
-      </div>
-
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-3">
-        <div className="flex min-w-0 flex-1 flex-col gap-1 sm:min-w-[12rem] sm:max-w-md">
-          <label htmlFor="dashboard-order-search" className="text-xs font-medium text-slate-600 dark:text-slate-400">
-            {t('common.search')}
-          </label>
-          <input
-            id="dashboard-order-search"
-            type="search"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            placeholder={t('common.searchOrdersPh')}
-            autoComplete="off"
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/60 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
-          />
-        </div>
-        <div className="flex w-full flex-col gap-1 sm:w-auto sm:min-w-[11rem]">
-          <label htmlFor="dashboard-status-filter" className="text-xs font-medium text-slate-600 dark:text-slate-400">
-            {t('dashboardPage.filterByStatus')}
-          </label>
-          <select
-            id="dashboard-status-filter"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500/60 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
-          >
-            <option value="">{t('dashboardPage.statusAll')}</option>
-            {statusFilterOptions.map((s) => (
-              <option key={s} value={s}>
-                {orderStatusFilterOptionLabel(s, t)}
-              </option>
-            ))}
-          </select>
-        </div>
+      <div className="space-y-5">
+        <PageHeader
+          title={t('dashboardPage.title')}
+          subtitle={t('dashboardPage.subtitle')}
+          helpTooltip={t('common.toolbarHintOrdersSearch')}
+          helpAriaLabel={t('common.moreInfo')}
+        />
+        <PageToolbarCard>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5 lg:items-end lg:gap-3 xl:gap-4">
+            <div className="min-w-0">
+              <SearchFilterField
+                id="dashboard-order-search-name"
+                label={t('common.name')}
+                value={nameInput}
+                onChange={setNameInput}
+                placeholder={t('common.customerSearchNamePh')}
+              />
+            </div>
+            <div className="min-w-0">
+              <SearchFilterField
+                id="dashboard-order-search-email"
+                label={t('common.email')}
+                value={emailInput}
+                onChange={setEmailInput}
+                placeholder={t('common.customerSearchEmailPh')}
+                inputMode="email"
+              />
+            </div>
+            <div className="min-w-0">
+              <Label htmlFor="dashboard-status-filter" className="text-sm font-medium leading-none text-slate-700 dark:text-slate-200">
+                {t('dashboardPage.filterByStatus')}
+              </Label>
+              <Select
+                id="dashboard-status-filter"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="mt-1.5 h-9 w-full"
+              >
+                <option value="">{t('dashboardPage.statusAll')}</option>
+                {statusFilterOptions.map((s) => (
+                  <option key={s} value={s}>
+                    {orderStatusFilterOptionLabel(s, t)}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="min-w-0">
+              <Label htmlFor="dashboard-location-filter" className="text-sm font-medium leading-none text-slate-700 dark:text-slate-200">
+                {t('common.filterByLocation')}
+              </Label>
+              <Select
+                id="dashboard-location-filter"
+                value={locationFilter}
+                onChange={(e) => setLocationFilter(e.target.value)}
+                className="mt-1.5 h-9 w-full"
+              >
+                <option value="">{t('common.allLocations')}</option>
+                {deliveryLocations
+                  .filter((loc) => loc.id != null && String(loc.id) !== '')
+                  .map((loc) => {
+                    const id = String(loc.id)
+                    return (
+                      <option key={id} value={id}>
+                        {loc.name ?? id}
+                      </option>
+                    )
+                  })}
+              </Select>
+            </div>
+            <div className="min-w-0">
+              <Label htmlFor="dashboard-payment-status-filter" className="text-sm font-medium leading-none text-slate-700 dark:text-slate-200">
+                {t('common.paymentStatus')}
+              </Label>
+              <Select
+                id="dashboard-payment-status-filter"
+                value={paymentStatusFilter}
+                onChange={(e) => setPaymentStatusFilter(e.target.value)}
+                className="mt-1.5 h-9 w-full"
+              >
+                <option value="">{t('dashboardPage.statusAll')}</option>
+                {paymentStatusFilterOptions.map((ps) => (
+                  <option key={ps} value={ps}>
+                    {paymentStatusFilterOptionLabel(ps, t)}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          </div>
+        </PageToolbarCard>
       </div>
 
       {orderActionError ? (
@@ -475,6 +598,7 @@ export default function Dashboard() {
                 <TableHeadCell>{t('ordersPage.orderDate')}</TableHeadCell>
                 <TableHeadCell>{t('ordersPage.deliveryLocation')}</TableHeadCell>
                 <TableHeadCell>{t('ordersPage.price')}</TableHeadCell>
+                <TableHeadCell>{t('common.paymentStatus')}</TableHeadCell>
                 <TableHeadCell>{t('ordersPage.status')}</TableHeadCell>
                 <TableHeadCell>{t('dashboardPage.actions')}</TableHeadCell>
               </tr>
@@ -482,7 +606,7 @@ export default function Dashboard() {
             <TableBody>
               {Array.from({ length: 5 }).map((_, r) => (
                 <TableRow key={r} className="animate-pulse">
-                  {Array.from({ length: 6 }).map((__, c) => (
+                  {Array.from({ length: 7 }).map((__, c) => (
                     <TableCell key={c}>
                       <Skeleton className="h-4 w-full bg-gray-200" />
                     </TableCell>
@@ -525,20 +649,34 @@ export default function Dashboard() {
                           role="button"
                           aria-expanded={openRowId === String(o.id ?? '')}
                         >
-                          <div className="flex items-center justify-between gap-2">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
                             <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 tabular-nums">
                               {o.orderNumber != null ? String(o.orderNumber) : dash}
                             </div>
-                            <OrderRowStatusSelect
-                              orderId={o.id}
-                              value={status || undefined}
-                              options={statusFilterOptions}
-                              getOptionLabel={(s) => orderStatusFilterOptionLabel(s, t)}
-                              canEdit={canEditOrderStatus}
-                              locked={!!patchingOrderId && patchingOrderId !== String(o.id ?? '')}
-                              saving={patchingOrderId === String(o.id ?? '')}
-                              onCommit={commitDashboardOrderStatus}
-                            />
+                            <div className="flex flex-wrap items-center justify-end gap-2">
+                              <OrderRowPaymentStatusSelect
+                                orderId={o.id}
+                                value={o.paymentStatus}
+                                options={paymentStatusFilterOptions}
+                                getOptionLabel={(s) => paymentStatusFilterOptionLabel(s, t)}
+                                canEdit={canEditPaymentStatus}
+                                locked={!!patchingOrderId && patchingOrderId !== String(o.id ?? '')}
+                                saving={patchingOrderId === String(o.id ?? '')}
+                                onCommit={commitDashboardPaymentStatus}
+                                triggerClassName="max-w-[9rem]"
+                              />
+                              <OrderRowStatusSelect
+                                orderId={o.id}
+                                value={status || undefined}
+                                options={statusFilterOptions}
+                                getOptionLabel={(s) => orderStatusFilterOptionLabel(s, t)}
+                                canEdit={canEditOrderStatus}
+                                locked={!!patchingOrderId && patchingOrderId !== String(o.id ?? '')}
+                                saving={patchingOrderId === String(o.id ?? '')}
+                                onCommit={commitDashboardOrderStatus}
+                                triggerClassName="max-w-[11rem]"
+                              />
+                            </div>
                           </div>
                           <div className="text-xs text-slate-600 dark:text-slate-300">{deliveryLocation}</div>
                           <div className="text-xs text-slate-600 dark:text-slate-400">
@@ -659,6 +797,13 @@ export default function Dashboard() {
                       onSort={onSortColumn}
                     />
                     <OrderTableSortHeadCell
+                      label={t('common.paymentStatus')}
+                      colKey="paymentStatus"
+                      activeKey={sortKey}
+                      dir={sortDir}
+                      onSort={onSortColumn}
+                    />
+                    <OrderTableSortHeadCell
                       label={t('ordersPage.status')}
                       colKey="status"
                       activeKey={sortKey}
@@ -671,7 +816,7 @@ export default function Dashboard() {
                 <TableBody>
                   {displayedOrders.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={6}>{noOrdersLabel}</TableCell>
+                      <TableCell colSpan={7}>{noOrdersLabel}</TableCell>
                     </TableRow>
                   )}
                   {paginatedOrders.map((o, i) => (
@@ -705,6 +850,18 @@ export default function Dashboard() {
                           <p className="text-xs">
                             {t('common.subtotal')}: {formatMoney(o.subtotal)}
                           </p>
+                        </TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <OrderRowPaymentStatusSelect
+                            orderId={o.id}
+                            value={o.paymentStatus}
+                            options={paymentStatusFilterOptions}
+                            getOptionLabel={(s) => paymentStatusFilterOptionLabel(s, t)}
+                            canEdit={canEditPaymentStatus}
+                            locked={!!patchingOrderId && patchingOrderId !== String(o.id ?? '')}
+                            saving={patchingOrderId === String(o.id ?? '')}
+                            onCommit={commitDashboardPaymentStatus}
+                          />
                         </TableCell>
                         <TableCell className="relative" onClick={(e) => e.stopPropagation()}>
                           <OrderRowStatusSelect
@@ -784,7 +941,7 @@ export default function Dashboard() {
                       </TableRow>
                       {openRowId === String(o.id ?? '') && (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-left align-top">
+                          <TableCell colSpan={7} className="text-left align-top">
                             <OrderDetailsPanel order={o} />
                           </TableCell>
                         </TableRow>
@@ -797,12 +954,19 @@ export default function Dashboard() {
 
             {displayedOrders.length > 0 && (
               <div className="flex flex-col sm:flex-row justify-between items-center gap-2 border-t border-slate-200 px-3 py-3 dark:border-slate-700">
-                <div className="text-slate-600 dark:text-slate-400 text-sm">
-                  {t('common.paginationSummary', {
-                    page: listPage,
-                    totalPages: totalListPages,
-                    total: displayedOrders.length,
-                  })}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+                  <div className="text-slate-600 dark:text-slate-400 text-sm">
+                    {t('common.paginationSummary', {
+                      page: listPage,
+                      totalPages: totalListPages,
+                      total: displayedOrders.length,
+                    })}
+                  </div>
+                  <TableItemsPerPageSelect
+                    id="dashboard-orders-page-size"
+                    value={listPageSize}
+                    onChange={setListPageSize}
+                  />
                 </div>
                 <div className="flex items-center gap-1 flex-wrap justify-center">
                   <Button
