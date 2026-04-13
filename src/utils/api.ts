@@ -2556,6 +2556,36 @@ export async function printOrder(
   };
 }
 
+export async function printFiscalOrder(
+  orderId: string | number,
+): Promise<{ status?: string; printed?: boolean }> {
+  const id = Number(orderId);
+  if (!Number.isFinite(id)) throw new Error("orderId is required");
+  const res = await authFetch(
+    `/printer/fiscal?orderId=${encodeURIComponent(String(id))}`,
+  );
+  if (!res.ok) {
+    let bodyText = "";
+    try {
+      const json = await res.json();
+      bodyText = parseErrorJson(json);
+    } catch {
+      try {
+        bodyText = await res.text();
+      } catch {
+        bodyText = "";
+      }
+    }
+    throw new Error(
+      bodyText || `GET /printer/fiscal?orderId= failed (${res.status})`,
+    );
+  }
+  return (await res.json().catch(() => ({}))) as {
+    status?: string;
+    printed?: boolean;
+  };
+}
+
 export type CreateDeliveryLocationPayload = {
   name: string;
   address?: string;

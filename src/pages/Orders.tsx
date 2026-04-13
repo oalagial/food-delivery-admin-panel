@@ -6,6 +6,7 @@ import {
   getOrderStatuses,
   getOrdersList,
   getPaymentStatuses,
+  printFiscalOrder,
   printOrder,
   updateOrder,
 } from '../utils/api'
@@ -64,6 +65,7 @@ type OrderCardProps = OrderRowProps
 function OrderPrintButton({ orderId }: { orderId: string | number | undefined }) {
   const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
+  const [fiscalLoading, setFiscalLoading] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
   const onPrint = async (e: MouseEvent<HTMLButtonElement>) => {
@@ -80,18 +82,44 @@ function OrderPrintButton({ orderId }: { orderId: string | number | undefined })
     }
   }
 
+  const onFiscalPrint = async (e: MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation()
+    if (orderId === undefined || orderId === null || String(orderId) === '') return
+    setErr(null)
+    setFiscalLoading(true)
+    try {
+      await printFiscalOrder(orderId)
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e))
+    } finally {
+      setFiscalLoading(false)
+    }
+  }
+
   return (
     <div className="flex flex-col items-center gap-0.5 min-w-[4.5rem]">
-      <Button
-        type="button"
-        variant="default"
-        size="sm"
-        disabled={loading || orderId == null || String(orderId) === ''}
-        aria-label={t('ordersPage.printAria')}
-        onClick={onPrint}
-      >
-        {loading ? t('ordersPage.printing') : t('ordersPage.print')}
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          variant="default"
+          size="sm"
+          disabled={loading || fiscalLoading || orderId == null || String(orderId) === ''}
+          aria-label={t('ordersPage.printAria')}
+          onClick={onPrint}
+        >
+          {loading ? t('ordersPage.printing') : t('ordersPage.print')}
+        </Button>
+        <Button
+          type="button"
+          variant="default"
+          size="sm"
+          disabled={loading || fiscalLoading || orderId == null || String(orderId) === ''}
+          aria-label="Fiscal Print"
+          onClick={onFiscalPrint}
+        >
+          {fiscalLoading ? 'Printing...' : 'Fiscal Print'}
+        </Button>
+      </div>
       {err ? <p className="text-[10px] text-red-600 text-center leading-tight max-w-[9rem]">{err}</p> : null}
     </div>
   )
