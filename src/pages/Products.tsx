@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { Button } from '../components/ui/button'
 import { FiPlus, FiEdit, FiTrash, FiCheckCircle, FiXCircle, FiRotateCw, FiAlertCircle } from 'react-icons/fi'
-import { getProductsList, restoreProduct, deleteProduct, updateProduct } from '../utils/api'
+import { getProductsListPaginated, restoreProduct, deleteProduct, updateProduct } from '../utils/api'
 import { perm } from '../utils/permissions'
 import type { Product } from '../utils/api'
 import { Skeleton } from '../components/ui/skeleton'
@@ -212,6 +212,8 @@ export default function Products() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_TABLE_PAGE_SIZE)
+  const [totalItems, setTotalItems] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
   const [openRowId, setOpenRowId] = useState<string | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
     show: boolean
@@ -231,9 +233,11 @@ export default function Products() {
 
   const loadProducts = () => {
     setLoading(true)
-    getProductsList()
-      .then((data) => {
-        setItems(data)
+    getProductsListPaginated({ page, limit: pageSize })
+      .then((res) => {
+        setItems(res.data)
+        setTotalItems(res.total)
+        setTotalPages(Math.max(1, res.totalPages))
         setError(null)
       })
       .catch((err) => {
@@ -245,7 +249,7 @@ export default function Products() {
 
   useEffect(() => {
     loadProducts()
-  }, [])
+  }, [page, pageSize])
 
   const openConfirmDialog = (type: 'delete' | 'restore', id: string | number, name: string) => {
     setConfirmDialog({
@@ -327,8 +331,6 @@ export default function Products() {
     )
   }, [activeProducts, search])
 
-  const totalPages = Math.max(1, Math.ceil(filteredItems.length / pageSize))
-
   useEffect(() => {
     setPage(1)
   }, [search])
@@ -341,10 +343,7 @@ export default function Products() {
     setPage((p) => Math.min(p, totalPages))
   }, [totalPages])
 
-  const paginatedItems = useMemo(() => {
-    const start = (page - 1) * pageSize
-    return filteredItems.slice(start, start + pageSize)
-  }, [filteredItems, page, pageSize])
+  const paginatedItems = filteredItems
 
   const pageNumbers = useMemo(() => {
     return Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -642,7 +641,7 @@ export default function Products() {
                 <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-2">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
                     <div className="text-gray-600 dark:text-slate-400 text-sm">
-                      {t('common.paginationSummary', { page, totalPages, total: filteredItems.length })}
+                      {t('common.paginationSummary', { page, totalPages, total: totalItems })}
                     </div>
                     <TableItemsPerPageSelect
                       id="products-page-size"

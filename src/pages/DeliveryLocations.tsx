@@ -7,7 +7,7 @@ import { Button } from '../components/ui/button'
 import { Skeleton } from '../components/ui/skeleton'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/card'
 import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert'
-import { getDeliveryLocationsList, getRestaurantsList, updateDeliveryLocation, deleteDeliveryLocation } from '../utils/api'
+import { getDeliveryLocationsList, getDeliveryLocationsListPaginated, getRestaurantsList, updateDeliveryLocation, deleteDeliveryLocation } from '../utils/api'
 import { perm } from '../utils/permissions'
 import type { CreateDeliveryLocationPayload as DeliveryLocation, Restaurant as RestaurantType } from '../utils/api'
 import { TableItemsPerPageSelect, DEFAULT_TABLE_PAGE_SIZE } from '../components/TableItemsPerPageSelect'
@@ -73,6 +73,8 @@ export default function DeliveryLocations() {
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_TABLE_PAGE_SIZE)
+  const [totalItems, setTotalItems] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
   const [confirmDialog, setConfirmDialog] = useState<{ show: boolean; id: string | null; name: string | null }>({
     show: false,
     id: null,
@@ -84,14 +86,16 @@ export default function DeliveryLocations() {
 
     async function loadAll() {
       try {
-        const locsRaw = await getDeliveryLocationsList()
+        const locsRaw = await getDeliveryLocationsListPaginated({ page, limit: pageSize })
         const restsRaw = await getRestaurantsList()
 
         if (!mounted) return
 
         // Normalize delivery locations to an array
-        const locsArray = Array.isArray(locsRaw) ? locsRaw : (locsRaw && (locsRaw as any).items) || (locsRaw && (locsRaw as any).data) || []
+        const locsArray = Array.isArray(locsRaw.data) ? locsRaw.data : []
         setLocations(locsArray as unknown as Partial<DeliveryLocation>[])
+        setTotalItems(locsRaw.total)
+        setTotalPages(Math.max(1, locsRaw.totalPages))
 
         // Normalize restaurants to an array and build id->name map
         const restsArray = Array.isArray(restsRaw) ? restsRaw : (restsRaw && (restsRaw as any).items) || (restsRaw && (restsRaw as any).data) || []
@@ -117,7 +121,7 @@ export default function DeliveryLocations() {
     return () => {
       mounted = false
     }
-  }, [])
+  }, [page, pageSize])
 
   // Separate active and deleted locations
   const activeLocations = locations.filter((loc) => {
@@ -130,8 +134,6 @@ export default function DeliveryLocations() {
   })
   const canSeeDeletedLocations = perm('delivery_locations', 'restore')
 
-  const totalPages = Math.max(1, Math.ceil(activeLocations.length / pageSize))
-
   useEffect(() => {
     setPage(1)
   }, [pageSize])
@@ -140,10 +142,7 @@ export default function DeliveryLocations() {
     setPage((p) => Math.min(p, totalPages))
   }, [totalPages])
 
-  const paginatedActive = useMemo(() => {
-    const start = (page - 1) * pageSize
-    return activeLocations.slice(start, start + pageSize)
-  }, [activeLocations, page, pageSize])
+  const paginatedActive = activeLocations
 
   const pageNumbers = useMemo(() => {
     return Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -174,7 +173,7 @@ export default function DeliveryLocations() {
     if (!confirmDialog.id) return
     try {
       await deleteDeliveryLocation(confirmDialog.id)
-      const locsRaw = await getDeliveryLocationsList()
+      const locsRaw = await getDeliveryLocationsList({ page, limit: pageSize })
       const locsArray = Array.isArray(locsRaw) ? locsRaw : (locsRaw && (locsRaw as any).items) || (locsRaw && (locsRaw as any).data) || []
       setLocations(locsArray as unknown as Partial<DeliveryLocation>[])
       setError(null)
@@ -208,7 +207,7 @@ export default function DeliveryLocations() {
       await updateDeliveryLocation(String(locId), updatedPayload)
 
       // Reload the list
-      const locsRaw = await getDeliveryLocationsList()
+      const locsRaw = await getDeliveryLocationsList({ page, limit: pageSize })
       const locsArray = Array.isArray(locsRaw) ? locsRaw : (locsRaw && (locsRaw as any).items) || (locsRaw && (locsRaw as any).data) || []
       setLocations(locsArray as unknown as Partial<DeliveryLocation>[])
       setError(null)
@@ -450,7 +449,7 @@ export default function DeliveryLocations() {
               <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-2">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
                   <div className="text-gray-600 dark:text-slate-400 text-sm">
-                    {t('common.paginationSummary', { page, totalPages, total: activeLocations.length })}
+                    {t('common.paginationSummary', { page, totalPages, total: totalItems })}
                   </div>
                   <TableItemsPerPageSelect
                     id="delivery-locations-page-size"

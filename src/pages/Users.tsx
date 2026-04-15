@@ -31,6 +31,8 @@ export default function Users() {
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_TABLE_PAGE_SIZE)
+  const [totalItems, setTotalItems] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
   const [userToDeactivate, setUserToDeactivate] = useState<User | null>(null)
   const [deactivating, setDeactivating] = useState(false)
   const [activatingId, setActivatingId] = useState<string | number | null>(null)
@@ -40,18 +42,20 @@ export default function Users() {
 
   // Use dedicated create/edit page instead of inline editing
 
-  async function fetchUsers() {
+  async function fetchUsers(targetPage = page, targetLimit = pageSize) {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`${API_BASE}/users`)
+      const res = await fetch(`${API_BASE}/users?page=${targetPage}&limit=${targetLimit}`)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       const data = Array.isArray(json) ? json : json?.data ?? Object.values(json ?? {})
       setUsers(data)
+      setTotalItems(Number(json?.total) || data.length)
+      setTotalPages(Math.max(1, Number(json?.totalPages) || 1))
       // fetch roles map to show role names (use api helper)
       try {
-        const roles = await getRolesList()
+        const roles = await getRolesList({ limit: 200 })
         const map: Record<string, string> = {}
         roles.forEach((role) => { if (role && role.id !== undefined) map[String(role.id)] = String(role.name ?? role.id) })
         setRolesMap(map)
@@ -67,10 +71,8 @@ export default function Users() {
   }
 
   useEffect(() => {
-    void fetchUsers()
-  }, [])
-
-  const totalPages = Math.max(1, Math.ceil(users.length / pageSize))
+    void fetchUsers(page, pageSize)
+  }, [page, pageSize])
 
   useEffect(() => {
     setPage(1)
@@ -80,10 +82,7 @@ export default function Users() {
     setPage((p) => Math.min(p, totalPages))
   }, [totalPages])
 
-  const paginatedUsers = useMemo(() => {
-    const start = (page - 1) * pageSize
-    return users.slice(start, start + pageSize)
-  }, [users, page, pageSize])
+  const paginatedUsers = users
 
   const pageNumbers = useMemo(() => {
     return Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -489,7 +488,7 @@ export default function Users() {
         <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-2">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
             <div className="text-gray-600 dark:text-slate-400 text-sm">
-              {t('common.paginationSummary', { page, totalPages, total: users.length })}
+              {t('common.paginationSummary', { page, totalPages, total: totalItems })}
             </div>
             <TableItemsPerPageSelect
               id="users-page-size"

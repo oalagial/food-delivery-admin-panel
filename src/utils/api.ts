@@ -388,10 +388,28 @@ export type Restaurant = {
   [k: string]: unknown;
 };
 
+type ListFetchParams = {
+  page?: number;
+  limit?: number;
+};
+
+export type PaginatedListResponse<T> = {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+};
+
 export async function getRestaurantsList(
   query?: string,
+  params?: ListFetchParams,
 ): Promise<Restaurant[]> {
-  const res = await authFetch(`/restaurants${query ? `?${query}` : ""}`);
+  const search = new URLSearchParams(query ?? "");
+  if (params?.page != null) search.set("page", String(params.page));
+  if (params?.limit != null) search.set("limit", String(params.limit));
+  const queryString = search.toString();
+  const res = await authFetch(`/restaurants${queryString ? `?${queryString}` : ""}`);
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(
@@ -401,6 +419,39 @@ export async function getRestaurantsList(
   }
   const data = await res.json().catch(() => null);
   return Array.isArray(data) ? data : data?.items || data?.data || [];
+}
+
+export async function getRestaurantsListPaginated(
+  query?: string,
+  params?: ListFetchParams,
+): Promise<PaginatedListResponse<Restaurant>> {
+  const search = new URLSearchParams(query ?? "");
+  if (params?.page != null) search.set("page", String(params.page));
+  if (params?.limit != null) search.set("limit", String(params.limit));
+  const queryString = search.toString();
+  const res = await authFetch(`/restaurants${queryString ? `?${queryString}` : ""}`);
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(
+      text ||
+      `GET /restaurants${queryString ? `?${queryString}` : ""} failed (${res.status})`,
+    );
+  }
+  const json = await res.json().catch(() => null);
+  const rows = Array.isArray(json?.data)
+    ? json.data
+    : Array.isArray(json?.items)
+      ? json.items
+      : Array.isArray(json)
+        ? json
+        : [];
+  return {
+    data: rows as Restaurant[],
+    total: Number(json?.total) || rows.length,
+    page: Number(json?.page) || Number(params?.page) || 1,
+    limit: Number(json?.limit) || Number(params?.limit) || rows.length || 1,
+    totalPages: Number(json?.totalPages) || 1,
+  };
 }
 
 /** Fetches all restaurants across pages for pickers/dropdowns. */
@@ -464,8 +515,14 @@ export async function getAllRestaurantsForSelection(
   });
 }
 
-export async function getDeliveryLocationsList(): Promise<Restaurant[]> {
-  const res = await authFetch("/delivery-locations");
+export async function getDeliveryLocationsList(
+  params?: ListFetchParams,
+): Promise<Restaurant[]> {
+  const search = new URLSearchParams();
+  if (params?.page != null) search.set("page", String(params.page));
+  if (params?.limit != null) search.set("limit", String(params.limit));
+  const query = search.toString();
+  const res = await authFetch(`/delivery-locations${query ? `?${query}` : ""}`);
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
@@ -474,6 +531,35 @@ export async function getDeliveryLocationsList(): Promise<Restaurant[]> {
 
   const data = await res.json().catch(() => null);
   return Array.isArray(data) ? data : data?.items || data?.data || [];
+}
+
+export async function getDeliveryLocationsListPaginated(
+  params?: ListFetchParams,
+): Promise<PaginatedListResponse<Restaurant>> {
+  const search = new URLSearchParams();
+  if (params?.page != null) search.set("page", String(params.page));
+  if (params?.limit != null) search.set("limit", String(params.limit));
+  const query = search.toString();
+  const res = await authFetch(`/delivery-locations${query ? `?${query}` : ""}`);
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(text || `GET /delivery-locations failed (${res.status})`);
+  }
+  const json = await res.json().catch(() => null);
+  const rows = Array.isArray(json?.data)
+    ? json.data
+    : Array.isArray(json?.items)
+      ? json.items
+      : Array.isArray(json)
+        ? json
+        : [];
+  return {
+    data: rows as Restaurant[],
+    total: Number(json?.total) || rows.length,
+    page: Number(json?.page) || Number(params?.page) || 1,
+    limit: Number(json?.limit) || Number(params?.limit) || rows.length || 1,
+    totalPages: Number(json?.totalPages) || 1,
+  };
 }
 
 export type OpeningHour = {
@@ -725,8 +811,12 @@ export type TypeItem = {
   [k: string]: unknown;
 };
 
-export async function getTypesList(): Promise<TypeItem[]> {
-  const res = await authFetch("/types");
+export async function getTypesList(params?: ListFetchParams): Promise<TypeItem[]> {
+  const search = new URLSearchParams();
+  if (params?.page != null) search.set("page", String(params.page));
+  if (params?.limit != null) search.set("limit", String(params.limit));
+  const query = search.toString();
+  const res = await authFetch(`/types${query ? `?${query}` : ""}`);
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
@@ -735,6 +825,35 @@ export async function getTypesList(): Promise<TypeItem[]> {
 
   const data = await res.json().catch(() => null);
   return Array.isArray(data) ? data : data?.items || data?.data || [];
+}
+
+export async function getTypesListPaginated(
+  params?: ListFetchParams,
+): Promise<PaginatedListResponse<TypeItem>> {
+  const search = new URLSearchParams();
+  if (params?.page != null) search.set("page", String(params.page));
+  if (params?.limit != null) search.set("limit", String(params.limit));
+  const query = search.toString();
+  const res = await authFetch(`/types${query ? `?${query}` : ""}`);
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(text || `GET /types failed (${res.status})`);
+  }
+  const json = await res.json().catch(() => null);
+  const rows = Array.isArray(json?.data)
+    ? json.data
+    : Array.isArray(json?.items)
+      ? json.items
+      : Array.isArray(json)
+        ? json
+        : [];
+  return {
+    data: rows as TypeItem[],
+    total: Number(json?.total) || rows.length,
+    page: Number(json?.page) || Number(params?.page) || 1,
+    limit: Number(json?.limit) || Number(params?.limit) || rows.length || 1,
+    totalPages: Number(json?.totalPages) || 1,
+  };
 }
 
 export type CreateTypePayload = {
@@ -937,6 +1056,36 @@ export async function getProductsList(
 
   const data = await res.json().catch(() => null);
   return Array.isArray(data) ? data : data?.items || data?.data || [];
+}
+
+export async function getProductsListPaginated(
+  params?: ProductsListParams,
+): Promise<PaginatedListResponse<Product>> {
+  const search = new URLSearchParams();
+  if (params?.page != null) search.set("page", String(params.page));
+  if (params?.limit != null) search.set("limit", String(params.limit));
+  if (params?.sortField) search.set("sortField", params.sortField);
+  if (params?.sortDir) search.set("sortDir", params.sortDir);
+  const res = await authFetch(`/products?${search}`);
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(text || `GET /products failed (${res.status})`);
+  }
+  const json = await res.json().catch(() => null);
+  const rows = Array.isArray(json?.data)
+    ? json.data
+    : Array.isArray(json?.items)
+      ? json.items
+      : Array.isArray(json)
+        ? json
+        : [];
+  return {
+    data: rows as Product[],
+    total: Number(json?.total) || rows.length,
+    page: Number(json?.page) || Number(params?.page) || 1,
+    limit: Number(json?.limit) || Number(params?.limit) || rows.length || 1,
+    totalPages: Number(json?.totalPages) || 1,
+  };
 }
 
 /** Fetches all products across pages for pickers (e.g. sections). */
@@ -1778,8 +1927,12 @@ export type CreateOfferPayload = {
   groups: OfferGroup[];
 };
 
-export async function getOfferList() {
-  const res = await authFetch("/offers");
+export async function getOfferList(params?: ListFetchParams) {
+  const search = new URLSearchParams();
+  if (params?.page != null) search.set("page", String(params.page));
+  if (params?.limit != null) search.set("limit", String(params.limit));
+  const query = search.toString();
+  const res = await authFetch(`/offers${query ? `?${query}` : ""}`);
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
@@ -1788,6 +1941,35 @@ export async function getOfferList() {
 
   const data = await res.json().catch(() => null);
   return Array.isArray(data) ? data : data?.items || data?.data || [];
+}
+
+export async function getOfferListPaginated(
+  params?: ListFetchParams,
+): Promise<PaginatedListResponse<Offer>> {
+  const search = new URLSearchParams();
+  if (params?.page != null) search.set("page", String(params.page));
+  if (params?.limit != null) search.set("limit", String(params.limit));
+  const query = search.toString();
+  const res = await authFetch(`/offers${query ? `?${query}` : ""}`);
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(text || `GET /offers failed (${res.status})`);
+  }
+  const json = await res.json().catch(() => null);
+  const rows = Array.isArray(json?.data)
+    ? json.data
+    : Array.isArray(json?.items)
+      ? json.items
+      : Array.isArray(json)
+        ? json
+        : [];
+  return {
+    data: rows as Offer[],
+    total: Number(json?.total) || rows.length,
+    page: Number(json?.page) || Number(params?.page) || 1,
+    limit: Number(json?.limit) || Number(params?.limit) || rows.length || 1,
+    totalPages: Number(json?.totalPages) || 1,
+  };
 }
 
 export async function getOfferById(id: string | number): Promise<Offer | null> {

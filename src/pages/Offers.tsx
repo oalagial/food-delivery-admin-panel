@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { getOfferList, deleteOffer, restoreOffer, updateOffer } from "../utils/api";
+import { getOfferListPaginated, deleteOffer, restoreOffer, updateOffer } from "../utils/api";
 import { API_BASE } from "../config";
 import { FiPlus, FiEdit, FiTrash, FiCheckCircle, FiXCircle, FiRotateCw, FiAlertCircle } from "react-icons/fi";
 import { Link } from "react-router-dom";
@@ -170,6 +170,8 @@ export default function Offers() {
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_TABLE_PAGE_SIZE);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [openRowId, setOpenRowId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | number | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -190,9 +192,11 @@ export default function Offers() {
 
   const loadOffers = () => {
     setLoading(true);
-    getOfferList()
-      .then((data) => {
-        setOffers(data);
+    getOfferListPaginated({ page, limit: pageSize })
+      .then((res) => {
+        setOffers(res.data);
+        setTotalItems(res.total);
+        setTotalPages(Math.max(1, res.totalPages));
         setError(null);
       })
       .catch((err) => {
@@ -206,7 +210,7 @@ export default function Offers() {
 
   useEffect(() => {
     loadOffers();
-  }, []);
+  }, [page, pageSize]);
 
   const handleDelete = async (id: string | number, name?: string) => {
     setConfirmDialog({
@@ -266,8 +270,6 @@ export default function Offers() {
   });
   const canSeeDeletedOffers = perm("offers", "restore");
 
-  const totalPages = Math.max(1, Math.ceil(activeOffers.length / pageSize));
-
   useEffect(() => {
     setPage(1);
   }, [pageSize]);
@@ -276,10 +278,7 @@ export default function Offers() {
     setPage((p) => Math.min(p, totalPages));
   }, [totalPages]);
 
-  const paginatedActive = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return activeOffers.slice(start, start + pageSize);
-  }, [activeOffers, page, pageSize]);
+  const paginatedActive = activeOffers;
 
   const pageNumbers = useMemo(() => {
     return Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -551,7 +550,7 @@ export default function Offers() {
               <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-2">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
                   <div className="text-gray-600 dark:text-slate-400 text-sm">
-                    {t("common.paginationSummary", { page, totalPages, total: activeOffers.length })}
+                    {t("common.paginationSummary", { page, totalPages, total: totalItems })}
                   </div>
                   <TableItemsPerPageSelect
                     id="offers-page-size"

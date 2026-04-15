@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { Button } from '../components/ui/button'
 import { FiPlus, FiEdit, FiTrash, FiAlertCircle } from 'react-icons/fi'
-import { getTypesList, deleteType } from '../utils/api'
+import { getTypesListPaginated, deleteType } from '../utils/api'
 import { perm } from '../utils/permissions'
 import type { TypeItem } from '../utils/api'
 import { Skeleton } from '../components/ui/skeleton'
@@ -20,6 +20,8 @@ export default function Types() {
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_TABLE_PAGE_SIZE)
+  const [totalItems, setTotalItems] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
   const [deletingId, setDeletingId] = useState<string | number | null>(null)
   const [confirmDialog, setConfirmDialog] = useState<{
     show: boolean
@@ -33,10 +35,12 @@ export default function Types() {
 
   useEffect(() => {
     let mounted = true
-    getTypesList()
-      .then((data) => {
+    getTypesListPaginated({ page, limit: pageSize })
+      .then((res) => {
         if (!mounted) return
-        setTypes(data)
+        setTypes(res.data)
+        setTotalItems(res.total)
+        setTotalPages(Math.max(1, res.totalPages))
         setError(null)
       })
       .catch((err) => {
@@ -47,9 +51,7 @@ export default function Types() {
       .finally(() => { if (mounted) setLoading(false) })
 
     return () => { mounted = false }
-  }, [])
-
-  const totalPages = Math.max(1, Math.ceil(types.length / pageSize))
+  }, [page, pageSize])
 
   useEffect(() => {
     setPage(1)
@@ -59,10 +61,7 @@ export default function Types() {
     setPage((p) => Math.min(p, totalPages))
   }, [totalPages])
 
-  const paginatedTypes = useMemo(() => {
-    const start = (page - 1) * pageSize
-    return types.slice(start, start + pageSize)
-  }, [types, page, pageSize])
+  const paginatedTypes = types
 
   const pageNumbers = useMemo(() => {
     return Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -302,7 +301,7 @@ export default function Types() {
             <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-2">
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
                 <div className="text-gray-600 dark:text-slate-400 text-sm">
-                  {tr('common.paginationSummary', { page, totalPages, total: types.length })}
+                  {tr('common.paginationSummary', { page, totalPages, total: totalItems })}
                 </div>
                 <TableItemsPerPageSelect
                   id="types-page-size"

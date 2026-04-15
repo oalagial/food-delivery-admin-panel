@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom'
 import { Button } from '../components/ui/button'
 import { FiPlus, FiEdit, FiTrash, FiRotateCw, FiAlertCircle } from 'react-icons/fi'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
-import { getRestaurantsList, restoreRestaurant, deleteRestaurant } from '../utils/api'
+import { getRestaurantsList, getRestaurantsListPaginated, restoreRestaurant, deleteRestaurant } from '../utils/api'
 import { perm } from '../utils/permissions'
 import type { Restaurant as RestaurantType, OpeningHour } from '../utils/api'
 import { Skeleton } from '../components/ui/skeleton'
@@ -50,6 +50,8 @@ export default function Restaurant() {
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_TABLE_PAGE_SIZE)
+  const [totalItems, setTotalItems] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
   const [confirmDialog, setConfirmDialog] = useState<{
     show: boolean
     type: 'delete' | 'restore' | null
@@ -63,10 +65,12 @@ export default function Restaurant() {
   })
   useEffect(() => {
     let mounted = true
-    getRestaurantsList()
-      .then((data) => {
+    getRestaurantsListPaginated(undefined, { page, limit: pageSize })
+      .then((res) => {
         if (!mounted) return
-        setRestaurants(data)
+        setRestaurants(res.data)
+        setTotalItems(res.total)
+        setTotalPages(Math.max(1, res.totalPages))
         setError(null)
       })
       .catch((err) => {
@@ -81,14 +85,12 @@ export default function Restaurant() {
     return () => {
       mounted = false
     }
-  }, [])
+  }, [page, pageSize])
 
   // Separate active and deleted restaurants
   const activeRestaurants = restaurants.filter((r) => !r.deletedBy)
   const deletedRestaurants = restaurants.filter((r) => r.deletedBy)
   const canSeeDeletedRestaurants = perm('restaurants', 'restore')
-
-  const totalPages = Math.max(1, Math.ceil(activeRestaurants.length / pageSize))
 
   useEffect(() => {
     setPage(1)
@@ -98,10 +100,7 @@ export default function Restaurant() {
     setPage((p) => Math.min(p, totalPages))
   }, [totalPages])
 
-  const paginatedActive = useMemo(() => {
-    const start = (page - 1) * pageSize
-    return activeRestaurants.slice(start, start + pageSize)
-  }, [activeRestaurants, page, pageSize])
+  const paginatedActive = activeRestaurants
 
   const pageNumbers = useMemo(() => {
     return Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -146,7 +145,7 @@ export default function Restaurant() {
         await restoreRestaurant(confirmDialog.id)
       }
       // Refresh the restaurants list
-      const data = await getRestaurantsList()
+      const data = await getRestaurantsList(undefined, { page, limit: pageSize })
       setRestaurants(data)
       setError(null)
       closeConfirmDialog()
@@ -408,7 +407,7 @@ export default function Restaurant() {
                 <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-2">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
                     <div className="text-gray-600 dark:text-slate-400 text-sm">
-                      {t('common.paginationSummary', { page, totalPages, total: activeRestaurants.length })}
+                      {t('common.paginationSummary', { page, totalPages, total: totalItems })}
                     </div>
                     <TableItemsPerPageSelect
                       id="restaurants-page-size"
