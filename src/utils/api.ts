@@ -403,6 +403,67 @@ export async function getRestaurantsList(
   return Array.isArray(data) ? data : data?.items || data?.data || [];
 }
 
+/** Fetches all restaurants across pages for pickers/dropdowns. */
+export async function getAllRestaurantsForSelection(
+  query?: string,
+  pageSize = 200,
+): Promise<Restaurant[]> {
+  const safePageSize = Math.max(1, Math.min(pageSize, 500));
+  const all: Restaurant[] = [];
+  const seen = new Set<string>();
+  let page = 1;
+  let totalPages = 1;
+
+  while (page <= totalPages) {
+    const search = new URLSearchParams();
+    search.set("page", String(page));
+    search.set("limit", String(safePageSize));
+    if (query) {
+      const raw = new URLSearchParams(query);
+      raw.forEach((value, key) => search.set(key, value));
+    }
+    const res = await authFetch(`/restaurants?${search.toString()}`);
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(text || `GET /restaurants failed (${res.status})`);
+    }
+    const json = await res.json().catch(() => null);
+    const rows: unknown[] = Array.isArray(json?.data)
+      ? json.data
+      : Array.isArray(json?.items)
+        ? json.items
+        : Array.isArray(json)
+          ? json
+          : [];
+
+    for (const row of rows) {
+      if (!row || typeof row !== "object") continue;
+      const rec = row as Record<string, unknown>;
+      const id = rec.id;
+      const key = id === undefined || id === null ? "" : String(id);
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      all.push(rec as unknown as Restaurant);
+    }
+
+    const fromApi = Number(json?.totalPages);
+    if (Array.isArray(json) || !Number.isFinite(fromApi) || fromApi <= 0) {
+      totalPages = page;
+    } else {
+      totalPages = fromApi;
+    }
+    page += 1;
+  }
+
+  return all.sort((a, b) => {
+    const an = String(a.name ?? "").toLocaleLowerCase();
+    const bn = String(b.name ?? "").toLocaleLowerCase();
+    if (an < bn) return -1;
+    if (an > bn) return 1;
+    return Number(a.id ?? 0) - Number(b.id ?? 0);
+  });
+}
+
 export async function getDeliveryLocationsList(): Promise<Restaurant[]> {
   const res = await authFetch("/delivery-locations");
 
@@ -851,8 +912,23 @@ export type CreateProductPayload = {
   [k: string]: unknown;
 };
 
-export async function getProductsList(): Promise<Product[]> {
-  const res = await authFetch("/products");
+export type ProductsListParams = {
+  page?: number;
+  limit?: number;
+  sortField?: string;
+  sortDir?: "asc" | "desc";
+};
+
+export async function getProductsList(
+  params?: ProductsListParams,
+): Promise<Product[]> {
+  const search = new URLSearchParams();
+  if (params?.page != null) search.set("page", String(params.page));
+  if (params?.limit != null) search.set("limit", String(params.limit));
+  if (params?.sortField) search.set("sortField", params.sortField);
+  if (params?.sortDir) search.set("sortDir", params.sortDir);
+  const query = search.toString();
+  const res = await authFetch(`/products${query ? `?${query}` : ""}`);
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
@@ -861,6 +937,57 @@ export async function getProductsList(): Promise<Product[]> {
 
   const data = await res.json().catch(() => null);
   return Array.isArray(data) ? data : data?.items || data?.data || [];
+}
+
+/** Fetches all products across pages for pickers (e.g. sections). */
+export async function getAllProductsForSelection(
+  pageSize = 200,
+): Promise<Product[]> {
+  const safePageSize = Math.max(1, Math.min(pageSize, 500));
+  const all: Product[] = [];
+  const seen = new Set<string>();
+  let page = 1;
+  let totalPages = 1;
+
+  while (page <= totalPages) {
+    const search = new URLSearchParams({
+      page: String(page),
+      limit: String(safePageSize),
+    });
+    const res = await authFetch(`/products?${search}`);
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(text || `GET /products failed (${res.status})`);
+    }
+    const json = await res.json().catch(() => null);
+    const rows: unknown[] = Array.isArray(json?.data)
+      ? json.data
+      : Array.isArray(json)
+        ? json
+        : [];
+
+    for (const row of rows) {
+      if (!row || typeof row !== "object") continue;
+      const rec = row as Record<string, unknown>;
+      const id = rec.id;
+      const key = id === undefined || id === null ? "" : String(id);
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      all.push(rec as unknown as Product);
+    }
+
+    const fromApi = Number(json?.totalPages);
+    totalPages = Number.isFinite(fromApi) && fromApi > 0 ? fromApi : page;
+    page += 1;
+  }
+
+  return all.sort((a, b) => {
+    const an = String(a.name ?? "").toLocaleLowerCase();
+    const bn = String(b.name ?? "").toLocaleLowerCase();
+    if (an < bn) return -1;
+    if (an > bn) return 1;
+    return Number(a.id ?? 0) - Number(b.id ?? 0);
+  });
 }
 
 export async function getProductById(
@@ -2168,6 +2295,63 @@ export async function getSectionsList(): Promise<SectionItem[]> {
 
   const data = await res.json().catch(() => null);
   return Array.isArray(data) ? data : data?.items || data?.data || [];
+}
+
+/** Fetches all sections across pages for pickers (e.g. menus). */
+export async function getAllSectionsForSelection(
+  pageSize = 200,
+): Promise<SectionItem[]> {
+  const safePageSize = Math.max(1, Math.min(pageSize, 500));
+  const all: SectionItem[] = [];
+  const seen = new Set<string>();
+  let page = 1;
+  let totalPages = 1;
+
+  while (page <= totalPages) {
+    const search = new URLSearchParams({
+      page: String(page),
+      limit: String(safePageSize),
+    });
+    const res = await authFetch(`/sections?${search}`);
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(text || `GET /sections failed (${res.status})`);
+    }
+    const json = await res.json().catch(() => null);
+    const rows: unknown[] = Array.isArray(json?.data)
+      ? json.data
+      : Array.isArray(json?.items)
+        ? json.items
+        : Array.isArray(json)
+          ? json
+          : [];
+
+    for (const row of rows) {
+      if (!row || typeof row !== "object") continue;
+      const rec = row as Record<string, unknown>;
+      const id = rec.id;
+      const key = id === undefined || id === null ? "" : String(id);
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      all.push(rec as unknown as SectionItem);
+    }
+
+    const fromApi = Number(json?.totalPages);
+    if (Array.isArray(json) || !Number.isFinite(fromApi) || fromApi <= 0) {
+      totalPages = page;
+    } else {
+      totalPages = fromApi;
+    }
+    page += 1;
+  }
+
+  return all.sort((a, b) => {
+    const an = String(a.name ?? "").toLocaleLowerCase();
+    const bn = String(b.name ?? "").toLocaleLowerCase();
+    if (an < bn) return -1;
+    if (an > bn) return 1;
+    return Number(a.id ?? 0) - Number(b.id ?? 0);
+  });
 }
 
 export async function getSectionById(
