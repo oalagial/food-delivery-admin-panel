@@ -9,20 +9,29 @@ import { Label } from '../components/ui/label'
 import { Alert, AlertDescription } from '../components/ui/alert'
 import { AlertCircle } from 'lucide-react'
 import { createProduct, getProductById, updateProduct, updateProductImage, getTypesList, getExtrasByProduct, getProductDiscount, ProductAllergy } from '../utils/api'
-import type { CreateProductPayload, ProductDiscount, ProductExtra } from '../utils/api'
+import type { CreateProductPayload, ProductDiscount, ProductExtra, ProductVatRate } from '../utils/api'
 import { Checkbox } from '../components/ui/checkbox'
 
 const ProductLabel = {
-  GLUTEN_FREE: 'GLUTEN_FREE',
-  LACTOSE_FREE: 'LACTOSE_FREE',
-  VEGAN: 'VEGAN',
-  VEGETARIAN: 'VEGETARIAN',
+  SENZA_GLUTINE: 'SENZA_GLUTINE',
+  SENZA_LATTE: 'SENZA_LATTE',
+  SENZA_LATTOSIO: 'SENZA_LATTOSIO',
+  VEGANO: 'VEGANO',
+  VEGETARIANO: 'VEGETARIANO',
+  SENZA_FRUTTA_A_GUSCIO: 'SENZA_FRUTTA_A_GUSCIO',
+  SENZA_ZUCCHERO: 'SENZA_ZUCCHERO',
+  BIOLOGICO: 'BIOLOGICO',
+  PICCANTE: 'PICCANTE',
+  HALAL: 'HALAL',
+  KOSHER: 'KOSHER',
 } as const;
 
 type ProductLabel = typeof ProductLabel[keyof typeof ProductLabel];
 
 import { Select } from '../components/ui/select';
-import { API_BASE } from '../config';
+import { API_BASE } from '../config'
+import { canSubmitResourceForm } from '../utils/permissions'
+import { FormSaveBarrier } from '../components/FormSaveBarrier'
 
 function utcToLocalDateTimeInput(utc?: string | null): string {
   if (!utc) return ''
@@ -169,6 +178,7 @@ export default function ProductCreate() {
   const { t: tr } = useTranslation()
   const { id } = useParams<{ id?: string }>()
   const navigate = useNavigate()
+  const canSave = canSubmitResourceForm('products', !!id)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -305,6 +315,7 @@ export default function ProductCreate() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!canSave) return
     setSaving(true)
     setError(null)
 
@@ -408,6 +419,7 @@ export default function ProductCreate() {
           onSubmit={handleSubmit}
           className="grid gap-6 max-w-5xl lg:grid-cols-2"
         >
+          <FormSaveBarrier canSave={canSave} alertClassName="lg:col-span-2">
           {/* Basic info */}
           <Card className="shadow-sm">
             <CardHeader className="pb-3">
@@ -501,7 +513,13 @@ export default function ProductCreate() {
                     id="vatRate"
                     className="mt-1.5 w-full"
                     value={form.vatRate || ''}
-                    onChange={(e) => setForm(s => ({ ...s, vatRate: e.target.value ? e.target.value as 'FOUR' | 'FIVE' | 'TEN' | 'TWENTY_TWO' : undefined }))}
+                    onChange={(e) => {
+                      const v = e.target.value
+                      setForm((s) => ({
+                        ...s,
+                        vatRate: v === '' ? undefined : (v as ProductVatRate),
+                      }))
+                    }}
                   >
                     <option value="">{tr('common.selectVat')}</option>
                     <option value="FOUR">4%</option>
@@ -704,12 +722,13 @@ export default function ProductCreate() {
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
+          </FormSaveBarrier>
 
           <div className="flex flex-wrap justify-end gap-3 pt-2 lg:col-span-2">
             <Button variant="default" type="button" onClick={() => navigate('/products')}>
               {tr('common.cancel')}
             </Button>
-            <Button variant="primary" type="submit" disabled={saving}>
+            <Button variant="primary" type="submit" disabled={!canSave || saving}>
               {saving ? tr('common.saving') : id ? tr('common.update') : tr('common.create')}
             </Button>
           </div>

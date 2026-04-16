@@ -5,11 +5,14 @@ import { Link } from 'react-router-dom'
 import { Button } from '../components/ui/button'
 import { FiPlus, FiEdit, FiTrash, FiRotateCw, FiAlertCircle } from 'react-icons/fi'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
-import { getRestaurantsList, restoreRestaurant, deleteRestaurant } from '../utils/api'
+import { getRestaurantsList, getRestaurantsListPaginated, restoreRestaurant, deleteRestaurant } from '../utils/api'
+import { perm } from '../utils/permissions'
 import type { Restaurant as RestaurantType, OpeningHour } from '../utils/api'
 import { Skeleton } from '../components/ui/skeleton'
 import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/card'
+import { TableItemsPerPageSelect, DEFAULT_TABLE_PAGE_SIZE } from '../components/TableItemsPerPageSelect'
+import { PageHeader, PageToolbarCard } from '../components/page-layout'
 
 function HoursTooltip({ hours, t }: { hours: OpeningHour[]; t: (key: string, opts?: Record<string, unknown>) => string }) {
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
@@ -40,14 +43,15 @@ function HoursTooltip({ hours, t }: { hours: OpeningHour[]; t: (key: string, opt
   )
 }
 
-const ACTIVE_PAGE_SIZE = 10
-
 export default function Restaurant() {
   const { t } = useTranslation()
   const [restaurants, setRestaurants] = useState<RestaurantType[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(DEFAULT_TABLE_PAGE_SIZE)
+  const [totalItems, setTotalItems] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
   const [confirmDialog, setConfirmDialog] = useState<{
     show: boolean
     type: 'delete' | 'restore' | null
@@ -61,10 +65,12 @@ export default function Restaurant() {
   })
   useEffect(() => {
     let mounted = true
-    getRestaurantsList()
-      .then((data) => {
+    getRestaurantsListPaginated(undefined, { page, limit: pageSize })
+      .then((res) => {
         if (!mounted) return
-        setRestaurants(data)
+        setRestaurants(res.data)
+        setTotalItems(res.total)
+        setTotalPages(Math.max(1, res.totalPages))
         setError(null)
       })
       .catch((err) => {
@@ -79,22 +85,22 @@ export default function Restaurant() {
     return () => {
       mounted = false
     }
-  }, [])
+  }, [page, pageSize])
 
   // Separate active and deleted restaurants
   const activeRestaurants = restaurants.filter((r) => !r.deletedBy)
   const deletedRestaurants = restaurants.filter((r) => r.deletedBy)
+  const canSeeDeletedRestaurants = perm('restaurants', 'restore')
 
-  const totalPages = Math.max(1, Math.ceil(activeRestaurants.length / ACTIVE_PAGE_SIZE))
+  useEffect(() => {
+    setPage(1)
+  }, [pageSize])
 
   useEffect(() => {
     setPage((p) => Math.min(p, totalPages))
   }, [totalPages])
 
-  const paginatedActive = useMemo(() => {
-    const start = (page - 1) * ACTIVE_PAGE_SIZE
-    return activeRestaurants.slice(start, start + ACTIVE_PAGE_SIZE)
-  }, [activeRestaurants, page])
+  const paginatedActive = activeRestaurants
 
   const pageNumbers = useMemo(() => {
     return Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -139,7 +145,7 @@ export default function Restaurant() {
         await restoreRestaurant(confirmDialog.id)
       }
       // Refresh the restaurants list
-      const data = await getRestaurantsList()
+      const data = await getRestaurantsList(undefined, { page, limit: pageSize })
       setRestaurants(data)
       setError(null)
       closeConfirmDialog()
@@ -161,10 +167,16 @@ export default function Restaurant() {
     <>
       {/* Confirmation Dialog Modal */}
       {confirmDialog.show && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" onClick={closeConfirmDialog}>
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70"
+          onClick={closeConfirmDialog}
+        >
+          <div
+            className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full mx-4 border border-slate-200 dark:border-slate-700"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="p-6">
-              <Alert variant="default">
+              <Alert variant="destructive">
                 <FiAlertCircle className="h-4 w-4" />
                 <AlertTitle>
                   {confirmDialog.type === 'delete' ? t('restaurantPage.deleteTitle') : t('restaurantPage.restoreTitle')}
@@ -192,20 +204,28 @@ export default function Restaurant() {
       )}
 
       <div className="space-y-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{t('restaurantPage.title')}</h1>
-            <p className="text-gray-600 mt-1 dark:text-slate-400">{t('restaurantPage.subtitle')}</p>
-          </div>
-          <Link to="/restaurant/creation" className="w-full sm:w-auto">
-            <Button
-              variant="primary"
-              icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
-              className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
-            >
-              <span className="sm:inline">{t('restaurantPage.create')}</span>
-            </Button>
-          </Link>
+        <div className="space-y-5">
+          <PageHeader
+            title={t('restaurantPage.title')}
+            subtitle={t('restaurantPage.subtitle')}
+            helpTooltip={t('common.toolbarHintDefault')}
+            helpAriaLabel={t('common.moreInfo')}
+          />
+          {perm('restaurants', 'create') ? (
+            <PageToolbarCard>
+              <div className="flex flex-wrap justify-end gap-3">
+                <Link to="/restaurant/creation" className="w-full sm:w-auto">
+                  <Button
+                    variant="primary"
+                    icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
+                    className="h-9 w-full justify-center px-4 text-sm sm:w-auto sm:px-6"
+                  >
+                    <span className="sm:inline">{t('restaurantPage.create')}</span>
+                  </Button>
+                </Link>
+              </div>
+            </PageToolbarCard>
+          ) : null}
         </div>
         {loading && (
           <Table>
@@ -290,21 +310,25 @@ export default function Restaurant() {
                           )}
                         </CardContent>
                         <CardFooter className="flex justify-end gap-1 px-4 pb-4 pt-0">
-                          <Link to={`/restaurant/creation/${encodeURIComponent(String(r.id ?? ''))}`}>
+                          {perm('restaurants', 'update') ? (
+                            <Link to={`/restaurant/creation/${encodeURIComponent(String(r.id ?? ''))}`}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="p-2 text-xs"
+                                icon={<FiEdit className="w-4 h-4" />}
+                              />
+                            </Link>
+                          ) : null}
+                          {perm('restaurants', 'delete') ? (
                             <Button
-                              variant="ghost"
+                              variant="danger"
                               size="sm"
                               className="p-2 text-xs"
-                              icon={<FiEdit className="w-4 h-4" />}
+                              icon={<FiTrash className="w-4 h-4" />}
+                              onClick={() => handleDelete(r.id ?? '', r.name ?? '')}
                             />
-                          </Link>
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            className="p-2 text-xs"
-                            icon={<FiTrash className="w-4 h-4" />}
-                            onClick={() => handleDelete(r.id ?? '', r.name ?? '')}
-                          />
+                          ) : null}
                         </CardFooter>
                       </Card>
                     )
@@ -364,8 +388,12 @@ export default function Restaurant() {
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-1">
-                              <Link to={`/restaurant/creation/${encodeURIComponent(String(r.id ?? ''))}`} className='mr-2' ><Button variant="ghost" className='p-2' size="sm" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
-                              <Button variant="danger" size="sm" className='p-2' icon={<FiTrash className="w-4 h-4" />} onClick={() => handleDelete(r.id ?? '', r.name ?? '')}></Button>
+                              {perm('restaurants', 'update') ? (
+                                <Link to={`/restaurant/creation/${encodeURIComponent(String(r.id ?? ''))}`} className='mr-2' ><Button variant="ghost" className='p-2' size="sm" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
+                              ) : null}
+                              {perm('restaurants', 'delete') ? (
+                                <Button variant="danger" size="sm" className='p-2' icon={<FiTrash className="w-4 h-4" />} onClick={() => handleDelete(r.id ?? '', r.name ?? '')}></Button>
+                              ) : null}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -377,8 +405,15 @@ export default function Restaurant() {
 
               {activeRestaurants.length > 0 && (
                 <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-2">
-                  <div className="text-gray-600 dark:text-slate-400 text-sm mb-2 sm:mb-0">
-                    {t('common.paginationSummary', { page, totalPages, total: activeRestaurants.length })}
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+                    <div className="text-gray-600 dark:text-slate-400 text-sm">
+                      {t('common.paginationSummary', { page, totalPages, total: totalItems })}
+                    </div>
+                    <TableItemsPerPageSelect
+                      id="restaurants-page-size"
+                      value={pageSize}
+                      onChange={setPageSize}
+                    />
                   </div>
                   <div className="flex items-center gap-1 flex-wrap justify-center">
                     <Button
@@ -440,7 +475,7 @@ export default function Restaurant() {
               )}
             </div>
 
-            {deletedRestaurants.length > 0 && (
+            {canSeeDeletedRestaurants && deletedRestaurants.length > 0 && (
               <div className="mt-8">
                 <h2 className="text-2xl font-semibold mb-4">{t('restaurantPage.deletedHeading')}</h2>
 
@@ -497,14 +532,16 @@ export default function Restaurant() {
                           </p>
                         </CardContent>
                         <CardFooter className="flex justify-end gap-1 px-4 pb-4 pt-0">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="p-2 text-xs"
-                            icon={<FiRotateCw className="w-4 h-4" />}
-                            onClick={() => handleRestore(r.id ?? '', r.name ?? '')}
-                            title={t('common.restore')}
-                          />
+                          {perm('restaurants', 'restore') ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="p-2 text-xs"
+                              icon={<FiRotateCw className="w-4 h-4" />}
+                              onClick={() => handleRestore(r.id ?? '', r.name ?? '')}
+                              title={t('common.restore')}
+                            />
+                          ) : null}
                         </CardFooter>
                       </Card>
                     )
@@ -569,13 +606,15 @@ export default function Restaurant() {
                             </TableCell>
                             <TableCell className="text-gray-500 text-sm">{String(r.deletedBy ?? '')}</TableCell>
                             <TableCell>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className='p-2'
-                                icon={<FiRotateCw className="w-4 h-4" />}
-                                onClick={() => handleRestore(r.id ?? '', r.name ?? '')}
-                              ></Button>
+                              {perm('restaurants', 'restore') ? (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className='p-2'
+                                  icon={<FiRotateCw className="w-4 h-4" />}
+                                  onClick={() => handleRestore(r.id ?? '', r.name ?? '')}
+                                ></Button>
+                              ) : null}
                             </TableCell>
                           </TableRow>
                         )

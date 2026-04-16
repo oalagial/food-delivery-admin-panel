@@ -7,8 +7,11 @@ import { Button } from '../components/ui/button'
 import { Skeleton } from '../components/ui/skeleton'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/card'
 import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert'
-import { getDeliveryLocationsList, getRestaurantsList, updateDeliveryLocation, deleteDeliveryLocation } from '../utils/api'
+import { getDeliveryLocationsList, getDeliveryLocationsListPaginated, getRestaurantsList, updateDeliveryLocation, deleteDeliveryLocation } from '../utils/api'
+import { perm } from '../utils/permissions'
 import type { CreateDeliveryLocationPayload as DeliveryLocation, Restaurant as RestaurantType } from '../utils/api'
+import { TableItemsPerPageSelect, DEFAULT_TABLE_PAGE_SIZE } from '../components/TableItemsPerPageSelect'
+import { PageHeader, PageToolbarCard } from '../components/page-layout'
 
 function renderRestaurantsCell(
   loc: Partial<DeliveryLocation>,
@@ -62,8 +65,6 @@ function renderRestaurantsCell(
   )
 }
 
-const ACTIVE_PAGE_SIZE = 10
-
 export default function DeliveryLocations() {
   const { t } = useTranslation()
   const [locations, setLocations] = useState<Partial<DeliveryLocation>[]>([])
@@ -71,6 +72,9 @@ export default function DeliveryLocations() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(DEFAULT_TABLE_PAGE_SIZE)
+  const [totalItems, setTotalItems] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
   const [confirmDialog, setConfirmDialog] = useState<{ show: boolean; id: string | null; name: string | null }>({
     show: false,
     id: null,
@@ -82,14 +86,16 @@ export default function DeliveryLocations() {
 
     async function loadAll() {
       try {
-        const locsRaw = await getDeliveryLocationsList()
+        const locsRaw = await getDeliveryLocationsListPaginated({ page, limit: pageSize })
         const restsRaw = await getRestaurantsList()
 
         if (!mounted) return
 
         // Normalize delivery locations to an array
-        const locsArray = Array.isArray(locsRaw) ? locsRaw : (locsRaw && (locsRaw as any).items) || (locsRaw && (locsRaw as any).data) || []
+        const locsArray = Array.isArray(locsRaw.data) ? locsRaw.data : []
         setLocations(locsArray as unknown as Partial<DeliveryLocation>[])
+        setTotalItems(locsRaw.total)
+        setTotalPages(Math.max(1, locsRaw.totalPages))
 
         // Normalize restaurants to an array and build id->name map
         const restsArray = Array.isArray(restsRaw) ? restsRaw : (restsRaw && (restsRaw as any).items) || (restsRaw && (restsRaw as any).data) || []
@@ -115,7 +121,7 @@ export default function DeliveryLocations() {
     return () => {
       mounted = false
     }
-  }, [])
+  }, [page, pageSize])
 
   // Separate active and deleted locations
   const activeLocations = locations.filter((loc) => {
@@ -126,17 +132,17 @@ export default function DeliveryLocations() {
     const anyLoc = loc as unknown as Record<string, unknown>
     return anyLoc.deletedBy
   })
+  const canSeeDeletedLocations = perm('delivery_locations', 'restore')
 
-  const totalPages = Math.max(1, Math.ceil(activeLocations.length / ACTIVE_PAGE_SIZE))
+  useEffect(() => {
+    setPage(1)
+  }, [pageSize])
 
   useEffect(() => {
     setPage((p) => Math.min(p, totalPages))
   }, [totalPages])
 
-  const paginatedActive = useMemo(() => {
-    const start = (page - 1) * ACTIVE_PAGE_SIZE
-    return activeLocations.slice(start, start + ACTIVE_PAGE_SIZE)
-  }, [activeLocations, page])
+  const paginatedActive = activeLocations
 
   const pageNumbers = useMemo(() => {
     return Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -167,7 +173,7 @@ export default function DeliveryLocations() {
     if (!confirmDialog.id) return
     try {
       await deleteDeliveryLocation(confirmDialog.id)
-      const locsRaw = await getDeliveryLocationsList()
+      const locsRaw = await getDeliveryLocationsList({ page, limit: pageSize })
       const locsArray = Array.isArray(locsRaw) ? locsRaw : (locsRaw && (locsRaw as any).items) || (locsRaw && (locsRaw as any).data) || []
       setLocations(locsArray as unknown as Partial<DeliveryLocation>[])
       setError(null)
@@ -201,7 +207,7 @@ export default function DeliveryLocations() {
       await updateDeliveryLocation(String(locId), updatedPayload)
 
       // Reload the list
-      const locsRaw = await getDeliveryLocationsList()
+      const locsRaw = await getDeliveryLocationsList({ page, limit: pageSize })
       const locsArray = Array.isArray(locsRaw) ? locsRaw : (locsRaw && (locsRaw as any).items) || (locsRaw && (locsRaw as any).data) || []
       setLocations(locsArray as unknown as Partial<DeliveryLocation>[])
       setError(null)
@@ -240,20 +246,28 @@ export default function DeliveryLocations() {
         </div>
       )}
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{t('deliveryLocationsPage.title')}</h1>
-          <p className="text-gray-600 mt-1 dark:text-slate-400">{t('deliveryLocationsPage.subtitle')}</p>
-        </div>
-        <Link to="/delivery-locations/creation" className="w-full sm:w-auto">
-          <Button
-            variant="primary"
-            icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
-            className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
-          >
-            <span className="sm:inline">{t('deliveryLocationsPage.create')}</span>
-          </Button>
-        </Link>
+      <div className="space-y-5">
+        <PageHeader
+          title={t('deliveryLocationsPage.title')}
+          subtitle={t('deliveryLocationsPage.subtitle')}
+          helpTooltip={t('common.toolbarHintDefault')}
+          helpAriaLabel={t('common.moreInfo')}
+        />
+        {perm('delivery_locations', 'create') ? (
+          <PageToolbarCard>
+            <div className="flex flex-wrap justify-end gap-3">
+              <Link to="/delivery-locations/creation" className="w-full sm:w-auto">
+                <Button
+                  variant="primary"
+                  icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
+                  className="h-9 w-full justify-center px-4 text-sm sm:w-auto sm:px-6"
+                >
+                  <span className="sm:inline">{t('deliveryLocationsPage.create')}</span>
+                </Button>
+              </Link>
+            </div>
+          </PageToolbarCard>
+        ) : null}
       </div>
 
       {error && <p className="text-red-600">{error}</p>}
@@ -330,36 +344,42 @@ export default function DeliveryLocations() {
                       </div>
                     </CardContent>
                     <CardFooter className="flex justify-end gap-1 px-4 pb-4 pt-0">
-                      <Link to={`/delivery-locations/creation/${encodeURIComponent(String(loc.id ?? ''))}`}>
+                      {perm('delivery_locations', 'update') ? (
+                        <Link to={`/delivery-locations/creation/${encodeURIComponent(String(loc.id ?? ''))}`}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="p-2 text-xs"
+                            icon={<FiEdit className="w-4 h-4" />}
+                          />
+                        </Link>
+                      ) : null}
+                      {perm('delivery_locations', 'update') ? (
                         <Button
                           variant="ghost"
                           size="sm"
                           className="p-2 text-xs"
-                          icon={<FiEdit className="w-4 h-4" />}
+                          icon={
+                            loc.isActive ? (
+                              <FiCheckCircle className="w-4 h-4 text-green-600" />
+                            ) : (
+                              <FiXCircle className="w-4 h-4 text-red-600" />
+                            )
+                          }
+                          onClick={() => toggleActiveStatus(loc)}
+                          title={loc.isActive ? t('common.deactivate') : t('common.activate')}
                         />
-                      </Link>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="p-2 text-xs"
-                        icon={
-                          loc.isActive ? (
-                            <FiCheckCircle className="w-4 h-4 text-green-600" />
-                          ) : (
-                            <FiXCircle className="w-4 h-4 text-red-600" />
-                          )
-                        }
-                        onClick={() => toggleActiveStatus(loc)}
-                        title={loc.isActive ? t('common.deactivate') : t('common.activate')}
-                      />
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        className="p-2 text-xs"
-                        icon={<FiTrash className="w-4 h-4" />}
-                        onClick={() => openConfirmDialog(loc)}
-                        title={t('common.delete')}
-                      />
+                      ) : null}
+                      {perm('delivery_locations', 'delete') ? (
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          className="p-2 text-xs"
+                          icon={<FiTrash className="w-4 h-4" />}
+                          onClick={() => openConfirmDialog(loc)}
+                          title={t('common.delete')}
+                        />
+                      ) : null}
                     </CardFooter>
                   </Card>
                 ))
@@ -401,16 +421,22 @@ export default function DeliveryLocations() {
                       <TableCell>{renderRestaurantsCell(loc, restaurantsMap, t)}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
-                          <Link to={`/delivery-locations/creation/${encodeURIComponent(String(loc.id ?? ''))}`}><Button variant="ghost" className='p-2' size="sm" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
-                          <Button
-                            variant={loc.isActive ? "ghost" : "ghost"}
-                            size="sm"
-                            className='p-2'
-                            icon={loc.isActive ? <FiCheckCircle className="w-4 h-4 text-green-600" /> : <FiXCircle className="w-4 h-4 text-red-600" />}
-                            onClick={() => toggleActiveStatus(loc)}
-                            title={loc.isActive ? t('common.deactivate') : t('common.activate')}
-                          ></Button>
-                          <Button variant="danger" size="sm" className='p-2' icon={<FiTrash className="w-4 h-4" />} onClick={() => openConfirmDialog(loc)} title={t('common.delete')} />
+                          {perm('delivery_locations', 'update') ? (
+                            <Link to={`/delivery-locations/creation/${encodeURIComponent(String(loc.id ?? ''))}`}><Button variant="ghost" className='p-2' size="sm" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
+                          ) : null}
+                          {perm('delivery_locations', 'update') ? (
+                            <Button
+                              variant={loc.isActive ? "ghost" : "ghost"}
+                              size="sm"
+                              className='p-2'
+                              icon={loc.isActive ? <FiCheckCircle className="w-4 h-4 text-green-600" /> : <FiXCircle className="w-4 h-4 text-red-600" />}
+                              onClick={() => toggleActiveStatus(loc)}
+                              title={loc.isActive ? t('common.deactivate') : t('common.activate')}
+                            ></Button>
+                          ) : null}
+                          {perm('delivery_locations', 'delete') ? (
+                            <Button variant="danger" size="sm" className='p-2' icon={<FiTrash className="w-4 h-4" />} onClick={() => openConfirmDialog(loc)} title={t('common.delete')} />
+                          ) : null}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -421,8 +447,15 @@ export default function DeliveryLocations() {
 
             {activeLocations.length > 0 && (
               <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-2">
-                <div className="text-gray-600 dark:text-slate-400 text-sm mb-2 sm:mb-0">
-                  {t('common.paginationSummary', { page, totalPages, total: activeLocations.length })}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+                  <div className="text-gray-600 dark:text-slate-400 text-sm">
+                    {t('common.paginationSummary', { page, totalPages, total: totalItems })}
+                  </div>
+                  <TableItemsPerPageSelect
+                    id="delivery-locations-page-size"
+                    value={pageSize}
+                    onChange={setPageSize}
+                  />
                 </div>
                 <div className="flex items-center gap-1 flex-wrap justify-center">
                   <Button
@@ -484,7 +517,7 @@ export default function DeliveryLocations() {
             )}
           </div>
 
-          {deletedLocations.length > 0 && (
+          {canSeeDeletedLocations && deletedLocations.length > 0 && (
             <div className="mt-8">
               <h2 className="text-2xl font-semibold mb-4">{t('deliveryLocationsPage.deletedHeading')}</h2>
 

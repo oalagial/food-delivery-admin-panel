@@ -19,4 +19,10 @@ export const usersPage = {
   deactivateUserTitle: 'Deactivate user',
   activateUserTitle: 'Activate user',
   createdLabel: 'Created:',
+  deleteTitle: 'Delete user permanently?',
+  deleteDesc:
+    'This will remove {{id}} and their role assignments. This cannot be undone.',
+  delete: 'Delete',
+  deleting: 'Deleting…',
+  deleteUserTitle: 'Delete user',
 } as const

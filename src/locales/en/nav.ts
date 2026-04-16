@@ -12,6 +12,7 @@ export const nav = {
   deliveryLocations: 'Delivery locations',
   users: 'Users',
   roles: 'Roles',
+  permissions: 'Permissions',
   types: 'Types',
   products: 'Products',
   menus: 'Menus',

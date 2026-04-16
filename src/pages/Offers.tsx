@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { getOfferList, deleteOffer, restoreOffer, updateOffer } from "../utils/api";
+import { getOfferListPaginated, deleteOffer, restoreOffer, updateOffer } from "../utils/api";
 import { API_BASE } from "../config";
 import { FiPlus, FiEdit, FiTrash, FiCheckCircle, FiXCircle, FiRotateCw, FiAlertCircle } from "react-icons/fi";
 import { Link } from "react-router-dom";
@@ -9,6 +9,9 @@ import { Skeleton } from "../components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeadCell, TableRow } from "../components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from "../components/ui/alert";
+import { perm } from "../utils/permissions";
+import { PageHeader, PageToolbarCard } from "../components/page-layout";
+import { TableItemsPerPageSelect, DEFAULT_TABLE_PAGE_SIZE } from "../components/TableItemsPerPageSelect";
 
 type OfferRowProps = {
   offer: any;
@@ -89,19 +92,29 @@ function OfferRow({ offer, isOpen, onToggle, onDelete, isDeleting = false, onTog
         <TableCell>{offer.description}</TableCell>
         <TableCell>{offer.price}</TableCell>
         <TableCell className="text-center">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="inline-flex items-center justify-center"
-            onClick={() => onToggleActive && onToggleActive(offer)}
-            aria-label={offer.isActive ? t("common.deactivate") : t("common.activate")}
-            icon={
-              offer.isActive
-                ? <FiCheckCircle className="w-5 h-5 text-green-500" aria-label={t("common.active")} />
-                : <FiXCircle className="w-5 h-5 text-red-500" aria-label={t("common.inactive")} />
-            }
-          />
+          {perm("offers", "update") ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="inline-flex items-center justify-center"
+              onClick={() => onToggleActive && onToggleActive(offer)}
+              aria-label={offer.isActive ? t("common.deactivate") : t("common.activate")}
+              icon={
+                offer.isActive
+                  ? <FiCheckCircle className="w-5 h-5 text-green-500" aria-label={t("common.active")} />
+                  : <FiXCircle className="w-5 h-5 text-red-500" aria-label={t("common.inactive")} />
+              }
+            />
+          ) : (
+            <span className="inline-flex justify-center" aria-hidden>
+              {offer.isActive ? (
+                <FiCheckCircle className="w-5 h-5 text-green-500 opacity-70" aria-label={t("common.active")} />
+              ) : (
+                <FiXCircle className="w-5 h-5 text-red-500 opacity-70" aria-label={t("common.inactive")} />
+              )}
+            </span>
+          )}
         </TableCell>
         <TableCell>
           <div className="flex justify-center gap-2">
@@ -113,17 +126,21 @@ function OfferRow({ offer, isOpen, onToggle, onDelete, isDeleting = false, onTog
               {isOpen ? t("common.hide") : t("common.details")}
             </Button>
 
-            <Link to={`/offers/creation/${offer.id}`}>
-              <Button variant="ghost" size="sm" icon={<FiEdit className="w-4 h-4" />} />
-            </Link>
+            {perm("offers", "update") ? (
+              <Link to={`/offers/creation/${offer.id}`}>
+                <Button variant="ghost" size="sm" icon={<FiEdit className="w-4 h-4" />} />
+              </Link>
+            ) : null}
 
-            <Button
-              variant="danger"
-              size="sm"
-              icon={<FiTrash className="w-4 h-4" />}
-              onClick={() => onDelete && onDelete(offer.id, offer.name)}
-              disabled={isDeleting}
-            />
+            {perm("offers", "delete") ? (
+              <Button
+                variant="danger"
+                size="sm"
+                icon={<FiTrash className="w-4 h-4" />}
+                onClick={() => onDelete && onDelete(offer.id, offer.name)}
+                disabled={isDeleting}
+              />
+            ) : null}
           </div>
         </TableCell>
       </TableRow>
@@ -146,14 +163,15 @@ function OfferRow({ offer, isOpen, onToggle, onDelete, isDeleting = false, onTog
   );
 }
 
-const ACTIVE_PAGE_SIZE = 10;
-
 export default function Offers() {
   const { t } = useTranslation();
   const [offers, setOffers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_TABLE_PAGE_SIZE);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [openRowId, setOpenRowId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | number | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -174,9 +192,11 @@ export default function Offers() {
 
   const loadOffers = () => {
     setLoading(true);
-    getOfferList()
-      .then((data) => {
-        setOffers(data);
+    getOfferListPaginated({ page, limit: pageSize })
+      .then((res) => {
+        setOffers(res.data);
+        setTotalItems(res.total);
+        setTotalPages(Math.max(1, res.totalPages));
         setError(null);
       })
       .catch((err) => {
@@ -190,7 +210,7 @@ export default function Offers() {
 
   useEffect(() => {
     loadOffers();
-  }, []);
+  }, [page, pageSize]);
 
   const handleDelete = async (id: string | number, name?: string) => {
     setConfirmDialog({
@@ -248,17 +268,17 @@ export default function Offers() {
     const anyOffer = o as Record<string, unknown>;
     return !!anyOffer.deletedBy;
   });
+  const canSeeDeletedOffers = perm("offers", "restore");
 
-  const totalPages = Math.max(1, Math.ceil(activeOffers.length / ACTIVE_PAGE_SIZE));
+  useEffect(() => {
+    setPage(1);
+  }, [pageSize]);
 
   useEffect(() => {
     setPage((p) => Math.min(p, totalPages));
   }, [totalPages]);
 
-  const paginatedActive = useMemo(() => {
-    const start = (page - 1) * ACTIVE_PAGE_SIZE;
-    return activeOffers.slice(start, start + ACTIVE_PAGE_SIZE);
-  }, [activeOffers, page]);
+  const paginatedActive = activeOffers;
 
   const pageNumbers = useMemo(() => {
     return Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -330,20 +350,28 @@ export default function Offers() {
         </div>
       )}
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{t("offersPage.title")}</h1>
-          <p className="text-gray-600 mt-1 dark:text-slate-400">{t("offersPage.subtitle")}</p>
-        </div>
-        <Link to="/offers/creation" className="w-full sm:w-auto">
-          <Button
-            variant="primary"
-            icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
-            className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
-          >
-            <span className="sm:inline">{t("offersPage.create")}</span>
-          </Button>
-        </Link>
+      <div className="space-y-5">
+        <PageHeader
+          title={t("offersPage.title")}
+          subtitle={t("offersPage.subtitle")}
+          helpTooltip={t("common.toolbarHintDefault")}
+          helpAriaLabel={t("common.moreInfo")}
+        />
+        {perm("offers", "create") ? (
+          <PageToolbarCard>
+            <div className="flex flex-wrap justify-end gap-3">
+              <Link to="/offers/creation" className="w-full sm:w-auto">
+                <Button
+                  variant="primary"
+                  icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
+                  className="h-9 w-full justify-center px-4 text-sm sm:w-auto sm:px-6"
+                >
+                  <span className="sm:inline">{t("offersPage.create")}</span>
+                </Button>
+              </Link>
+            </div>
+          </PageToolbarCard>
+        ) : null}
       </div>
       {loading && (
         <Table>
@@ -429,35 +457,41 @@ export default function Offers() {
                           {openRowId === String(o.id) ? t("common.hideDetails") : t("common.details")}
                         </Button>
                         <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="p-2 text-xs"
-                            icon={
-                              o.isActive ? (
-                                <FiCheckCircle className="w-4 h-4 text-green-600" />
-                              ) : (
-                                <FiXCircle className="w-4 h-4 text-red-600" />
-                              )
-                            }
-                            onClick={() => handleToggleActive(o)}
-                          />
-                          <Link to={`/offers/creation/${o.id}`}>
+                          {perm("offers", "update") ? (
                             <Button
                               variant="ghost"
                               size="sm"
                               className="p-2 text-xs"
-                              icon={<FiEdit className="w-4 h-4" />}
+                              icon={
+                                o.isActive ? (
+                                  <FiCheckCircle className="w-4 h-4 text-green-600" />
+                                ) : (
+                                  <FiXCircle className="w-4 h-4 text-red-600" />
+                                )
+                              }
+                              onClick={() => handleToggleActive(o)}
                             />
-                          </Link>
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            className="p-2 text-xs"
-                            icon={<FiTrash className="w-4 h-4" />}
-                            onClick={() => handleDelete(o.id, o.name)}
-                            disabled={deletingId === o.id}
-                          />
+                          ) : null}
+                          {perm("offers", "update") ? (
+                            <Link to={`/offers/creation/${o.id}`}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="p-2 text-xs"
+                                icon={<FiEdit className="w-4 h-4" />}
+                              />
+                            </Link>
+                          ) : null}
+                          {perm("offers", "delete") ? (
+                            <Button
+                              variant="danger"
+                              size="sm"
+                              className="p-2 text-xs"
+                              icon={<FiTrash className="w-4 h-4" />}
+                              onClick={() => handleDelete(o.id, o.name)}
+                              disabled={deletingId === o.id}
+                            />
+                          ) : null}
                         </div>
                       </div>
 
@@ -514,8 +548,15 @@ export default function Offers() {
 
             {activeOffers.length > 0 && (
               <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-2">
-                <div className="text-gray-600 dark:text-slate-400 text-sm mb-2 sm:mb-0">
-                  {t("common.paginationSummary", { page, totalPages, total: activeOffers.length })}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+                  <div className="text-gray-600 dark:text-slate-400 text-sm">
+                    {t("common.paginationSummary", { page, totalPages, total: totalItems })}
+                  </div>
+                  <TableItemsPerPageSelect
+                    id="offers-page-size"
+                    value={pageSize}
+                    onChange={setPageSize}
+                  />
                 </div>
                 <div className="flex items-center gap-1 flex-wrap justify-center">
                   <Button
@@ -577,7 +618,7 @@ export default function Offers() {
             )}
           </div>
 
-          {deletedOffers.length > 0 && (
+          {canSeeDeletedOffers && deletedOffers.length > 0 && (
             <div>
               <h2 className="text-2xl font-semibold text-gray-600 dark:text-slate-400 mb-4">{t("offersPage.deletedHeading")}</h2>
               <Table>
@@ -621,13 +662,15 @@ export default function Offers() {
                         </TableCell>
                         <TableCell>
                           <div className="flex justify-center gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="p-2"
-                              icon={<FiRotateCw className="w-4 h-4" />}
-                              onClick={() => handleRestore(o.id, o.name)}
-                            />
+                            {perm("offers", "restore") ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="p-2"
+                                icon={<FiRotateCw className="w-4 h-4" />}
+                                onClick={() => handleRestore(o.id, o.name)}
+                              />
+                            ) : null}
                           </div>
                         </TableCell>
                       </TableRow>

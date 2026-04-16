@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '../components/ui/button'
 import { Link } from 'react-router-dom'
 import { Skeleton } from '../components/ui/skeleton'
-import { FiPlus, FiEdit, FiUserMinus, FiUserPlus } from 'react-icons/fi'
+import { FiPlus, FiEdit, FiUserMinus, FiUserPlus, FiTrash2 } from 'react-icons/fi'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 
 type User = {
@@ -15,12 +15,13 @@ type User = {
 }
 
 import { API_BASE } from '../config'
-import { getRolesList, setUserActive, getCurrentUserId } from '../utils/api'
+import { getRolesList, setUserActive, getCurrentUserId, deleteUser } from '../utils/api'
+import { perm } from '../utils/permissions'
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert'
 import { AlertCircle } from 'lucide-react'
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card'
-
-const PAGE_SIZE = 10
+import { TableItemsPerPageSelect, DEFAULT_TABLE_PAGE_SIZE } from '../components/TableItemsPerPageSelect'
+import { PageHeader, PageToolbarCard } from '../components/page-layout'
 
 export default function Users() {
   const { t } = useTranslation()
@@ -29,25 +30,32 @@ export default function Users() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(DEFAULT_TABLE_PAGE_SIZE)
+  const [totalItems, setTotalItems] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
   const [userToDeactivate, setUserToDeactivate] = useState<User | null>(null)
   const [deactivating, setDeactivating] = useState(false)
   const [activatingId, setActivatingId] = useState<string | number | null>(null)
+  const [userToDelete, setUserToDelete] = useState<User | null>(null)
+  const [deletingUser, setDeletingUser] = useState(false)
   const currentUserId = getCurrentUserId()
 
   // Use dedicated create/edit page instead of inline editing
 
-  async function fetchUsers() {
+  async function fetchUsers(targetPage = page, targetLimit = pageSize) {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`${API_BASE}/users`)
+      const res = await fetch(`${API_BASE}/users?page=${targetPage}&limit=${targetLimit}`)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       const data = Array.isArray(json) ? json : json?.data ?? Object.values(json ?? {})
       setUsers(data)
+      setTotalItems(Number(json?.total) || data.length)
+      setTotalPages(Math.max(1, Number(json?.totalPages) || 1))
       // fetch roles map to show role names (use api helper)
       try {
-        const roles = await getRolesList()
+        const roles = await getRolesList({ limit: 200 })
         const map: Record<string, string> = {}
         roles.forEach((role) => { if (role && role.id !== undefined) map[String(role.id)] = String(role.name ?? role.id) })
         setRolesMap(map)
@@ -63,19 +71,18 @@ export default function Users() {
   }
 
   useEffect(() => {
-    void fetchUsers()
-  }, [])
+    void fetchUsers(page, pageSize)
+  }, [page, pageSize])
 
-  const totalPages = Math.max(1, Math.ceil(users.length / PAGE_SIZE))
+  useEffect(() => {
+    setPage(1)
+  }, [pageSize])
 
   useEffect(() => {
     setPage((p) => Math.min(p, totalPages))
   }, [totalPages])
 
-  const paginatedUsers = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE
-    return users.slice(start, start + PAGE_SIZE)
-  }, [users, page])
+  const paginatedUsers = users
 
   const pageNumbers = useMemo(() => {
     return Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -101,12 +108,23 @@ export default function Users() {
     return () => window.removeEventListener('keydown', onKey)
   }, [userToDeactivate])
 
+  useEffect(() => {
+    if (!userToDelete) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') cancelDelete()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [userToDelete])
+
   if (loading && users.length === 0) {
     return (
       <div>
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold">{t('usersPage.title')}</h1>
-          <Link to="/users/creation"><Button variant="primary" icon={<FiPlus className="w-4 h-4" />}>{t('usersPage.create')}</Button></Link>
+          {perm('users', 'create') ? (
+            <Link to="/users/creation"><Button variant="primary" icon={<FiPlus className="w-4 h-4" />}>{t('usersPage.create')}</Button></Link>
+          ) : null}
         </div>
         <Table>
           <TableHead>
@@ -115,7 +133,7 @@ export default function Users() {
               <TableHeadCell>{t('usersPage.username')}</TableHeadCell>
               <TableHeadCell>{t('usersPage.role')}</TableHeadCell>
               <TableHeadCell>{t('usersPage.created')}</TableHeadCell>
-              <TableHeadCell>{t('common.actions')}</TableHeadCell>
+              <TableHeadCell className="text-center">{t('common.actions')}</TableHeadCell>
             </tr>
           </TableHead>
           <TableBody>
@@ -179,24 +197,57 @@ export default function Users() {
     }
   }
 
+  function askDelete(user: User) {
+    setError(null)
+    setUserToDelete(user)
+  }
+
+  function cancelDelete() {
+    setUserToDelete(null)
+  }
+
+  async function confirmDelete() {
+    if (!userToDelete) return
+    setError(null)
+    setDeletingUser(true)
+    try {
+      await deleteUser(userToDelete.id)
+      setUserToDelete(null)
+      await fetchUsers()
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      setError(msg)
+    } finally {
+      setDeletingUser(false)
+    }
+  }
+
 
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{t('usersPage.title')}</h1>
-          <p className="text-gray-600 mt-1 dark:text-slate-400">{t('usersPage.subtitle')}</p>
-        </div>
-        <Link to="/users/creation" className="w-full sm:w-auto">
-          <Button
-            variant="primary"
-            icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
-            className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
-          >
-            <span className="sm:inline">{t('usersPage.createUser')}</span>
-          </Button>
-        </Link>
+      <div className="space-y-5">
+        <PageHeader
+          title={t('usersPage.title')}
+          subtitle={t('usersPage.subtitle')}
+          helpTooltip={t('common.toolbarHintDefault')}
+          helpAriaLabel={t('common.moreInfo')}
+        />
+        {perm('users', 'create') ? (
+          <PageToolbarCard>
+            <div className="flex flex-wrap justify-end gap-3">
+              <Link to="/users/creation" className="w-full sm:w-auto">
+                <Button
+                  variant="primary"
+                  icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
+                  className="h-9 w-full justify-center px-4 text-sm sm:w-auto sm:px-6"
+                >
+                  <span className="sm:inline">{t('usersPage.createUser')}</span>
+                </Button>
+              </Link>
+            </div>
+          </PageToolbarCard>
+        ) : null}
       </div>
 
       {error && (
@@ -228,6 +279,33 @@ export default function Users() {
               </Button>
               <Button variant="danger" onClick={confirmDeactivate} disabled={deactivating}>
                 {deactivating ? t('usersPage.deactivating') : t('usersPage.deactivate')}
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+      )}
+
+      {userToDelete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+          onClick={(e) => e.target === e.currentTarget && !deletingUser && cancelDelete()}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-user-title"
+        >
+          <Card className="w-full max-w-md shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <CardHeader>
+              <CardTitle id="delete-user-title">{t('usersPage.deleteTitle')}</CardTitle>
+              <CardDescription>
+                {t('usersPage.deleteDesc', { id: userToDelete.email ?? userToDelete.username ?? userToDelete.id })}
+              </CardDescription>
+            </CardHeader>
+            <CardFooter className="flex justify-end gap-3">
+              <Button variant="default" onClick={cancelDelete} disabled={deletingUser}>
+                {t('common.cancel')}
+              </Button>
+              <Button variant="danger" onClick={confirmDelete} disabled={deletingUser}>
+                {deletingUser ? t('usersPage.deleting') : t('usersPage.delete')}
               </Button>
             </CardFooter>
           </Card>
@@ -276,44 +354,59 @@ export default function Users() {
                     {u.username && u.username !== u.email ? u.username : roleLabel || t('common.emDash')}
                   </p>
                 </CardHeader>
-                <CardFooter className="flex justify-between items-center px-4 pb-4 pt-0 gap-2">
-                  <div className="text-[11px]">
+                <CardFooter className="flex flex-col items-center gap-3 px-4 pb-4 pt-0 sm:flex-row sm:justify-between sm:items-center">
+                  <div className="text-[11px] text-center sm:text-left">
                     {u.createdAt && (
                       <span>{t('usersPage.createdLabel')} {new Date(String(u.createdAt)).toLocaleDateString()}</span>
                     )}
                   </div>
-                  <div className="flex gap-1">
-                    <Link to={`/users/creation/${encodeURIComponent(String(u.id ?? ''))}`}>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="p-2 text-xs"
-                        icon={<FiEdit className="w-4 h-4" />}
-                        title={t('usersPage.editTitle')}
-                      />
-                    </Link>
-                    {isCurrent ? null : active ? (
+                  <div className="flex flex-wrap justify-center gap-1">
+                    {perm('users', 'update') ? (
+                      <Link to={`/users/creation/${encodeURIComponent(String(u.id ?? ''))}`}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="p-2 text-xs"
+                          icon={<FiEdit className="w-4 h-4" />}
+                          title={t('usersPage.editTitle')}
+                        />
+                      </Link>
+                    ) : null}
+                    {perm('users', 'update') && !isCurrent ? (
+                      active ? (
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          className="p-2 text-xs"
+                          icon={<FiUserMinus className="w-4 h-4" />}
+                          onClick={() => askDeactivate(u)}
+                          type="button"
+                          title={t('usersPage.deactivateUserTitle')}
+                        />
+                      ) : (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          className="p-2 text-xs"
+                          icon={<FiUserPlus className="w-4 h-4" />}
+                          onClick={() => handleActivate(u)}
+                          type="button"
+                          disabled={activatingId === u.id}
+                          title={t('usersPage.activateUserTitle')}
+                        />
+                      )
+                    ) : null}
+                    {perm('users', 'delete') && !isCurrent ? (
                       <Button
                         variant="danger"
                         size="sm"
                         className="p-2 text-xs"
-                        icon={<FiUserMinus className="w-4 h-4" />}
-                        onClick={() => askDeactivate(u)}
+                        icon={<FiTrash2 className="w-4 h-4" />}
+                        onClick={() => askDelete(u)}
                         type="button"
-                        title={t('usersPage.deactivateUserTitle')}
+                        title={t('usersPage.deleteUserTitle')}
                       />
-                    ) : (
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        className="p-2 text-xs"
-                        icon={<FiUserPlus className="w-4 h-4" />}
-                        onClick={() => handleActivate(u)}
-                        type="button"
-                        disabled={activatingId === u.id}
-                        title={t('usersPage.activateUserTitle')}
-                      />
-                    )}
+                    ) : null}
                   </div>
                 </CardFooter>
               </Card>
@@ -332,7 +425,7 @@ export default function Users() {
               <TableHeadCell>{t('usersPage.role')}</TableHeadCell>
               <TableHeadCell>{t('common.status')}</TableHeadCell>
               <TableHeadCell>{t('usersPage.created')}</TableHeadCell>
-              <TableHeadCell>{t('common.actions')}</TableHeadCell>
+              <TableHeadCell className="text-center">{t('common.actions')}</TableHeadCell>
             </tr>
           </TableHead>
           <TableBody>
@@ -367,15 +460,22 @@ export default function Users() {
                     </span>
                   </TableCell>
                   <TableCell>{u.createdAt ? new Date(String(u.createdAt)).toLocaleString() : ''}</TableCell>
-                  <TableCell className="flex items-center gap-1">
-                    <Link to={`/users/creation/${encodeURIComponent(String(u.id ?? ''))}`}>
-                      <Button variant="ghost" className="p-2" size="sm" icon={<FiEdit className="w-4 h-4" />} title={t('usersPage.editTitle')} />
-                    </Link>
-                    {currentUserId != null && String(u.id) === String(currentUserId) ? null : active ? (
-                      <Button variant="danger" size="sm" className="p-2" icon={<FiUserMinus className="w-4 h-4" />} onClick={() => askDeactivate(u)} type="button" title={t('usersPage.deactivateUserTitle')} />
-                    ) : (
-                      <Button variant="primary" size="sm" className="p-2" icon={<FiUserPlus className="w-4 h-4" />} onClick={() => handleActivate(u)} type="button" disabled={activatingId === u.id} title={t('usersPage.activateUserTitle')} />
-                    )}
+                  <TableCell className="flex items-center justify-center gap-1">
+                    {perm('users', 'update') ? (
+                      <Link to={`/users/creation/${encodeURIComponent(String(u.id ?? ''))}`}>
+                        <Button variant="ghost" className="p-2" size="sm" icon={<FiEdit className="w-4 h-4" />} title={t('usersPage.editTitle')} />
+                      </Link>
+                    ) : null}
+                    {perm('users', 'update') && !(currentUserId != null && String(u.id) === String(currentUserId)) ? (
+                      active ? (
+                        <Button variant="danger" size="sm" className="p-2" icon={<FiUserMinus className="w-4 h-4" />} onClick={() => askDeactivate(u)} type="button" title={t('usersPage.deactivateUserTitle')} />
+                      ) : (
+                        <Button variant="primary" size="sm" className="p-2" icon={<FiUserPlus className="w-4 h-4" />} onClick={() => handleActivate(u)} type="button" disabled={activatingId === u.id} title={t('usersPage.activateUserTitle')} />
+                      )
+                    ) : null}
+                    {perm('users', 'delete') && !(currentUserId != null && String(u.id) === String(currentUserId)) ? (
+                      <Button variant="danger" size="sm" className="p-2" icon={<FiTrash2 className="w-4 h-4" />} onClick={() => askDelete(u)} type="button" title={t('usersPage.deleteUserTitle')} />
+                    ) : null}
                   </TableCell>
                 </TableRow>
               )
@@ -386,8 +486,15 @@ export default function Users() {
 
       {users.length > 0 && (
         <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-2">
-          <div className="text-gray-600 dark:text-slate-400 text-sm mb-2 sm:mb-0">
-            {t('common.paginationSummary', { page, totalPages, total: users.length })}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+            <div className="text-gray-600 dark:text-slate-400 text-sm">
+              {t('common.paginationSummary', { page, totalPages, total: totalItems })}
+            </div>
+            <TableItemsPerPageSelect
+              id="users-page-size"
+              value={pageSize}
+              onChange={setPageSize}
+            />
           </div>
           <div className="flex items-center gap-1 flex-wrap justify-center">
             <Button

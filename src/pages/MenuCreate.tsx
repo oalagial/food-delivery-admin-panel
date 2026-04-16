@@ -7,15 +7,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Label } from '../components/ui/label'
 import { Alert, AlertDescription } from '../components/ui/alert'
 import { AlertCircle } from 'lucide-react'
-import { getRestaurantsList, getSectionsList, getMenuById, createMenu, updateMenu } from '../utils/api'
+import { getAllRestaurantsForSelection, getAllSectionsForSelection, getMenuById, createMenu, updateMenu } from '../utils/api'
+import { canSubmitResourceForm } from '../utils/permissions'
+import { FormSaveBarrier } from '../components/FormSaveBarrier'
 import type { CreateMenuPayload, Restaurant, SectionItem } from '../utils/api'
 import { Select } from '../components/ui/select';
+import { TransferList } from '../components/ui/transfer-list'
 
 export default function MenuCreate() {
   const { t } = useTranslation()
   const { id } = useParams<{ id?: string }>()
   const navigate = useNavigate()
   const editing = !!id
+  const canSave = canSubmitResourceForm('menus', editing)
 
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -32,8 +36,8 @@ export default function MenuCreate() {
   useEffect(() => {
     let mounted = true
     Promise.all([
-      getRestaurantsList().catch(() => []),
-      getSectionsList().catch(() => []),
+      getAllRestaurantsForSelection().catch(() => []),
+      getAllSectionsForSelection().catch(() => []),
       id ? getMenuById(id).catch(() => null) : Promise.resolve(null),
     ]).then(([rs, ss, menu]) => {
       if (!mounted) return
@@ -63,12 +67,17 @@ export default function MenuCreate() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!canSave) return
     setError(null)
     if (!name.trim()) { setError(t('common.menuNameRequired')); return }
     const payload: CreateMenuPayload = {
       name: String(name).trim(),
       description: description || undefined,
       sectionIds: sectionIds.map(Number),
+      orderedSections: sectionIds.map((sectionId, index) => ({
+        sectionId: Number(sectionId),
+        sortOrder: index + 1,
+      })),
       restaurantId: restaurantId ? Number(restaurantId) : undefined,
     }
     try {
@@ -103,6 +112,7 @@ export default function MenuCreate() {
           onSubmit={handleSubmit}
           className="grid gap-6 max-w-5xl lg:grid-cols-2"
         >
+          <FormSaveBarrier canSave={canSave} alertClassName="lg:col-span-2">
           {/* Basic info */}
           <Card className="shadow-sm">
             <CardHeader className="pb-3">
@@ -161,73 +171,23 @@ export default function MenuCreate() {
               <CardDescription>{t('common.menuSectionsDesc')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex gap-4">
-                {/* Available Sections */}
-                <div className="flex-1">
-                  <div className="font-semibold mb-1 text-sm">{t('common.available')}</div>
-                  <div className="border rounded p-2 h-40 overflow-y-auto bg-white dark:bg-slate-900">
-                    {sections.filter((s) => !sectionIds.includes(Number(s.id))).length === 0 && (
-                      <div className="text-xs text-gray-400">{t('common.noMoreSections')}</div>
-                    )}
-                    {sections
-                      .filter((s) => !sectionIds.includes(Number(s.id)))
-                      .map((s) => (
-                        <div
-                          key={s.id}
-                          className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded cursor-pointer group"
-                        >
-                          <span>{s.name || s.id}</span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="ml-2 text-green-600 hover:text-green-800 text-xs font-bold opacity-80 group-hover:opacity-100"
-                            onClick={() =>
-                              setSectionIds((ids) => [...ids.map(Number), Number(s.id)])
-                            }
-                          >
-                            {t('common.add')}
-                          </Button>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-                {/* Selected Sections */}
-                <div className="flex-1">
-                  <div className="font-semibold mb-1 text-sm">{t('common.selected')}</div>
-                  <div className="border rounded p-2 h-40 overflow-y-auto bg-white dark:bg-slate-900">
-                    {sectionIds.length === 0 && (
-                      <div className="text-xs text-gray-400">{t('common.noSectionsSelected')}</div>
-                    )}
-                    {sections
-                      .filter((s) => sectionIds.includes(Number(s.id)))
-                      .map((s) => (
-                        <div
-                          key={s.id}
-                          className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded cursor-pointer group"
-                        >
-                          <span>{s.name || s.id}</span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="ml-2 text-red-600 hover:text-red-800 text-xs font-bold opacity-80 group-hover:opacity-100"
-                            onClick={() =>
-                              setSectionIds((ids) =>
-                                ids.map(Number).filter((id) => id !== Number(s.id)),
-                              )
-                            }
-                          >
-                            {t('common.remove')}
-                          </Button>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              </div>
-              <p className="mt-1 text-xs text-gray-500">
-                {t('common.pickerHintAddRemove')}
-              </p>
+              <TransferList
+                items={sections.map((section) => ({
+                  id: Number(section.id),
+                  label: String(section.name || section.id),
+                }))}
+                selectedIds={sectionIds}
+                onChange={(ids) => setSectionIds(ids.map((id) => Number(id)))}
+                availableTitle={t('common.available')}
+                selectedTitle={t('common.selected')}
+                availableEmptyText={t('common.noMoreSections')}
+                selectedEmptyText={t('common.noSectionsSelected')}
+                searchPlaceholder={t('common.search')}
+                noDataText={t('common.noData')}
+                hintText={t('common.pickerHintAddRemoveReorder')}
+                clearLabel={t('common.clearField')}
+                reorder
+              />
 
               {error && (
                 <Alert variant="destructive">
@@ -235,21 +195,21 @@ export default function MenuCreate() {
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
-
-              <div className="flex justify-end gap-3 pt-2">
-                <Button
-                  variant="default"
-                  type="button"
-                  onClick={() => navigate(-1)}
-                >
-                  {t('common.cancel')}
-                </Button>
-                <Button type="submit" variant="primary" disabled={saving}>
-                  {saving ? t('common.saving') : editing ? t('common.update') : t('common.create')}
-                </Button>
-              </div>
             </CardContent>
           </Card>
+          </FormSaveBarrier>
+          <div className="flex justify-end gap-3 pt-2 lg:col-span-2">
+            <Button
+              variant="default"
+              type="button"
+              onClick={() => navigate(-1)}
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button type="submit" variant="primary" disabled={!canSave || saving}>
+              {saving ? t('common.saving') : editing ? t('common.update') : t('common.create')}
+            </Button>
+          </div>
         </form>
       )}
     </div>

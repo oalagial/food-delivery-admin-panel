@@ -1,12 +1,15 @@
 import './App.css'
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom'
+import { useEffect, useState, type ReactElement } from 'react'
 import Header from './components/Header'
 import Login from './pages/Login'
 import SetPassword from './pages/SetPassword'
+import ResetPassword from './pages/ResetPassword'
+import ForgotPassword from './pages/ForgotPassword'
 import RequireAuth from './components/RequireAuth'
 import RequireRouteAccess from './components/RequireRouteAccess'
-import { getToken } from './utils/api'
+import { getToken, syncPermissionsFromServer } from './utils/api'
+import { getStoredPermissions } from './utils/permissions'
 import { Sidebar } from './components/Sidebar'
 import Dashboard from './pages/Dashboard'
 import Stats from './pages/Stats'
@@ -19,6 +22,7 @@ import Users from './pages/Users'
 import UserCreate from './pages/UserCreate'
 import Roles from './pages/Roles'
 import RoleCreate from './pages/RoleCreate'
+import PermissionsPage from './pages/Permissions'
 import Types from './pages/Types'
 import TypeCreate from './pages/TypeCreate'
 import Products from './pages/Products'
@@ -68,6 +72,7 @@ const routes: RouteConfig[] = [
   { path: '/roles', element: <Roles />, protected: true },
   { path: '/roles/creation', element: <RoleCreate />, protected: true },
   { path: '/roles/creation/:id', element: <RoleCreate />, protected: true },
+  { path: '/permissions', element: <PermissionsPage />, protected: true },
   { path: '/offers', element: <Offers />, protected: true },
   { path: '/offers/creation', element: <OfferCreate />, protected: true },
   { path: '/offers/creation/:id', element: <OfferCreate />, protected: true },
@@ -78,8 +83,26 @@ const routes: RouteConfig[] = [
   { path: '/', element: <Dashboard />, protected: true },
 ]
 
+const PUBLIC_AUTH_PATHS = ['/set-password', '/reset-password', '/forgot-password'] as const
+
+function isPublicAuthPath(pathname: string): boolean {
+  return (PUBLIC_AUTH_PATHS as readonly string[]).includes(pathname)
+}
+
 function AuthenticatedLayout() {
   const location = useLocation()
+  const [permissionsReady, setPermissionsReady] = useState(
+    () => typeof window !== 'undefined' && getStoredPermissions() !== null,
+  )
+
+  useEffect(() => {
+    if (getStoredPermissions() !== null) {
+      setPermissionsReady(true)
+      return
+    }
+    void syncPermissionsFromServer().finally(() => setPermissionsReady(true))
+  }, [])
+
   // On mobile start closed; on desktop (md+) start open so sidebar is visible
   const [sidebarOpen, setSidebarOpen] = useState(
     () => typeof window !== 'undefined' && window.innerWidth >= 768
@@ -97,6 +120,16 @@ function AuthenticatedLayout() {
       setSidebarOpen(false)
     }
   }, [location.pathname])
+
+  if (!permissionsReady) {
+    return (
+      <div className="app-root">
+        <main className="main">
+          <div className="panel p-8 text-center text-muted-foreground">{/* i18n optional */}Loading…</div>
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div className="app-root">
@@ -135,8 +168,12 @@ function AuthenticatedLayout() {
   )
 }
 
-function App() {
+const PERMISSIONS_SYNC_THROTTLE_MS = 2500
+
+function AppRoutes(): ReactElement {
+  const location = useLocation()
   const [token, setToken] = useState<string | null>(getToken())
+  const onPublicAuthPage = isPublicAuthPath(location.pathname)
 
   useEffect(() => {
     const update = () => setToken(getToken())
@@ -148,21 +185,58 @@ function App() {
     }
   }, [])
 
-  if (!token) {
+  useEffect(() => {
+    if (!token || onPublicAuthPage) return
+    void syncPermissionsFromServer()
+  }, [token, onPublicAuthPage])
+
+  useEffect(() => {
+    if (!token || onPublicAuthPage) return
+    let last = 0
+    const run = () => {
+      const now = Date.now()
+      if (now - last < PERMISSIONS_SYNC_THROTTLE_MS) return
+      last = now
+      void syncPermissionsFromServer()
+    }
+    const onVis = () => {
+      if (document.visibilityState === 'visible') run()
+    }
+    window.addEventListener('focus', run)
+    document.addEventListener('visibilitychange', onVis)
+    return () => {
+      window.removeEventListener('focus', run)
+      document.removeEventListener('visibilitychange', onVis)
+    }
+  }, [token, onPublicAuthPage])
+
+  if (onPublicAuthPage) {
     return (
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/set-password" element={<SetPassword />} />
-          <Route path="/*" element={<Login />} />
-        </Routes>
-      </BrowserRouter>
+      <Routes>
+        <Route path="/set-password" element={<SetPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
     )
   }
 
+  if (!token) {
+    return (
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/*" element={<Login />} />
+      </Routes>
+    )
+  }
+
+  return <AuthenticatedLayout />
+}
+
+function App() {
   return (
     <BrowserRouter>
-      <AuthenticatedLayout />
+      <AppRoutes />
     </BrowserRouter>
   )
 }

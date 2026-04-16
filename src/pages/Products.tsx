@@ -4,13 +4,17 @@ import { Link } from 'react-router-dom'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { Button } from '../components/ui/button'
 import { FiPlus, FiEdit, FiTrash, FiCheckCircle, FiXCircle, FiRotateCw, FiAlertCircle } from 'react-icons/fi'
-import { getProductsList, restoreProduct, deleteProduct, updateProduct } from '../utils/api'
+import { getProductsListPaginated, restoreProduct, deleteProduct, updateProduct } from '../utils/api'
+import { perm } from '../utils/permissions'
 import type { Product } from '../utils/api'
 import { Skeleton } from '../components/ui/skeleton'
 import { API_BASE } from '../config'
 import { Input } from '../components/ui/input'
 import { Card, CardContent, CardDescription, CardTitle, CardHeader, CardFooter } from '../components/ui/card'
 import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert'
+import { TableItemsPerPageSelect, DEFAULT_TABLE_PAGE_SIZE } from '../components/TableItemsPerPageSelect'
+import { PageHeader, PageToolbarCard } from '../components/page-layout'
+import { Label } from '../components/ui/label'
 
 type ProductRowProps = {
   product: Product;
@@ -114,33 +118,48 @@ function ProductRow({ product, isOpen, onToggle, isDeleted = false, onRestore, o
         </TableCell>
         <TableCell className={isDeleted ? "text-gray-600" : ""}>
           {product.vatRate ? (
-            product.vatRate === 'FOUR' ? '4%' :
-              product.vatRate === 'FIVE' ? '5%' :
-                product.vatRate === 'TEN' ? '10%' :
-                  product.vatRate === 'TWENTY_TWO' ? '22%' : product.vatRate
+            product.vatRate === 'FOUR'
+              ? '4%'
+              : product.vatRate === 'FIVE'
+                ? '5%'
+                : product.vatRate === 'TEN'
+                  ? '10%'
+                  : product.vatRate === 'TWENTY_TWO'
+                    ? '22%'
+                    : product.vatRate
           ) : '-'}
         </TableCell>
         <TableCell className={`text-center ${isDeleted ? "text-gray-600" : ""}`}>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="inline-flex items-center justify-center"
-            disabled={isDeleted}
-            onClick={() => !isDeleted && onToggleAvailability && onToggleAvailability(product)}
-            aria-label={product.isAvailable ? t('common.setUnavailable') : t('common.setAvailable')}
-            icon={
-              product.isAvailable
-                ? <FiCheckCircle className="w-5 h-5 text-green-500" aria-label={t('common.ariaAvailable')} />
-                : <FiXCircle className="w-5 h-5 text-red-500" aria-label={t('common.ariaNotAvailable')} />
-            }
-          />
+          {perm('products', 'update') ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="inline-flex items-center justify-center"
+              disabled={isDeleted}
+              onClick={() => !isDeleted && onToggleAvailability && onToggleAvailability(product)}
+              aria-label={product.isAvailable ? t('common.setUnavailable') : t('common.setAvailable')}
+              icon={
+                product.isAvailable
+                  ? <FiCheckCircle className="w-5 h-5 text-green-500" aria-label={t('common.ariaAvailable')} />
+                  : <FiXCircle className="w-5 h-5 text-red-500" aria-label={t('common.ariaNotAvailable')} />
+              }
+            />
+          ) : (
+            <span className="inline-flex justify-center" aria-hidden>
+              {product.isAvailable ? (
+                <FiCheckCircle className="w-5 h-5 text-green-500 opacity-70" aria-label={t('common.ariaAvailable')} />
+              ) : (
+                <FiXCircle className="w-5 h-5 text-red-500 opacity-70" aria-label={t('common.ariaNotAvailable')} />
+              )}
+            </span>
+          )}
         </TableCell>
         {isDeleted ? (
           <>
             <TableCell className="text-gray-500 text-sm">{String(anyProduct.deletedBy ?? '')}</TableCell>
             <TableCell>
-              {onRestore && (
+              {onRestore && perm('products', 'restore') ? (
                 <div className="flex justify-center">
                   <Button
                     variant="ghost"
@@ -150,7 +169,7 @@ function ProductRow({ product, isOpen, onToggle, isDeleted = false, onRestore, o
                     icon={<FiRotateCw className="w-4 h-4" />}
                   ></Button>
                 </div>
-              )}
+              ) : null}
             </TableCell>
           </>
         ) : (
@@ -163,8 +182,12 @@ function ProductRow({ product, isOpen, onToggle, isDeleted = false, onRestore, o
               >
                 {isOpen ? t('productsPage.hide') : t('productsPage.details')}
               </Button>
-              <Link to={`/products/creation/${encodeURIComponent(String(product.id ?? ''))}`} ><Button variant="ghost" className='p-2' size="sm" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
-              <Button variant="danger" size="sm" icon={<FiTrash className="w-4 h-4" />} onClick={() => onDelete && onDelete(product.id ?? '', product.name ?? '')}></Button>
+              {perm('products', 'update') ? (
+                <Link to={`/products/creation/${encodeURIComponent(String(product.id ?? ''))}`} ><Button variant="ghost" className='p-2' size="sm" icon={<FiEdit className="w-4 h-4" />}></Button></Link>
+              ) : null}
+              {perm('products', 'delete') ? (
+                <Button variant="danger" size="sm" icon={<FiTrash className="w-4 h-4" />} onClick={() => onDelete && onDelete(product.id ?? '', product.name ?? '')}></Button>
+              ) : null}
             </div>
           </TableCell>
         )}
@@ -181,8 +204,6 @@ function ProductRow({ product, isOpen, onToggle, isDeleted = false, onRestore, o
   )
 }
 
-const ACTIVE_PAGE_SIZE = 10
-
 export default function Products() {
   const { t } = useTranslation()
   const [items, setItems] = useState<Product[]>([])
@@ -190,6 +211,9 @@ export default function Products() {
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(DEFAULT_TABLE_PAGE_SIZE)
+  const [totalItems, setTotalItems] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
   const [openRowId, setOpenRowId] = useState<string | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
     show: boolean
@@ -209,9 +233,11 @@ export default function Products() {
 
   const loadProducts = () => {
     setLoading(true)
-    getProductsList()
-      .then((data) => {
-        setItems(data)
+    getProductsListPaginated({ page, limit: pageSize })
+      .then((res) => {
+        setItems(res.data)
+        setTotalItems(res.total)
+        setTotalPages(Math.max(1, res.totalPages))
         setError(null)
       })
       .catch((err) => {
@@ -223,7 +249,7 @@ export default function Products() {
 
   useEffect(() => {
     loadProducts()
-  }, [])
+  }, [page, pageSize])
 
   const openConfirmDialog = (type: 'delete' | 'restore', id: string | number, name: string) => {
     setConfirmDialog({
@@ -293,6 +319,7 @@ export default function Products() {
     const anyProduct = p as unknown as Record<string, unknown>
     return anyProduct.deletedBy
   })
+  const canSeeDeletedProducts = perm('products', 'restore')
 
   const filteredItems = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -304,20 +331,19 @@ export default function Products() {
     )
   }, [activeProducts, search])
 
-  const totalPages = Math.max(1, Math.ceil(filteredItems.length / ACTIVE_PAGE_SIZE))
-
   useEffect(() => {
     setPage(1)
   }, [search])
 
   useEffect(() => {
+    setPage(1)
+  }, [pageSize])
+
+  useEffect(() => {
     setPage((p) => Math.min(p, totalPages))
   }, [totalPages])
 
-  const paginatedItems = useMemo(() => {
-    const start = (page - 1) * ACTIVE_PAGE_SIZE
-    return filteredItems.slice(start, start + ACTIVE_PAGE_SIZE)
-  }, [filteredItems, page])
+  const paginatedItems = filteredItems
 
   const pageNumbers = useMemo(() => {
     return Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -375,29 +401,44 @@ export default function Products() {
       )}
 
       <div className="space-y-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{t('productsPage.title')}</h1>
-            <p className="text-gray-600 mt-1 dark:text-slate-400">{t('productsPage.subtitle')}</p>
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-            <div className="w-full sm:w-48">
-              <Input
-                placeholder={t('productsPage.searchPh')}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+        <div className="space-y-5">
+          <PageHeader
+            title={t('productsPage.title')}
+            subtitle={t('productsPage.subtitle')}
+            helpTooltip={t('common.toolbarHintDefault')}
+            helpAriaLabel={t('common.moreInfo')}
+          />
+          <PageToolbarCard>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+              <div className="flex min-w-0 flex-1 flex-col gap-1.5 sm:max-w-md">
+                <Label htmlFor="products-search" className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                  {t('common.search')}
+                </Label>
+                <Input
+                  id="products-search"
+                  placeholder={t('productsPage.searchPh')}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+              {perm('products', 'create') ? (
+                <div className="flex w-full shrink-0 flex-col gap-1.5 sm:w-auto">
+                  <span className="invisible block text-sm font-medium leading-none select-none" aria-hidden>
+                    .
+                  </span>
+                  <Link to="/products/creation" className="w-full sm:w-auto">
+                    <Button
+                      variant="primary"
+                      icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
+                      className="h-9 w-full justify-center px-4 text-sm sm:w-auto sm:px-6"
+                    >
+                      <span className="sm:inline">{t('productsPage.createProduct')}</span>
+                    </Button>
+                  </Link>
+                </div>
+              ) : null}
             </div>
-            <Link to="/products/creation" className="w-full sm:w-auto">
-              <Button
-                variant="primary"
-                icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
-                className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
-              >
-                <span className="sm:inline">{t('productsPage.createProduct')}</span>
-              </Button>
-            </Link>
-          </div>
+          </PageToolbarCard>
         </div>
 
         {loading && (
@@ -474,8 +515,8 @@ export default function Products() {
                           </div>
                           <span
                             className={`inline-flex flex-shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${p.isAvailable
-                                ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'
-                                : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
+                              ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400'
+                              : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
                               }`}
                           >
                             {p.isAvailable ? t('common.available') : t('common.unavailable')}
@@ -510,34 +551,40 @@ export default function Products() {
                             {openRowId === String(p.id) ? t('common.hideDetails') : t('productsPage.details')}
                           </Button>
                           <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="p-2 text-xs"
-                              icon={
-                                p.isAvailable ? (
-                                  <FiCheckCircle className="w-4 h-4 text-green-600" />
-                                ) : (
-                                  <FiXCircle className="w-4 h-4 text-red-600" />
-                                )
-                              }
-                              onClick={() => handleToggleAvailability(p)}
-                            />
-                            <Link to={`/products/creation/${encodeURIComponent(String(p.id ?? ''))}`}>
+                            {perm('products', 'update') ? (
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 className="p-2 text-xs"
-                                icon={<FiEdit className="w-4 h-4" />}
+                                icon={
+                                  p.isAvailable ? (
+                                    <FiCheckCircle className="w-4 h-4 text-green-600" />
+                                  ) : (
+                                    <FiXCircle className="w-4 h-4 text-red-600" />
+                                  )
+                                }
+                                onClick={() => handleToggleAvailability(p)}
                               />
-                            </Link>
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              className="p-2 text-xs"
-                              icon={<FiTrash className="w-4 h-4" />}
-                              onClick={() => handleDelete(p.id ?? '', p.name ?? '')}
-                            />
+                            ) : null}
+                            {perm('products', 'update') ? (
+                              <Link to={`/products/creation/${encodeURIComponent(String(p.id ?? ''))}`}>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="p-2 text-xs"
+                                  icon={<FiEdit className="w-4 h-4" />}
+                                />
+                              </Link>
+                            ) : null}
+                            {perm('products', 'delete') ? (
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                className="p-2 text-xs"
+                                icon={<FiTrash className="w-4 h-4" />}
+                                onClick={() => handleDelete(p.id ?? '', p.name ?? '')}
+                              />
+                            ) : null}
                           </div>
                         </CardFooter>
 
@@ -592,8 +639,15 @@ export default function Products() {
 
               {filteredItems.length > 0 && (
                 <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-2">
-                  <div className="text-gray-600 dark:text-slate-400 text-sm mb-2 sm:mb-0">
-                    {t('common.paginationSummary', { page, totalPages, total: filteredItems.length })}
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+                    <div className="text-gray-600 dark:text-slate-400 text-sm">
+                      {t('common.paginationSummary', { page, totalPages, total: totalItems })}
+                    </div>
+                    <TableItemsPerPageSelect
+                      id="products-page-size"
+                      value={pageSize}
+                      onChange={setPageSize}
+                    />
                   </div>
                   <div className="flex items-center gap-1 flex-wrap justify-center">
                     <Button
@@ -655,7 +709,7 @@ export default function Products() {
               )}
             </div>
 
-            {deletedProducts.length > 0 && (
+            {canSeeDeletedProducts && deletedProducts.length > 0 && (
               <div className="mt-8">
                 <h2 className="text-2xl font-semibold text-gray-600 dark:text-slate-400 mb-4">
                   {t('productsPage.deletedHeading')}

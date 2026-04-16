@@ -14,10 +14,13 @@ import {
   getDeliveryLocationById,
   updateDeliveryLocation,
   updateDeliveryLocationImage,
-  getRestaurantsList,
+  getAllRestaurantsForSelection,
 } from '../utils/api'
 import type { CreateDeliveryLocationPayload, Restaurant as RestaurantType } from '../utils/api'
 import { API_BASE } from '../config'
+import { canSubmitResourceForm } from '../utils/permissions'
+import { FormSaveBarrier } from '../components/FormSaveBarrier'
+import { TransferList } from '../components/ui/transfer-list'
 
 const DEFAULT_MIN_DELIVERY_MINUTES = 10
 
@@ -33,6 +36,7 @@ export default function DeliveryLocationCreate() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const params = useParams<{ id?: string }>()
+  const canSave = canSubmitResourceForm('delivery_locations', !!params.id)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -108,7 +112,7 @@ export default function DeliveryLocationCreate() {
           }
         }
 
-        const rest = await getRestaurantsList()
+        const rest = await getAllRestaurantsForSelection()
         if (!mounted) return
         setRestaurants(rest)
         setRestaurantsError(null)
@@ -150,6 +154,7 @@ export default function DeliveryLocationCreate() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!canSave) return
     setSubmitting(true)
     setError(null)
 
@@ -247,6 +252,7 @@ export default function DeliveryLocationCreate() {
         onSubmit={handleSubmit}
         className="grid gap-6 max-w-5xl lg:grid-cols-2"
       >
+        <FormSaveBarrier canSave={canSave} alertClassName="lg:col-span-2">
         {/* Basic location info */}
         <Card className="shadow-sm">
           <CardHeader className="pb-3">
@@ -463,68 +469,40 @@ export default function DeliveryLocationCreate() {
                   <AlertDescription>{restaurantsError}</AlertDescription>
                 </Alert>
               ) : (
-                <div className="flex gap-4 mt-2">
-                  {/* Available Restaurants */}
-                  <div className="flex-1">
-                    <div className="font-semibold mb-1 text-sm">{t('common.available')}</div>
-                    <div className="border rounded p-2 h-40 overflow-y-auto bg-white dark:bg-slate-900">
-                      {restaurants.filter(r => !selectedDeliveredBy.some(e => e.restaurantId === Number(r.id))).length === 0 && (
-                        <div className="text-xs text-gray-400">{t('common.noMoreRestaurants')}</div>
-                      )}
-                      {restaurants.filter(r => !selectedDeliveredBy.some(e => e.restaurantId === Number(r.id))).map(r => (
-                        <div key={r.id} className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 rounded cursor-pointer group">
-                          <span>{r.name ?? String(r.id)}</span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="ml-2 text-green-600 hover:text-green-800 text-xs font-bold opacity-80 group-hover:opacity-100"
-                            onClick={() =>
-                              setSelectedDeliveredBy(list => [
-                                ...list,
-                                { restaurantId: Number(r.id), deliveryFee: 0, minOrder: 0, minDeliveryTimeMinutes: DEFAULT_MIN_DELIVERY_MINUTES, isActive: true },
-                              ])
-                            }
-                          >
-                            {t('common.add')}
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  {/* Selected Restaurants */}
-                  <div className="flex-1">
-                    <div className="font-semibold mb-1 text-sm">{t('common.selected')}</div>
-                    <div className="border rounded p-2 h-40 overflow-y-auto bg-white dark:bg-slate-900">
-                      {selectedDeliveredBy.length === 0 && (
-                        <div className="text-xs text-gray-400">{t('common.noRestaurantsSelected')}</div>
-                      )}
-                      {selectedDeliveredBy.map((entry) => {
-                        const rest = restaurants.find(r => Number(r.id) === Number(entry.restaurantId))
-                        return (
-                          <div key={entry.restaurantId} className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 rounded cursor-pointer group">
-                            <span>{rest?.name ?? entry.restaurantId}</span>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="ml-2 text-red-600 hover:text-red-800 text-xs font-bold opacity-80 group-hover:opacity-100"
-                              onClick={() =>
-                                setSelectedDeliveredBy(list =>
-                                  list.filter(e => e.restaurantId !== entry.restaurantId),
-                                )
-                              }
-                            >
-                              {t('common.remove')}
-                            </Button>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                </div>
+                <TransferList
+                  items={restaurants.map((restaurant) => ({
+                    id: Number(restaurant.id),
+                    label: String(restaurant.name ?? restaurant.id),
+                  }))}
+                  selectedIds={selectedDeliveredBy.map((entry) => entry.restaurantId)}
+                  onChange={(ids) => {
+                    const prevById = new Map(
+                      selectedDeliveredBy.map((entry) => [entry.restaurantId, entry]),
+                    )
+                    const next = ids.map((id) => {
+                      const restaurantId = Number(id)
+                      const existing = prevById.get(restaurantId)
+                      return (
+                        existing ?? {
+                          restaurantId,
+                          deliveryFee: 0,
+                          minOrder: 0,
+                          minDeliveryTimeMinutes: DEFAULT_MIN_DELIVERY_MINUTES,
+                          isActive: true,
+                        }
+                      )
+                    })
+                    setSelectedDeliveredBy(next)
+                  }}
+                  availableTitle={t('common.available')}
+                  selectedTitle={t('common.selected')}
+                  availableEmptyText={t('common.noMoreRestaurants')}
+                  selectedEmptyText={t('common.noRestaurantsSelected')}
+                  searchPlaceholder={t('common.search')}
+                  noDataText={t('common.noData')}
+                  hintText={t('common.pickerHintAddRemove')}
+                />
               )}
-              <p className="mt-1 text-xs text-gray-500">{t('common.pickerHintAddRemove')}</p>
             </div>
 
             {selectedDeliveredBy.length > 0 && (
@@ -622,13 +600,13 @@ export default function DeliveryLocationCreate() {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
-
-            <div className="flex justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
-              <Button variant="ghost" type="button" onClick={() => navigate('/delivery-locations')}>{t('common.cancel')}</Button>
-              <Button variant="primary" type="submit" disabled={submitting}>{submitting ? t('common.saving') : params.id ? t('common.update') : t('common.create')}</Button>
-            </div>
           </CardContent>
         </Card>
+        </FormSaveBarrier>
+        <div className="flex justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-700 lg:col-span-2">
+          <Button variant="ghost" type="button" onClick={() => navigate('/delivery-locations')}>{t('common.cancel')}</Button>
+          <Button variant="primary" type="submit" disabled={!canSave || submitting}>{submitting ? t('common.saving') : params.id ? t('common.update') : t('common.create')}</Button>
+        </div>
       </form>
     </div>
   )

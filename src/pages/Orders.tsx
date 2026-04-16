@@ -1,19 +1,43 @@
 import { useEffect, useState, type MouseEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../components/ui/button'
-import { getOrdersList, printOrder } from '../utils/api'
+import {
+  getDeliveryLocationsList,
+  getOrderStatuses,
+  getOrdersList,
+  getPaymentStatuses,
+  printFiscalOrder,
+  printOrder,
+  updateOrder,
+} from '../utils/api'
 import type { OrderItem } from '../utils/api'
+import {
+  ORDER_STATUS_FILTER_FALLBACK,
+  orderStatusFilterOptionLabel,
+} from '../utils/orderStatusFilter'
+import { PAYMENT_STATUS_FILTER_FALLBACK, paymentStatusFilterOptionLabel } from '../utils/paymentStatusFilter'
 import { Skeleton } from '../components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../components/ui/card'
 import { Table, TableBody, TableHead, TableRow, TableCell, TableHeadCell } from '../components/ui/table'
 import { OrderTableSortHeadCell } from '../components/OrderTableSortHeadCell'
 import { OrderDetailsPanel } from '../components/OrderDetailsPanel'
+import { OrderRowPaymentStatusSelect } from '../components/OrderRowPaymentStatusSelect'
+import { OrderRowStatusSelect } from '../components/OrderRowStatusSelect'
 import {
   toggleOrderTableSort,
   type OrderTableSortDir,
   type OrderTableSortKey,
 } from '../utils/orderTableSort'
+import {
+  hasOrdersPaymentMutationUiAccess,
+  hasOrdersStatusMutationUiAccess,
+} from '../utils/permissions'
 import i18n from '../i18n'
+import { TableItemsPerPageSelect, DEFAULT_TABLE_PAGE_SIZE } from '../components/TableItemsPerPageSelect'
+import { PageHeader, PageToolbarCard } from '../components/page-layout'
+import { SearchFilterField, SEARCH_FILTER_DEBOUNCE_MS } from '../components/SearchFilterField'
+import { Label } from '../components/ui/label'
+import { Select } from '../components/ui/select'
 
 function formatOrderBusinessDate(value: string | number | undefined | null): string {
   const dash = i18n.t('common.emDash')
@@ -26,6 +50,14 @@ type OrderRowProps = {
   order: OrderItem
   isOpen: boolean
   onToggle: () => void
+  statusOptions: string[]
+  paymentOptions: string[]
+  canEditOrderStatus: boolean
+  canEditPaymentStatus: boolean
+  orderStatusPatchingId: string | null
+  paymentStatusPatchingId: string | null
+  onStatusCommit: (id: string, status: string) => Promise<void>
+  onPaymentCommit: (id: string, paymentStatus: string) => Promise<void>
 }
 
 type OrderCardProps = OrderRowProps
@@ -33,6 +65,7 @@ type OrderCardProps = OrderRowProps
 function OrderPrintButton({ orderId }: { orderId: string | number | undefined }) {
   const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
+  const [fiscalLoading, setFiscalLoading] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
   const onPrint = async (e: MouseEvent<HTMLButtonElement>) => {
@@ -49,26 +82,68 @@ function OrderPrintButton({ orderId }: { orderId: string | number | undefined })
     }
   }
 
+  const onFiscalPrint = async (e: MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation()
+    if (orderId === undefined || orderId === null || String(orderId) === '') return
+    setErr(null)
+    setFiscalLoading(true)
+    try {
+      await printFiscalOrder(orderId)
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e))
+    } finally {
+      setFiscalLoading(false)
+    }
+  }
+
   return (
     <div className="flex flex-col items-center gap-0.5 min-w-[4.5rem]">
-      <Button
-        type="button"
-        variant="default"
-        size="sm"
-        disabled={loading || orderId == null || String(orderId) === ''}
-        aria-label={t('ordersPage.printAria')}
-        onClick={onPrint}
-      >
-        {loading ? t('ordersPage.printing') : t('ordersPage.print')}
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          variant="default"
+          size="sm"
+          disabled={loading || fiscalLoading || orderId == null || String(orderId) === ''}
+          aria-label={t('ordersPage.printAria')}
+          onClick={onPrint}
+        >
+          {loading ? t('ordersPage.printing') : t('ordersPage.print')}
+        </Button>
+        <Button
+          type="button"
+          variant="default"
+          size="sm"
+          disabled={loading || fiscalLoading || orderId == null || String(orderId) === ''}
+          aria-label="Fiscal Print"
+          onClick={onFiscalPrint}
+        >
+          {fiscalLoading ? 'Printing...' : 'Fiscal Print'}
+        </Button>
+      </div>
       {err ? <p className="text-[10px] text-red-600 text-center leading-tight max-w-[9rem]">{err}</p> : null}
     </div>
   )
 }
 
-function OrderRow({ order, isOpen, onToggle }: OrderRowProps) {
+function OrderRow({
+  order,
+  isOpen,
+  onToggle,
+  statusOptions,
+  paymentOptions,
+  canEditOrderStatus,
+  canEditPaymentStatus,
+  orderStatusPatchingId,
+  paymentStatusPatchingId,
+  onStatusCommit,
+  onPaymentCommit,
+}: OrderRowProps) {
   const { t } = useTranslation()
   const dash = t('common.emDash')
+  const rowId = String(order.id ?? '')
+  const lockedOther =
+    (orderStatusPatchingId !== null && orderStatusPatchingId !== rowId) ||
+    (paymentStatusPatchingId !== null && paymentStatusPatchingId !== rowId)
   return (
     <>
       <TableRow onClick={onToggle} className="cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-800">
@@ -95,34 +170,40 @@ function OrderRow({ order, isOpen, onToggle }: OrderRowProps) {
           <p className="font-semibold">€{order.total}</p>
           <p className="text-xs">{t('ordersPage.subtotalLine', { amount: order.subtotal })}</p>
         </TableCell>
-        <TableCell>
-          <span
-            className={`px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
-              order.status === 'DELIVERED'
-                ? 'bg-green-100 text-green-800'
-                : order.status === 'PENDING'
-                  ? 'bg-yellow-100 text-yellow-800'
-                  : order.status === 'CANCELLED'
-                    ? 'bg-red-100 text-red-800'
-                    : 'bg-blue-100 text-blue-800'
-            }`}
-          >
-            {order.status}
-          </span>
+        <TableCell onClick={(e) => e.stopPropagation()}>
+          <OrderRowPaymentStatusSelect
+            orderId={order.id}
+            value={order.paymentStatus}
+            options={paymentOptions}
+            getOptionLabel={(s) => paymentStatusFilterOptionLabel(s, t)}
+            canEdit={canEditPaymentStatus}
+            locked={lockedOther}
+            saving={paymentStatusPatchingId === rowId}
+            onCommit={onPaymentCommit}
+          />
+        </TableCell>
+        <TableCell onClick={(e) => e.stopPropagation()}>
+          <OrderRowStatusSelect
+            orderId={order.id}
+            value={order.status}
+            options={statusOptions}
+            getOptionLabel={(s) => orderStatusFilterOptionLabel(s, t)}
+            canEdit={canEditOrderStatus}
+            locked={lockedOther}
+            saving={orderStatusPatchingId === rowId}
+            onCommit={onStatusCommit}
+          />
         </TableCell>
         <TableCell>
-          <div className="flex justify-center items-start gap-2" onClick={(e) => e.stopPropagation()}>
+          <div className="flex justify-center items-start" onClick={(e) => e.stopPropagation()}>
             <OrderPrintButton orderId={order.id} />
-            <Button variant="ghost" size="sm" onClick={onToggle}>
-              {isOpen ? t('common.hide') : t('common.details')}
-            </Button>
           </div>
         </TableCell>
       </TableRow>
 
       {isOpen && (
         <TableRow className="bg-gray-50 dark:bg-slate-900">
-          <TableCell colSpan={9} className="text-left align-top">
+          <TableCell colSpan={10} className="text-left align-top">
             <OrderDetailsPanel order={order} />
           </TableCell>
         </TableRow>
@@ -131,9 +212,25 @@ function OrderRow({ order, isOpen, onToggle }: OrderRowProps) {
   )
 }
 
-function OrderCard({ order, isOpen, onToggle }: OrderCardProps) {
+function OrderCard({
+  order,
+  isOpen,
+  onToggle,
+  statusOptions,
+  paymentOptions,
+  canEditOrderStatus,
+  canEditPaymentStatus,
+  orderStatusPatchingId,
+  paymentStatusPatchingId,
+  onStatusCommit,
+  onPaymentCommit,
+}: OrderCardProps) {
   const { t } = useTranslation()
   const dash = t('common.emDash')
+  const rowId = String(order.id ?? '')
+  const lockedOther =
+    (orderStatusPatchingId !== null && orderStatusPatchingId !== rowId) ||
+    (paymentStatusPatchingId !== null && paymentStatusPatchingId !== rowId)
   return (
     <Card className="shadow-sm">
       <CardHeader
@@ -157,19 +254,30 @@ function OrderCard({ order, isOpen, onToggle }: OrderCardProps) {
             })}
           </p>
         </div>
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
-            order.status === 'DELIVERED'
-              ? 'bg-green-100 text-green-800'
-              : order.status === 'PENDING'
-                ? 'bg-yellow-100 text-yellow-800'
-                : order.status === 'CANCELLED'
-                  ? 'bg-red-100 text-red-800'
-                  : 'bg-blue-100 text-blue-800'
-          }`}
-        >
-          {order.status}
-        </span>
+        <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row" onClick={(e) => e.stopPropagation()}>
+          <OrderRowPaymentStatusSelect
+            orderId={order.id}
+            value={order.paymentStatus}
+            options={paymentOptions}
+            getOptionLabel={(s) => paymentStatusFilterOptionLabel(s, t)}
+            canEdit={canEditPaymentStatus}
+            locked={lockedOther}
+            saving={paymentStatusPatchingId === rowId}
+            onCommit={onPaymentCommit}
+            triggerClassName="max-w-[10rem]"
+          />
+          <OrderRowStatusSelect
+            orderId={order.id}
+            value={order.status}
+            options={statusOptions}
+            getOptionLabel={(s) => orderStatusFilterOptionLabel(s, t)}
+            canEdit={canEditOrderStatus}
+            locked={lockedOther}
+            saving={orderStatusPatchingId === rowId}
+            onCommit={onStatusCommit}
+            triggerClassName="max-w-[11rem]"
+          />
+        </div>
       </CardHeader>
 
       <CardContent className="px-4 pb-2 pt-0 space-y-1" onClick={onToggle}>
@@ -183,11 +291,8 @@ function OrderCard({ order, isOpen, onToggle }: OrderCardProps) {
         </p>
       </CardContent>
 
-      <CardFooter className="flex justify-start items-center gap-2 px-4 pb-4 pt-0" onClick={(e) => e.stopPropagation()}>
+      <CardFooter className="flex justify-start items-center px-4 pb-4 pt-0" onClick={(e) => e.stopPropagation()}>
         <OrderPrintButton orderId={order.id} />
-        <Button variant="ghost" size="sm" onClick={onToggle}>
-          {isOpen ? t('common.hideDetails') : t('common.details')}
-        </Button>
       </CardFooter>
 
       {isOpen && (
@@ -206,11 +311,123 @@ export default function Orders() {
   const [error, setError] = useState<string | null>(null)
   const [openRowId, setOpenRowId] = useState<string | null>(null)
   const [page, setPage] = useState(1)
-  const [limit] = useState(10)
+  const [limit, setLimit] = useState(DEFAULT_TABLE_PAGE_SIZE)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
   const [sortKey, setSortKey] = useState<OrderTableSortKey>('createdAt')
   const [sortDir, setSortDir] = useState<OrderTableSortDir>('desc')
+  const [statusFilter, setStatusFilter] = useState('')
+  const [statusFilterOptions, setStatusFilterOptions] = useState<string[]>(() => [
+    ...ORDER_STATUS_FILTER_FALLBACK,
+  ])
+  const [nameInput, setNameInput] = useState('')
+  const [emailInput, setEmailInput] = useState('')
+  const [debouncedName, setDebouncedName] = useState('')
+  const [debouncedEmail, setDebouncedEmail] = useState('')
+  const [deliveryLocations, setDeliveryLocations] = useState<Array<{ id?: string | number; name?: string }>>([])
+  const [locationFilter, setLocationFilter] = useState('')
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState('')
+  const [paymentStatusFilterOptions, setPaymentStatusFilterOptions] = useState<string[]>(() => [
+    ...PAYMENT_STATUS_FILTER_FALLBACK,
+  ])
+  const [orderStatusPatchingId, setOrderStatusPatchingId] = useState<string | null>(null)
+  const [paymentStatusPatchingId, setPaymentStatusPatchingId] = useState<string | null>(null)
+  const [orderStatusError, setOrderStatusError] = useState<string | null>(null)
+
+  const canEditOrderStatus = hasOrdersStatusMutationUiAccess()
+  const canEditPaymentStatus = hasOrdersPaymentMutationUiAccess()
+
+  const commitOrderListStatus = async (id: string, status: string) => {
+    setOrderStatusPatchingId(id)
+    setOrderStatusError(null)
+    try {
+      await updateOrder(id, { status })
+      setItems((prev) =>
+        prev.map((o) => (String(o.id) === id ? { ...o, status: status as OrderItem['status'] } : o)),
+      )
+    } catch (e) {
+      setOrderStatusError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setOrderStatusPatchingId(null)
+    }
+  }
+
+  const commitOrderListPaymentStatus = async (id: string, paymentStatus: string) => {
+    setPaymentStatusPatchingId(id)
+    setOrderStatusError(null)
+    try {
+      await updateOrder(id, { paymentStatus })
+      setItems((prev) =>
+        prev.map((o) =>
+          String(o.id) === id ? { ...o, paymentStatus: paymentStatus as OrderItem['paymentStatus'] } : o,
+        ),
+      )
+    } catch (e) {
+      setOrderStatusError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setPaymentStatusPatchingId(null)
+    }
+  }
+
+  useEffect(() => {
+    let mounted = true
+    void getOrderStatuses()
+      .then((list) => {
+        if (!mounted || !list.length) return
+        setStatusFilterOptions(list)
+      })
+      .catch(() => {})
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  useEffect(() => {
+    let mounted = true
+    void getDeliveryLocationsList()
+      .then((list) => {
+        if (!mounted) return
+        const sorted = [...list].sort((a, b) =>
+          String(a.name ?? '').localeCompare(String(b.name ?? ''), undefined, { sensitivity: 'base' }),
+        )
+        setDeliveryLocations(sorted)
+      })
+      .catch(() => {})
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  useEffect(() => {
+    let mounted = true
+    void getPaymentStatuses()
+      .then((list) => {
+        if (!mounted || !list.length) return
+        setPaymentStatusFilterOptions(list)
+      })
+      .catch(() => {})
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  useEffect(() => {
+    const id = window.setTimeout(() => setDebouncedName(nameInput.trim()), SEARCH_FILTER_DEBOUNCE_MS)
+    return () => window.clearTimeout(id)
+  }, [nameInput])
+
+  useEffect(() => {
+    const id = window.setTimeout(() => setDebouncedEmail(emailInput.trim()), SEARCH_FILTER_DEBOUNCE_MS)
+    return () => window.clearTimeout(id)
+  }, [emailInput])
+
+  useEffect(() => {
+    setPage(1)
+  }, [statusFilter, debouncedName, debouncedEmail, locationFilter, paymentStatusFilter])
+
+  useEffect(() => {
+    setPage(1)
+  }, [limit])
 
   const onSortColumn = (k: OrderTableSortKey) => {
     const next = toggleOrderTableSort(sortKey, sortDir, k)
@@ -227,7 +444,18 @@ export default function Orders() {
     let mounted = true
     setLoading(true)
     setError(null)
-    getOrdersList(page, limit, { sortField: sortKey, sortDir })
+    getOrdersList(
+      page,
+      limit,
+      { sortField: sortKey, sortDir },
+      {
+        status: statusFilter || undefined,
+        customerName: debouncedName || undefined,
+        customerEmail: debouncedEmail || undefined,
+        deliveryLocationId: locationFilter || undefined,
+        paymentStatus: paymentStatusFilter || undefined,
+      },
+    )
       .then((res: unknown) => {
         if (!mounted) return
         let data: OrderItem[]
@@ -258,14 +486,113 @@ export default function Orders() {
     return () => {
       mounted = false
     }
-  }, [page, limit, sortKey, sortDir])
+  }, [page, limit, sortKey, sortDir, statusFilter, debouncedName, debouncedEmail, locationFilter, paymentStatusFilter])
+
+  const hasActiveFilters = Boolean(
+    statusFilter || debouncedName || debouncedEmail || locationFilter || paymentStatusFilter,
+  )
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{t('ordersPage.title')}</h1>
-        <p className="text-gray-600 mt-1 dark:text-slate-400">{t('ordersPage.subtitle')}</p>
+      <div className="space-y-5">
+        <PageHeader
+          title={t('ordersPage.title')}
+          subtitle={t('ordersPage.subtitle')}
+          helpTooltip={t('common.toolbarHintOrdersSearch')}
+          helpAriaLabel={t('common.moreInfo')}
+        />
+        <PageToolbarCard>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5 lg:items-end lg:gap-3 xl:gap-4">
+            <div className="min-w-0">
+              <SearchFilterField
+                id="orders-search-customer-name"
+                label={t('common.name')}
+                value={nameInput}
+                onChange={setNameInput}
+                placeholder={t('common.customerSearchNamePh')}
+              />
+            </div>
+            <div className="min-w-0">
+              <SearchFilterField
+                id="orders-search-customer-email"
+                label={t('common.email')}
+                value={emailInput}
+                onChange={setEmailInput}
+                placeholder={t('common.customerSearchEmailPh')}
+                inputMode="email"
+              />
+            </div>
+            <div className="min-w-0">
+              <Label htmlFor="orders-status-filter" className="text-sm font-medium leading-none text-slate-700 dark:text-slate-200">
+                {t('dashboardPage.filterByStatus')}
+              </Label>
+              <Select
+                id="orders-status-filter"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="mt-1.5 h-9 w-full"
+              >
+                <option value="">{t('dashboardPage.statusAll')}</option>
+                {statusFilterOptions.map((s) => (
+                  <option key={s} value={s}>
+                    {orderStatusFilterOptionLabel(s, t)}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="min-w-0">
+              <Label htmlFor="orders-location-filter" className="text-sm font-medium leading-none text-slate-700 dark:text-slate-200">
+                {t('common.filterByLocation')}
+              </Label>
+              <Select
+                id="orders-location-filter"
+                value={locationFilter}
+                onChange={(e) => setLocationFilter(e.target.value)}
+                className="mt-1.5 h-9 w-full"
+              >
+                <option value="">{t('common.allLocations')}</option>
+                {deliveryLocations
+                  .filter((loc) => loc.id != null && String(loc.id) !== '')
+                  .map((loc) => {
+                    const id = String(loc.id)
+                    return (
+                      <option key={id} value={id}>
+                        {loc.name ?? id}
+                      </option>
+                    )
+                  })}
+              </Select>
+            </div>
+            <div className="min-w-0">
+              <Label htmlFor="orders-payment-status-filter" className="text-sm font-medium leading-none text-slate-700 dark:text-slate-200">
+                {t('common.paymentStatus')}
+              </Label>
+              <Select
+                id="orders-payment-status-filter"
+                value={paymentStatusFilter}
+                onChange={(e) => setPaymentStatusFilter(e.target.value)}
+                className="mt-1.5 h-9 w-full"
+              >
+                <option value="">{t('dashboardPage.statusAll')}</option>
+                {paymentStatusFilterOptions.map((ps) => (
+                  <option key={ps} value={ps}>
+                    {paymentStatusFilterOptionLabel(ps, t)}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          </div>
+        </PageToolbarCard>
       </div>
+
+      {orderStatusError ? (
+        <div
+          role="alert"
+          className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/50 dark:text-red-200"
+        >
+          {orderStatusError}
+        </div>
+      ) : null}
 
       {loading ? (
         <Table>
@@ -278,14 +605,15 @@ export default function Orders() {
               <TableHeadCell>{t('ordersPage.deliveryLocation')}</TableHeadCell>
               <TableHeadCell>{t('ordersPage.customer')}</TableHeadCell>
               <TableHeadCell>{t('ordersPage.price')}</TableHeadCell>
+              <TableHeadCell>{t('common.paymentStatus')}</TableHeadCell>
               <TableHeadCell>{t('ordersPage.status')}</TableHeadCell>
-              <TableHeadCell>{t('ordersPage.detailsCol')}</TableHeadCell>
+              <TableHeadCell>{t('ordersPage.print')}</TableHeadCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {Array.from({ length: 4 }).map((_, r) => (
               <TableRow key={r} className="animate-pulse">
-                {Array.from({ length: 9 }).map((__, c) => (
+                {Array.from({ length: 10 }).map((__, c) => (
                   <TableCell key={c}>
                     <Skeleton className="h-4 w-full bg-gray-200" />
                   </TableCell>
@@ -301,7 +629,7 @@ export default function Orders() {
       ) : items.length === 0 ? (
         <Card>
           <CardContent className="p-8 text-center">
-            <p>{t('ordersPage.noOrders')}</p>
+            <p>{hasActiveFilters ? t('ordersPage.noOrdersMatchFilters') : t('ordersPage.noOrders')}</p>
           </CardContent>
         </Card>
       ) : (
@@ -313,6 +641,14 @@ export default function Orders() {
                 order={it}
                 isOpen={openRowId === String(it.id)}
                 onToggle={() => toggleRow(it.id ?? '')}
+                statusOptions={statusFilterOptions}
+                paymentOptions={paymentStatusFilterOptions}
+                canEditOrderStatus={canEditOrderStatus}
+                canEditPaymentStatus={canEditPaymentStatus}
+                orderStatusPatchingId={orderStatusPatchingId}
+                paymentStatusPatchingId={paymentStatusPatchingId}
+                onStatusCommit={commitOrderListStatus}
+                onPaymentCommit={commitOrderListPaymentStatus}
               />
             ))}
           </div>
@@ -371,13 +707,20 @@ export default function Orders() {
                     onSort={onSortColumn}
                   />
                   <OrderTableSortHeadCell
+                    label={t('common.paymentStatus')}
+                    colKey="paymentStatus"
+                    activeKey={sortKey}
+                    dir={sortDir}
+                    onSort={onSortColumn}
+                  />
+                  <OrderTableSortHeadCell
                     label={t('ordersPage.status')}
                     colKey="status"
                     activeKey={sortKey}
                     dir={sortDir}
                     onSort={onSortColumn}
                   />
-                  <TableHeadCell>{t('ordersPage.detailsCol')}</TableHeadCell>
+                  <TableHeadCell>{t('ordersPage.print')}</TableHeadCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -387,6 +730,14 @@ export default function Orders() {
                     order={it}
                     isOpen={openRowId === String(it.id)}
                     onToggle={() => toggleRow(it.id ?? '')}
+                    statusOptions={statusFilterOptions}
+                    paymentOptions={paymentStatusFilterOptions}
+                    canEditOrderStatus={canEditOrderStatus}
+                    canEditPaymentStatus={canEditPaymentStatus}
+                    orderStatusPatchingId={orderStatusPatchingId}
+                    paymentStatusPatchingId={paymentStatusPatchingId}
+                    onStatusCommit={commitOrderListStatus}
+                    onPaymentCommit={commitOrderListPaymentStatus}
                   />
                 ))}
               </TableBody>
@@ -394,8 +745,15 @@ export default function Orders() {
           </div>
 
           <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-2">
-            <div className="text-gray-600 text-sm mb-2 sm:mb-0">
-              {t('ordersPage.pagination', { page, totalPages, total })}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+              <div className="text-gray-600 dark:text-slate-400 text-sm">
+                {t('ordersPage.pagination', { page, totalPages, total })}
+              </div>
+              <TableItemsPerPageSelect
+                id="orders-page-size"
+                value={limit}
+                onChange={setLimit}
+              />
             </div>
             <div className="flex items-center gap-1 flex-wrap">
               <Button

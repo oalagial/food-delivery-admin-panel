@@ -6,6 +6,7 @@ export type OrderTableSortKey =
   | 'deliveryLocation'
   | 'customer'
   | 'price'
+  | 'paymentStatus'
   | 'status'
 
 export type OrderTableSortDir = 'asc' | 'desc'
@@ -43,6 +44,7 @@ type SortableOrder = {
   email?: string
   total?: number | string | null
   amount?: number | string | null
+  paymentStatus?: string
   status?: string
 }
 
@@ -104,6 +106,9 @@ export function sortOrdersByColumn<T extends SortableOrder>(
         break
       case 'price':
         c = num(a.total ?? a.amount) - num(b.total ?? b.amount)
+        break
+      case 'paymentStatus':
+        c = lc(a.paymentStatus).localeCompare(lc(b.paymentStatus))
         break
       case 'status':
         c = lc(a.status).localeCompare(lc(b.status))

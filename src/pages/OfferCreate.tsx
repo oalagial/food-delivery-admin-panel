@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Link, useNavigate, useParams } from "react-router-dom"
-import { createOffer, getOfferById, getProductsList, getRestaurantsList, updateOffer, updateOfferImage, type CreateOfferPayload, type OfferGroup, type Product, type Restaurant } from "../utils/api"
+import { createOffer, getAllProductsForSelection, getAllRestaurantsForSelection, getOfferById, updateOffer, updateOfferImage, type CreateOfferPayload, type OfferGroup, type Product, type Restaurant } from "../utils/api"
 import { API_BASE } from "../config"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
@@ -11,12 +11,16 @@ import { Select } from "../components/ui/select"
 import { Checkbox } from "../components/ui/checkbox"
 import { Alert, AlertDescription } from "../components/ui/alert"
 import { AlertCircle } from "lucide-react"
+import { canSubmitResourceForm } from "../utils/permissions"
+import { FormSaveBarrier } from "../components/FormSaveBarrier"
+import { TransferList } from "../components/ui/transfer-list"
 
 export default function OfferCreate () {
   const { t } = useTranslation()
   const { id } = useParams<{ id?: string }>()
   const editing = !!id;
   const navigate = useNavigate()
+  const canSave = canSubmitResourceForm("offers", editing)
 
   const [createError, setCreateError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -47,41 +51,12 @@ export default function OfferCreate () {
     groups: []
   });
 
-  const addProductToGroup = (groupIndex: number, productId: number | string | undefined) => {
-    if (productId === undefined || productId === null) return
-    const productIdNum = Number(productId)
-    if (isNaN(productIdNum)) return
-    setForm(prev => ({
-      ...prev,
-      groups: prev.groups.map((g, i) =>
-        i === groupIndex
-          ? { ...g, productsIds: [...g.productsIds, productIdNum] }
-          : g
-      )
-    }));
-  };
-
-  const removeProductFromGroup = (groupIndex: number, productId: number | string | undefined) => {
-    if (productId === undefined || productId === null) return
-    const productIdNum = Number(productId)
-    if (isNaN(productIdNum)) return
-    setForm(prev => ({
-      ...prev,
-      groups: prev.groups.map((g, i) =>
-        i === groupIndex
-          ? { ...g, productsIds: g.productsIds.filter(id => id !== productIdNum) }
-          : g
-      )
-    }));
-  };
-
-
   useEffect(() => {
     let mounted = true
     
     Promise.all([
-      getRestaurantsList('deletedBy=null').catch(() => []),
-      getProductsList().catch(() => []),
+      getAllRestaurantsForSelection('deletedBy=null').catch(() => []),
+      getAllProductsForSelection().catch(() => []),
       id ? getOfferById(id).catch(() => null) : Promise.resolve(null)
     ]).then(([rs, pr, offer]) => {
       if (!mounted) return
@@ -167,6 +142,7 @@ export default function OfferCreate () {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!canSave) return
     setCreateError(null)
     setSaving(true)
 
@@ -222,6 +198,7 @@ export default function OfferCreate () {
           onSubmit={handleSubmit}
           className="grid gap-6 max-w-5xl lg:grid-cols-2"
         >
+          <FormSaveBarrier canSave={canSave} alertClassName="lg:col-span-2">
           {/* Basic info */}
           <Card className="shadow-sm">
             <CardHeader className="pb-3">
@@ -518,115 +495,60 @@ export default function OfferCreate () {
 
                       <div>
                         <Label>{t('common.products')}</Label>
-                        <div className="flex gap-4 mt-2">
-                          {/* Available */}
-                          <div className="flex-1">
-                            <div className="font-semibold mb-1 text-sm">
-                              {t('common.available')}
-                            </div>
-                            <div className="border rounded p-2 h-48 overflow-y-auto bg-white dark:bg-slate-900">
-                              {products.filter(
-                                (p) => !g.productsIds.includes(Number(p.id)),
-                              ).length === 0 && (
-                                <div className="text-xs text-gray-400">
-                                  {t('createForms.noMoreProducts')}
-                                </div>
-                              )}
-
-                              {products
-                                .filter(
-                                  (p) => !g.productsIds.includes(Number(p.id)),
-                                )
-                                .map((p) => (
-                                  <div
-                                    key={p.id}
-                                    className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded group"
-                                  >
-                                    <span>{p.name ?? p.id}</span>
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      className="text-green-600 text-xs font-bold"
-                                      onClick={() => addProductToGroup(index, p.id)}
-                                    >
-                                      {t('common.add')}
-                                    </Button>
-                                  </div>
-                                ))}
-                            </div>
-                          </div>
-
-                          {/* Selected */}
-                          <div className="flex-1">
-                            <div className="font-semibold mb-1 text-sm">
-                              {t('common.selected')}
-                            </div>
-                            <div className="border rounded p-2 h-48 overflow-y-auto bg-white dark:bg-slate-900">
-                              {g.productsIds.length === 0 && (
-                                <div className="text-xs text-gray-400">
-                                  {t('createForms.noProductsSelected')}
-                                </div>
-                              )}
-
-                              {products
-                                .filter((p) =>
-                                  g.productsIds.includes(Number(p.id)),
-                                )
-                                .map((p) => (
-                                  <div
-                                    key={p.id}
-                                    className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded group"
-                                  >
-                                    <span>{p.name ?? p.id}</span>
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      className="text-red-600 text-xs font-bold"
-                                      onClick={() =>
-                                        removeProductFromGroup(index, p.id)
-                                      }
-                                    >
-                                      {t('common.remove')}
-                                    </Button>
-                                  </div>
-                                ))}
-                            </div>
-                          </div>
-                        </div>
-
-                        <p className="mt-1 text-xs text-gray-500">
-                          {t('common.pickerHintAddRemove')}
-                        </p>
+                        <TransferList
+                          items={products.map((product) => ({
+                            id: Number(product.id),
+                            label: String(product.name ?? product.id),
+                          }))}
+                          selectedIds={g.productsIds}
+                          onChange={(ids) => {
+                            const nextIds = ids.map((id) => Number(id))
+                            setForm((prev) => ({
+                              ...prev,
+                              groups: prev.groups.map((group, groupIdx) =>
+                                groupIdx === index
+                                  ? { ...group, productsIds: nextIds }
+                                  : group,
+                              ),
+                            }))
+                          }}
+                          availableTitle={t('common.available')}
+                          selectedTitle={t('common.selected')}
+                          availableEmptyText={t('createForms.noMoreProducts')}
+                          selectedEmptyText={t('createForms.noProductsSelected')}
+                          searchPlaceholder={t('common.search')}
+                          noDataText={t('common.noData')}
+                          hintText={t('common.pickerHintAddRemove')}
+                        />
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div className="flex flex-wrap justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
-                <Link to="/offers">
-                  <Button variant="default" type="button">
-                    {t('common.cancel')}
-                  </Button>
-                </Link>
-                <Button
-                  variant="primary"
-                  type="submit"
-                  disabled={saving}
-                >
-                  {saving
-                    ? id
-                      ? t('common.saving')
-                      : t('common.creating')
-                    : id
-                    ? t('common.update')
-                    : t('common.create')}
-                </Button>
-              </div>
             </CardContent>
           </Card>
+          </FormSaveBarrier>
+          <div className="flex flex-wrap justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-700 lg:col-span-2">
+            <Link to="/offers">
+              <Button variant="default" type="button">
+                {t('common.cancel')}
+              </Button>
+            </Link>
+            <Button
+              variant="primary"
+              type="submit"
+              disabled={!canSave || saving}
+            >
+              {saving
+                ? id
+                  ? t('common.saving')
+                  : t('common.creating')
+                : id
+                ? t('common.update')
+                : t('common.create')}
+            </Button>
+          </div>
         </form>
       )}
     </div>

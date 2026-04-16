@@ -3,6 +3,8 @@ import { nav } from './nav'
 import { header } from './header'
 import { login } from './login'
 import { setPassword } from './setPassword'
+import { forgotPassword } from './forgotPassword'
+import { resetPassword } from './resetPassword'
 import { orderDetails, ordersPage, dashboardPage } from './ordersPages'
 import { usersPage } from './users'
 import { productsPage } from './products'
@@ -10,6 +12,7 @@ import { restaurantPage } from './restaurant'
 import {
   typesPage,
   rolesPage,
+  permissionsPage,
   menusPage,
   sectionsPage,
   offersPage,
@@ -25,6 +28,8 @@ export const it = {
   header,
   login,
   setPassword,
+  forgotPassword,
+  resetPassword,
   orderDetails,
   ordersPage,
   dashboardPage,
@@ -33,6 +38,7 @@ export const it = {
   restaurantPage,
   typesPage,
   rolesPage,
+  permissionsPage,
   menusPage,
   sectionsPage,
   offersPage,

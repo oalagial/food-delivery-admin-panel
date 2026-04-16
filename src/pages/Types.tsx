@@ -4,13 +4,14 @@ import { Link } from 'react-router-dom'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { Button } from '../components/ui/button'
 import { FiPlus, FiEdit, FiTrash, FiAlertCircle } from 'react-icons/fi'
-import { getTypesList, deleteType } from '../utils/api'
+import { getTypesListPaginated, deleteType } from '../utils/api'
+import { perm } from '../utils/permissions'
 import type { TypeItem } from '../utils/api'
 import { Skeleton } from '../components/ui/skeleton'
 import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/card'
-
-const PAGE_SIZE = 10
+import { TableItemsPerPageSelect, DEFAULT_TABLE_PAGE_SIZE } from '../components/TableItemsPerPageSelect'
+import { PageHeader, PageToolbarCard } from '../components/page-layout'
 
 export default function Types() {
   const { t: tr } = useTranslation()
@@ -18,6 +19,9 @@ export default function Types() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(DEFAULT_TABLE_PAGE_SIZE)
+  const [totalItems, setTotalItems] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
   const [deletingId, setDeletingId] = useState<string | number | null>(null)
   const [confirmDialog, setConfirmDialog] = useState<{
     show: boolean
@@ -31,10 +35,12 @@ export default function Types() {
 
   useEffect(() => {
     let mounted = true
-    getTypesList()
-      .then((data) => {
+    getTypesListPaginated({ page, limit: pageSize })
+      .then((res) => {
         if (!mounted) return
-        setTypes(data)
+        setTypes(res.data)
+        setTotalItems(res.total)
+        setTotalPages(Math.max(1, res.totalPages))
         setError(null)
       })
       .catch((err) => {
@@ -45,18 +51,17 @@ export default function Types() {
       .finally(() => { if (mounted) setLoading(false) })
 
     return () => { mounted = false }
-  }, [])
+  }, [page, pageSize])
 
-  const totalPages = Math.max(1, Math.ceil(types.length / PAGE_SIZE))
+  useEffect(() => {
+    setPage(1)
+  }, [pageSize])
 
   useEffect(() => {
     setPage((p) => Math.min(p, totalPages))
   }, [totalPages])
 
-  const paginatedTypes = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE
-    return types.slice(start, start + PAGE_SIZE)
-  }, [types, page])
+  const paginatedTypes = types
 
   const pageNumbers = useMemo(() => {
     return Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -136,20 +141,28 @@ export default function Types() {
           </div>
         </div>
       )}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{tr('typesPage.title')}</h1>
-          <p className="text-gray-600 mt-1 dark:text-slate-400">{tr('typesPage.subtitle')}</p>
-        </div>
-        <Link to="/types/creation" className="w-full sm:w-auto">
-          <Button
-            variant="primary"
-            icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
-            className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
-          >
-            <span className="sm:inline">{tr('typesPage.create')}</span>
-          </Button>
-        </Link>
+      <div className="space-y-5">
+        <PageHeader
+          title={tr('typesPage.title')}
+          subtitle={tr('typesPage.subtitle')}
+          helpTooltip={tr('common.toolbarHintDefault')}
+          helpAriaLabel={tr('common.moreInfo')}
+        />
+        {perm('types', 'create') ? (
+          <PageToolbarCard>
+            <div className="flex flex-wrap justify-end gap-3">
+              <Link to="/types/creation" className="w-full sm:w-auto">
+                <Button
+                  variant="primary"
+                  icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
+                  className="h-9 w-full justify-center px-4 text-sm sm:w-auto sm:px-6"
+                >
+                  <span className="sm:inline">{tr('typesPage.create')}</span>
+                </Button>
+              </Link>
+            </div>
+          </PageToolbarCard>
+        ) : null}
       </div>
 
       {loading && (
@@ -202,22 +215,26 @@ export default function Types() {
                     )}
                   </CardContent>
                   <CardFooter className="flex justify-end gap-1 px-4 pb-4 pt-0">
-                    <Link to={`/types/creation/${encodeURIComponent(String(ty.id ?? ''))}`}>
+                    {perm('types', 'update') ? (
+                      <Link to={`/types/creation/${encodeURIComponent(String(ty.id ?? ''))}`}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="p-2 text-xs"
+                          icon={<FiEdit className="w-4 h-4" />}
+                        />
+                      </Link>
+                    ) : null}
+                    {perm('types', 'delete') ? (
                       <Button
-                        variant="ghost"
+                        variant="danger"
                         size="sm"
                         className="p-2 text-xs"
-                        icon={<FiEdit className="w-4 h-4" />}
+                        icon={<FiTrash className="w-4 h-4" />}
+                        onClick={() => handleDelete(ty.id, ty.name)}
+                        disabled={deletingId === ty.id}
                       />
-                    </Link>
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      className="p-2 text-xs"
-                      icon={<FiTrash className="w-4 h-4" />}
-                      onClick={() => handleDelete(ty.id, ty.name)}
-                      disabled={deletingId === ty.id}
-                    />
+                    ) : null}
                   </CardFooter>
                 </Card>
               ))
@@ -250,25 +267,29 @@ export default function Types() {
                     <TableCell>{ty.description ?? ''}</TableCell>
                     <TableCell>{ty.createdAt ? new Date(String(ty.createdAt)).toLocaleString() : ''}</TableCell>
                     <TableCell>
-                      <Link
-                        to={`/types/creation/${encodeURIComponent(String(ty.id ?? ''))}`}
-                        className='mr-2'
-                      >
+                      {perm('types', 'update') ? (
+                        <Link
+                          to={`/types/creation/${encodeURIComponent(String(ty.id ?? ''))}`}
+                          className='mr-2'
+                        >
+                          <Button
+                            variant="ghost"
+                            className='p-2'
+                            size="sm"
+                            icon={<FiEdit className="w-4 h-4" />}
+                          />
+                        </Link>
+                      ) : null}
+                      {perm('types', 'delete') ? (
                         <Button
-                          variant="ghost"
-                          className='p-2'
+                          variant="danger"
                           size="sm"
-                          icon={<FiEdit className="w-4 h-4" />}
+                          className='p-2'
+                          icon={<FiTrash className="w-4 h-4" />}
+                          onClick={() => handleDelete(ty.id, ty.name)}
+                          disabled={deletingId === ty.id}
                         />
-                      </Link>
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        className='p-2'
-                        icon={<FiTrash className="w-4 h-4" />}
-                        onClick={() => handleDelete(ty.id, ty.name)}
-                        disabled={deletingId === ty.id}
-                      />
+                      ) : null}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -278,8 +299,15 @@ export default function Types() {
 
           {types.length > 0 && (
             <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-2">
-              <div className="text-gray-600 dark:text-slate-400 text-sm mb-2 sm:mb-0">
-                {tr('common.paginationSummary', { page, totalPages, total: types.length })}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+                <div className="text-gray-600 dark:text-slate-400 text-sm">
+                  {tr('common.paginationSummary', { page, totalPages, total: totalItems })}
+                </div>
+                <TableItemsPerPageSelect
+                  id="types-page-size"
+                  value={pageSize}
+                  onChange={setPageSize}
+                />
               </div>
               <div className="flex items-center gap-1 flex-wrap justify-center">
                 <Button

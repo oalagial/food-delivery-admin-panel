@@ -9,6 +9,8 @@ import { Textarea } from '../components/ui/textarea'
 import { Alert, AlertDescription } from '../components/ui/alert'
 import { AlertCircle } from 'lucide-react'
 import { createType, getTypeById, updateType } from '../utils/api'
+import { canSubmitResourceForm } from '../utils/permissions'
+import { FormSaveBarrier } from '../components/FormSaveBarrier'
 import type { CreateTypePayload } from '../utils/api'
 
 export default function TypeCreate() {
@@ -16,6 +18,7 @@ export default function TypeCreate() {
   const { id } = useParams<{ id?: string }>()
   const navigate = useNavigate()
   const editing = !!id
+  const canSave = canSubmitResourceForm('types', editing)
 
   const [submitting, setSubmitting] = useState(false)
   const [loading, setLoading] = useState(editing)
@@ -39,6 +42,7 @@ export default function TypeCreate() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!canSave) return
     setSubmitting(true)
     setError(null)
 
@@ -79,6 +83,7 @@ export default function TypeCreate() {
           onSubmit={handleSubmit}
           className="grid gap-6 max-w-3xl lg:grid-cols-2"
         >
+          <FormSaveBarrier canSave={canSave} alertClassName="lg:col-span-2">
           {/* Basic info */}
           <Card className="shadow-sm">
             <CardHeader className="pb-3">
@@ -145,21 +150,21 @@ export default function TypeCreate() {
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
-
-              <div className="flex justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
-                <Button
-                  variant="default"
-                  type="button"
-                  onClick={() => navigate('/types')}
-                >
-                  {t('common.cancel')}
-                </Button>
-                <Button variant="primary" type="submit" disabled={submitting}>
-                  {submitting ? t('common.saving') : editing ? t('common.update') : t('common.create')}
-                </Button>
-              </div>
             </CardContent>
           </Card>
+          </FormSaveBarrier>
+          <div className="flex justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-700 lg:col-span-2 max-w-3xl">
+            <Button
+              variant="default"
+              type="button"
+              onClick={() => navigate('/types')}
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button variant="primary" type="submit" disabled={!canSave || submitting}>
+              {submitting ? t('common.saving') : editing ? t('common.update') : t('common.create')}
+            </Button>
+          </div>
         </form>
       )}
     </div>

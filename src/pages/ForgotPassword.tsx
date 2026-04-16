@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Input } from '../components/ui/input'
 import { Button } from '../components/ui/button'
@@ -8,53 +8,23 @@ import { Label } from '../components/ui/label'
 import { Alert, AlertDescription } from '../components/ui/alert'
 import { AlertCircle } from 'lucide-react'
 import { API_BASE } from '../config'
-import { clearToken } from '../utils/api'
 
-export default function SetPassword() {
+export default function ForgotPassword() {
   const { t } = useTranslation()
-  const [searchParams] = useSearchParams()
-
-  useEffect(() => {
-    clearToken()
-  }, [])
-  const email = searchParams.get('email') ?? ''
-  const token = searchParams.get('token') ?? ''
-
-  const [password, setPassword] = useState('')
-  const [confirm, setConfirm] = useState('')
+  const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
-  function validatePassword(p: string): string | null {
-    if (p.length < 8) return t('setPassword.errMinLength')
-    if (!/[A-Z]/.test(p)) return t('setPassword.errUppercase')
-    if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(p)) return t('setPassword.errSpecial')
-    return null
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
-    if (password !== confirm) {
-      setError(t('setPassword.errMismatch'))
-      return
-    }
-    const passwordError = validatePassword(password)
-    if (passwordError) {
-      setError(passwordError)
-      return
-    }
-    if (!email || !token) {
-      setError(t('setPassword.errInvalidLink'))
-      return
-    }
     setLoading(true)
     try {
-      const res = await fetch(`${API_BASE}/auth/accept-invite`, {
+      const res = await fetch(`${API_BASE}/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, token, password }),
+        body: JSON.stringify({ email: email.trim() }),
       })
       if (!res.ok) {
         const text = await res.text()
@@ -64,13 +34,13 @@ export default function SetPassword() {
           if (Array.isArray(j.message)) msg = j.message.join(', ')
           else if (typeof j.message === 'string') msg = j.message
         } catch {
-          /* use raw text */
+          /* use raw */
         }
         throw new Error(msg)
       }
       setSuccess(true)
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : t('setPassword.errGeneric'))
+      setError(err instanceof Error ? err.message : t('forgotPassword.errGeneric'))
     } finally {
       setLoading(false)
     }
@@ -87,15 +57,15 @@ export default function SetPassword() {
           </div>
           <Card className="w-full max-w-md shadow-2xl border-0">
             <CardHeader>
-              <CardTitle className="text-center">{t('setPassword.successTitle')}</CardTitle>
-              <CardDescription className="text-center">{t('setPassword.successDesc')}</CardDescription>
+              <CardTitle className="text-center">{t('forgotPassword.successTitle')}</CardTitle>
+              <CardDescription className="text-center">{t('forgotPassword.successDesc')}</CardDescription>
             </CardHeader>
             <CardContent className="flex justify-center">
-              <a href="/login">
+              <Link to="/login">
                 <Button variant="primary" className="rounded-lg">
-                  {t('setPassword.goLogin')}
+                  {t('forgotPassword.backToLogin')}
                 </Button>
-              </a>
+              </Link>
             </CardContent>
           </Card>
         </div>
@@ -113,36 +83,23 @@ export default function SetPassword() {
         </div>
         <Card className="shadow-2xl border-0">
           <CardHeader className="space-y-3">
-            <CardTitle className="text-3xl text-center font-bold text-gray-900">{t('setPassword.title')}</CardTitle>
-            <CardDescription className="text-center text-gray-600">{t('setPassword.subtitle')}</CardDescription>
+            <CardTitle className="text-3xl text-center font-bold text-gray-900">{t('forgotPassword.title')}</CardTitle>
+            <CardDescription className="text-center text-gray-600">{t('forgotPassword.subtitle')}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-lg font-semibold text-gray-700">
-                  {t('setPassword.password')}
+                <Label htmlFor="email" className="text-lg font-semibold text-gray-700">
+                  {t('login.email')}
                 </Label>
                 <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
-                  placeholder={t('setPassword.passwordPh')}
-                  className="w-full h-12 border-gray-300 px-4"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirm" className="text-lg font-semibold text-gray-700">
-                  {t('setPassword.confirm')}
-                </Label>
-                <Input
-                  id="confirm"
-                  type="password"
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                  required
-                  placeholder={t('setPassword.confirmPh')}
+                  autoComplete="email"
+                  placeholder={t('forgotPassword.emailPh')}
                   className="w-full h-12 border-gray-300 px-4"
                 />
               </div>
@@ -161,12 +118,17 @@ export default function SetPassword() {
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
                     <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    {t('setPassword.setting')}
+                    {t('forgotPassword.sending')}
                   </span>
                 ) : (
-                  t('setPassword.submit')
+                  t('forgotPassword.submit')
                 )}
               </Button>
+              <p className="text-center text-sm">
+                <Link to="/login" className="text-blue-600 font-semibold hover:text-blue-700">
+                  {t('forgotPassword.backToLogin')}
+                </Link>
+              </p>
             </form>
           </CardContent>
         </Card>

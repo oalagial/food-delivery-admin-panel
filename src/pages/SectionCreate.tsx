@@ -9,14 +9,18 @@ import { Label } from '../components/ui/label'
 import { Textarea } from '../components/ui/textarea'
 import { Alert, AlertDescription } from '../components/ui/alert'
 import { AlertCircle } from 'lucide-react'
-import { getSectionById, createSection, updateSection, getTypesList, getProductsList } from '../utils/api'
+import { getSectionById, createSection, updateSection, getTypesList, getAllProductsForSelection } from '../utils/api'
+import { canSubmitResourceForm } from '../utils/permissions'
+import { FormSaveBarrier } from '../components/FormSaveBarrier'
 import type { TypeItem, Product } from '../utils/api'
 import { Select } from '../components/ui/select';
+import { TransferList } from '../components/ui/transfer-list'
 
 export default function SectionCreate(){
   const { t } = useTranslation()
   const params = useParams<{id?: string}>()
   const navigate = useNavigate()
+  const canSave = canSubmitResourceForm('sections', !!params.id)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [typeId, setTypeId] = useState<number | ''>('')
@@ -29,7 +33,7 @@ export default function SectionCreate(){
   useEffect(()=>{
     let mounted = true
     getTypesList().then(d=>{ if(mounted) setTypes(d)}).catch(()=>{})
-    getProductsList().then(d=>{ if(mounted) setProducts(d)}).catch(()=>{})
+    getAllProductsForSelection().then(d=>{ if(mounted) setProducts(d)}).catch(()=>{})
     if(params.id){
       getSectionById(Number(params.id)).then((s) => {
         if (!s) return
@@ -51,9 +55,19 @@ export default function SectionCreate(){
 
   async function onSubmit(e: FormEvent<HTMLFormElement>){
     e.preventDefault()
+    if (!canSave) return
     setLoading(true)
     setError(null)
-    const payload = { name, description: String(description || ''), typeId: typeof typeId === 'string' ? Number(typeId) : typeId, productsIds }
+    const payload = {
+      name,
+      description: String(description || ''),
+      typeId: typeof typeId === 'string' ? Number(typeId) : typeId,
+      productsIds,
+      orderedProducts: productsIds.map((productId, index) => ({
+        productId: Number(productId),
+        sortOrder: index + 1,
+      })),
+    }
     try{
       if(params.id){
         await updateSection(Number(params.id), payload)
@@ -77,6 +91,7 @@ export default function SectionCreate(){
         onSubmit={onSubmit}
         className="grid gap-6 max-w-5xl lg:grid-cols-2"
       >
+        <FormSaveBarrier canSave={canSave} alertClassName="lg:col-span-2">
         {/* Basic info */}
         <Card className="shadow-sm">
           <CardHeader className="pb-3">
@@ -139,65 +154,24 @@ export default function SectionCreate(){
           <CardContent className="space-y-4">
             <div>
               <Label>{t('common.sectionProducts')}</Label>
-              <div className="flex gap-4 mt-2">
-                {/* Available Products */}
-                <div className="flex-1">
-                  <div className="font-semibold mb-1 text-sm">{t('common.available')}</div>
-                  <div className="border rounded p-2 h-48 overflow-y-auto bg-white dark:bg-slate-900">
-                    {products.filter(p => !productsIds.includes(p.id)).length === 0 && (
-                      <div className="text-xs text-gray-400">{t('createForms.noMoreProducts')}</div>
-                    )}
-                    {products.filter(p => !productsIds.includes(p.id)).map(p => (
-                      <div
-                        key={p.id}
-                        className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded cursor-pointer group"
-                      >
-                        <span>{p.name ?? String(p.id)}</span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="ml-2 text-green-600 hover:text-green-800 text-xs font-bold opacity-80 group-hover:opacity-100"
-                          onClick={() => setProductsIds(ids => [...ids, p.id])}
-                        >
-                          {t('common.add')}
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                {/* Selected Products */}
-                <div className="flex-1">
-                  <div className="font-semibold mb-1 text-sm">{t('common.selected')}</div>
-                  <div className="border rounded p-2 h-48 overflow-y-auto bg-white dark:bg-slate-900">
-                    {productsIds.length === 0 && (
-                      <div className="text-xs text-gray-400">{t('createForms.noProductsSelected')}</div>
-                    )}
-                    {products.filter(p => productsIds.includes(p.id)).map(p => (
-                      <div
-                        key={p.id}
-                        className="flex items-center justify-between py-1 px-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded cursor-pointer group"
-                      >
-                        <span>{p.name ?? String(p.id)}</span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="ml-2 text-red-600 hover:text-red-800 text-xs font-bold opacity-80 group-hover:opacity-100"
-                          onClick={() =>
-                            setProductsIds(ids => ids.filter(id => id !== p.id))
-                          }
-                        >
-                          {t('common.remove')}
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <p className="mt-1 text-xs text-gray-500">
-                {t('common.pickerHintAddRemove')}
-              </p>
+              <TransferList
+                items={products.flatMap((product) => {
+                  const id = product.id
+                  if (id === undefined || id === null) return []
+                  return [{ id, label: String(product.name ?? id) }]
+                })}
+                selectedIds={productsIds}
+                onChange={setProductsIds}
+                availableTitle={t('common.available')}
+                selectedTitle={t('common.selected')}
+                availableEmptyText={t('createForms.noMoreProducts')}
+                selectedEmptyText={t('createForms.noProductsSelected')}
+                searchPlaceholder={t('common.search')}
+                noDataText={t('common.noData')}
+                hintText={t('common.pickerHintAddRemoveReorder')}
+                clearLabel={t('common.clearField')}
+                reorder
+              />
             </div>
 
             {error && (
@@ -206,13 +180,13 @@ export default function SectionCreate(){
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
-
-            <div className="flex justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
-              <Button type="button" variant="default" onClick={()=>navigate('/sections')}>{t('common.cancel')}</Button>
-              <Button type="submit" variant="primary" disabled={loading}>{loading ? t('common.saving') : params.id ? t('common.update') : t('common.create')}</Button>
-            </div>
           </CardContent>
         </Card>
+        </FormSaveBarrier>
+        <div className="flex justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-700 lg:col-span-2">
+          <Button type="button" variant="default" onClick={()=>navigate('/sections')}>{t('common.cancel')}</Button>
+          <Button type="submit" variant="primary" disabled={!canSave || loading}>{loading ? t('common.saving') : params.id ? t('common.update') : t('common.create')}</Button>
+        </div>
       </form>
     </div>
   )

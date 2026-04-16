@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { login as apiLogin } from '../utils/api'
+import { getFirstAccessiblePanelPath } from '../utils/permissions'
 import { Input } from '../components/ui/input'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
@@ -23,7 +24,7 @@ export default function Login() {
     setLoading(true)
     try {
       await apiLogin(email, password)
-      navigate('/dashboard')
+      navigate(getFirstAccessiblePanelPath() ?? '/dashboard')
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)
       setError(msg || t('login.loginFailed'))
@@ -75,6 +76,11 @@ export default function Login() {
                   placeholder={t('login.passwordPh')}
                   className="w-full h-20 text-xl border-gray-300 px-4"
                 />
+                <div className="text-right text-base">
+                  <Link to="/forgot-password" className="text-blue-600 font-semibold hover:text-blue-700">
+                    {t('login.forgotPassword')}
+                  </Link>
+                </div>
               </div>
 
               {error && (

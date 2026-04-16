@@ -5,10 +5,12 @@ import { Table, TableBody, TableHead, TableRow, TableCell, TableHeadCell } from 
 import { Button } from '../components/ui/button'
 import { FiPlus, FiEdit, FiTrash, FiRotateCw, FiAlertCircle } from 'react-icons/fi'
 import { getMenusList, restoreMenu, deleteMenu } from '../utils/api'
+import { perm } from '../utils/permissions'
 import type { MenuItem } from '../utils/api'
 import { Skeleton } from '../components/ui/skeleton'
 import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../components/ui/card'
+import { PageHeader, PageToolbarCard } from '../components/page-layout'
 
 export default function Menus() {
   const { t } = useTranslation()
@@ -98,6 +100,7 @@ export default function Menus() {
     const anyMenu = m as unknown as Record<string, unknown>
     return anyMenu.deletedBy
   })
+  const canSeeDeletedMenus = perm('menus', 'restore')
 
   return (
     <>
@@ -134,20 +137,28 @@ export default function Menus() {
       )}
 
       <div className="space-y-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{t('menusPage.title')}</h1>
-            <p className="text-gray-600 mt-1 dark:text-slate-400">{t('menusPage.subtitle')}</p>
-          </div>
-          <Link to="/menus/creation" className="w-full sm:w-auto">
-            <Button
-              variant="primary"
-              icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
-              className="w-full justify-center px-4 py-2 text-sm sm:w-auto sm:px-6 sm:py-3 sm:text-base"
-            >
-              <span className="sm:inline">{t('menusPage.create')}</span>
-            </Button>
-          </Link>
+        <div className="space-y-5">
+          <PageHeader
+            title={t('menusPage.title')}
+            subtitle={t('menusPage.subtitle')}
+            helpTooltip={t('common.toolbarHintDefault')}
+            helpAriaLabel={t('common.moreInfo')}
+          />
+          {perm('menus', 'create') ? (
+            <PageToolbarCard>
+              <div className="flex flex-wrap justify-end gap-3">
+                <Link to="/menus/creation" className="w-full sm:w-auto">
+                  <Button
+                    variant="primary"
+                    icon={<FiPlus className="w-4 h-4 sm:w-5 sm:h-5" />}
+                    className="h-9 w-full justify-center px-4 text-sm sm:w-auto sm:px-6"
+                  >
+                    <span className="sm:inline">{t('menusPage.create')}</span>
+                  </Button>
+                </Link>
+              </div>
+            </PageToolbarCard>
+          ) : null}
         </div>
 
         {loading ? (
@@ -221,21 +232,25 @@ export default function Menus() {
                           )}
                         </CardContent>
                         <CardFooter className="flex justify-end gap-1 px-4 pb-4 pt-0">
-                          <Link to={`/menus/creation/${m.id}`}>
+                          {perm('menus', 'update') ? (
+                            <Link to={`/menus/creation/${m.id}`}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="p-2 text-xs"
+                                icon={<FiEdit className="w-4 h-4" />}
+                              />
+                            </Link>
+                          ) : null}
+                          {perm('menus', 'delete') ? (
                             <Button
-                              variant="ghost"
+                              variant="danger"
                               size="sm"
                               className="p-2 text-xs"
-                              icon={<FiEdit className="w-4 h-4" />}
+                              icon={<FiTrash className="w-4 h-4" />}
+                              onClick={() => handleDelete(m.id ?? '', m.name ?? '')}
                             />
-                          </Link>
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            className="p-2 text-xs"
-                            icon={<FiTrash className="w-4 h-4" />}
-                            onClick={() => handleDelete(m.id ?? '', m.name ?? '')}
-                          />
+                          ) : null}
                         </CardFooter>
                       </Card>
                     )
@@ -278,15 +293,19 @@ export default function Menus() {
                           <TableCell>{m.createdAt ? new Date(String(m.createdAt)).toLocaleString() : ''}</TableCell>
                           <TableCell>
                             <div className="flex justify-center gap-2">
-                              <Link to={`/menus/creation/${m.id}`}>
-                                <Button size="sm" variant="ghost" icon={<FiEdit className="w-4 h-4" />}></Button>
-                              </Link>
-                              <Button
-                                variant="danger"
-                                size="sm"
-                                icon={<FiTrash className="w-4 h-4" />}
-                                onClick={() => handleDelete(m.id ?? '', m.name ?? '')}
-                              ></Button>
+                              {perm('menus', 'update') ? (
+                                <Link to={`/menus/creation/${m.id}`}>
+                                  <Button size="sm" variant="ghost" icon={<FiEdit className="w-4 h-4" />}></Button>
+                                </Link>
+                              ) : null}
+                              {perm('menus', 'delete') ? (
+                                <Button
+                                  variant="danger"
+                                  size="sm"
+                                  icon={<FiTrash className="w-4 h-4" />}
+                                  onClick={() => handleDelete(m.id ?? '', m.name ?? '')}
+                                ></Button>
+                              ) : null}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -297,7 +316,7 @@ export default function Menus() {
               </div>
             </div>
 
-            {deletedMenus.length > 0 && (
+            {canSeeDeletedMenus && deletedMenus.length > 0 && (
               <div className="mt-8">
                 <h2 className="text-2xl font-semibold text-gray-600 mb-4">{t('menusPage.deletedHeading')}</h2>
                 <Table>
@@ -330,13 +349,15 @@ export default function Menus() {
                           <TableCell className="text-gray-500 text-sm">{String(anyMenu.deletedBy ?? '')}</TableCell>
                           <TableCell>
                             <div className="flex justify-center">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className='p-2'
-                                onClick={() => handleRestore(m.id ?? '', m.name ?? '')}
-                                icon={<FiRotateCw className="w-4 h-4" />}
-                              ></Button>
+                              {perm('menus', 'restore') ? (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className='p-2'
+                                  onClick={() => handleRestore(m.id ?? '', m.name ?? '')}
+                                  icon={<FiRotateCw className="w-4 h-4" />}
+                                ></Button>
+                              ) : null}
                             </div>
                           </TableCell>
                         </TableRow>

@@ -5,12 +5,13 @@ import {
   getToken,
   clearToken,
   fetchCurrentUserSession,
+  getCurrentUserId,
   getCurrentUserJwtHints,
   getCurrentUserRole,
   type CurrentUserSessionInfo,
 } from '../utils/api'
 import { Button } from './ui/button'
-import { FiLogOut, FiClock, FiMenu, FiMoon, FiSun, FiChevronDown } from 'react-icons/fi'
+import { FiEdit2, FiLogOut, FiClock, FiMenu, FiMoon, FiSun, FiChevronDown } from 'react-icons/fi'
 
 type HeaderProps = {
   onToggleSidebar?: () => void
@@ -140,6 +141,13 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
     setToken(null)
     setAccountOpen(false)
     navigate('/login')
+  }
+
+  function handleEditProfile() {
+    const id = getCurrentUserId()
+    if (id == null) return
+    setAccountOpen(false)
+    navigate(`/users/creation/${encodeURIComponent(String(id))}`)
   }
 
   function handleLogin() {
@@ -285,7 +293,18 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
                       </div>
                     ) : null}
                   </div>
-                  <div className="mt-4 border-t border-slate-200 pt-4 dark:border-slate-700">
+                  <div className="mt-4 flex flex-col gap-2 border-t border-slate-200 pt-4 dark:border-slate-700">
+                    {getCurrentUserId() != null ? (
+                      <Button
+                        type="button"
+                        variant="default"
+                        className="w-full justify-center px-4 py-2"
+                        icon={<FiEdit2 className="h-4 w-4" />}
+                        onClick={handleEditProfile}
+                      >
+                        {t('header.editProfile')}
+                      </Button>
+                    ) : null}
                     <Button
                       type="button"
                       variant="danger"
