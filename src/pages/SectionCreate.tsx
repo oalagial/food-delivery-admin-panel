@@ -155,10 +155,11 @@ export default function SectionCreate(){
             <div>
               <Label>{t('common.sectionProducts')}</Label>
               <TransferList
-                items={products.map((product) => ({
-                  id: product.id,
-                  label: String(product.name ?? product.id),
-                }))}
+                items={products.flatMap((product) => {
+                  const id = product.id
+                  if (id === undefined || id === null) return []
+                  return [{ id, label: String(product.name ?? id) }]
+                })}
                 selectedIds={productsIds}
                 onChange={setProductsIds}
                 availableTitle={t('common.available')}
