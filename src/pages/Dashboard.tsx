@@ -89,6 +89,7 @@ type DashboardOrder = {
   total?: number | string | null
   amount?: number | string | null
   status?: string
+  isReceiptPrinted?: boolean
   createdAt?: string
   orderNumber?: number
   orderDate?: string
