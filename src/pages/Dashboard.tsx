@@ -15,6 +15,7 @@ import {
   getOrderStatuses,
   getPaymentStatuses,
   OrderStatus,
+  PaymentStatus,
   updateOrder,
 } from '../utils/api'
 import {
@@ -119,11 +120,13 @@ function formatMoney(value?: number | string | null): string {
   return Number.isFinite(n) ? `€${n.toFixed(2)}` : '-'
 }
 
-function formatOrderBusinessDate(value: string | number | undefined | null): string {
+function formatDeliveryTime(value: string | undefined | null): string {
   const dash = i18n.t('common.emDash')
-  if (value == null || value === '') return dash
-  const d = new Date(String(value))
-  return Number.isNaN(d.getTime()) ? dash : d.toLocaleDateString()
+  if (!value) return dash
+  const trimmed = value.trim()
+  if (!trimmed) return dash
+  const d = new Date(trimmed)
+  return Number.isNaN(d.getTime()) ? trimmed : `${d.toLocaleDateString()} ${d.toLocaleTimeString()}`
 }
 
 function orderDeliveryLocationId(o: DashboardOrder): string {
@@ -271,9 +274,23 @@ export default function Dashboard() {
     if (!id) return
     setPatchingOrderId(id)
     setOrderActionError(null)
+    const shouldAutoMarkPaid = next === OrderStatus.DELIVERED
     try {
-      await updateOrder(id, { status: next })
-      setTodayOrders((prev) => prev.map((o) => (String(o.id) === id ? { ...o, status: next } : o)))
+      await updateOrder(id, {
+        status: next,
+        ...(shouldAutoMarkPaid ? { paymentStatus: PaymentStatus.PAID } : {}),
+      })
+      setTodayOrders((prev) =>
+        prev.map((o) =>
+          String(o.id) === id
+            ? {
+                ...o,
+                status: next,
+                ...(shouldAutoMarkPaid ? { paymentStatus: PaymentStatus.PAID } : {}),
+              }
+            : o,
+        ),
+      )
     } catch (e) {
       setOrderActionError(e instanceof Error ? e.message : String(e))
     } finally {
@@ -304,8 +321,12 @@ export default function Dashboard() {
     if (!id || patchingOrderId) return
     setPatchingOrderId(id)
     setOrderActionError(null)
+    const shouldAutoMarkPaid = status === OrderStatus.DELIVERED
     try {
-      await updateOrder(id, { status })
+      await updateOrder(id, {
+        status,
+        ...(shouldAutoMarkPaid ? { paymentStatus: PaymentStatus.PAID } : {}),
+      })
       await refreshTodayOrdersRef.current()
     } catch (e) {
       setOrderActionError(e instanceof Error ? e.message : String(e))
@@ -595,7 +616,7 @@ export default function Dashboard() {
             <TableHead>
               <tr>
                 <TableHeadCell>{t('ordersPage.orderNumber')}</TableHeadCell>
-                <TableHeadCell>{t('ordersPage.orderDate')}</TableHeadCell>
+                <TableHeadCell>{t('ordersPage.deliveryTime')}</TableHeadCell>
                 <TableHeadCell>{t('ordersPage.deliveryLocation')}</TableHeadCell>
                 <TableHeadCell>{t('ordersPage.price')}</TableHeadCell>
                 <TableHeadCell>{t('common.paymentStatus')}</TableHeadCell>
@@ -680,7 +701,7 @@ export default function Dashboard() {
                           </div>
                           <div className="text-xs text-slate-600 dark:text-slate-300">{deliveryLocation}</div>
                           <div className="text-xs text-slate-600 dark:text-slate-400">
-                            {formatOrderBusinessDate(o.orderDate)}
+                            {formatDeliveryTime(o.deliveryTime)}
                           </div>
                           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                             <span className="font-medium text-slate-900 dark:text-slate-100">
@@ -776,7 +797,7 @@ export default function Dashboard() {
                       onSort={onSortColumn}
                     />
                     <OrderTableSortHeadCell
-                      label={t('ordersPage.orderDate')}
+                      label={t('ordersPage.deliveryTime')}
                       colKey="orderDate"
                       activeKey={sortKey}
                       dir={sortDir}
@@ -842,7 +863,7 @@ export default function Dashboard() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <span className="text-sm">{formatOrderBusinessDate(o.orderDate)}</span>
+                          <span className="text-sm">{formatDeliveryTime(o.deliveryTime)}</span>
                         </TableCell>
                         <TableCell>{o.deliveryLocation?.name ?? '-'}</TableCell>
                         <TableCell>

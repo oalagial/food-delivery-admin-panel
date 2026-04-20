@@ -23,6 +23,7 @@ export const ordersPage = {
   orderId: 'ID ordine',
   orderNumber: 'Numero ordine',
   orderDate: 'Data ordine',
+  deliveryTime: 'Orario di consegna',
   restaurant: 'Ristorante',
   deliveryLocation: 'Punto di consegna',
   customer: 'Cliente',

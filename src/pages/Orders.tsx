@@ -5,6 +5,8 @@ import {
   getDeliveryLocationsList,
   getOrderStatuses,
   getOrdersList,
+  OrderStatus,
+  PaymentStatus,
   getPaymentStatuses,
   printFiscalOrder,
   printOrder,
@@ -340,10 +342,22 @@ export default function Orders() {
   const commitOrderListStatus = async (id: string, status: string) => {
     setOrderStatusPatchingId(id)
     setOrderStatusError(null)
+    const shouldAutoMarkPaid = status === OrderStatus.DELIVERED
     try {
-      await updateOrder(id, { status })
+      await updateOrder(id, {
+        status,
+        ...(shouldAutoMarkPaid ? { paymentStatus: PaymentStatus.PAID } : {}),
+      })
       setItems((prev) =>
-        prev.map((o) => (String(o.id) === id ? { ...o, status: status as OrderItem['status'] } : o)),
+        prev.map((o) =>
+          String(o.id) === id
+            ? {
+                ...o,
+                status: status as OrderItem['status'],
+                ...(shouldAutoMarkPaid ? { paymentStatus: PaymentStatus.PAID } : {}),
+              }
+            : o,
+        ),
       )
     } catch (e) {
       setOrderStatusError(e instanceof Error ? e.message : String(e))
