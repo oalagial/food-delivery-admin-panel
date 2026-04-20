@@ -64,7 +64,13 @@ type OrderRowProps = {
 
 type OrderCardProps = OrderRowProps
 
-function OrderPrintButton({ orderId }: { orderId: string | number | undefined }) {
+function OrderPrintButton({
+  orderId,
+  isReceiptPrinted,
+}: {
+  orderId: string | number | undefined
+  isReceiptPrinted?: boolean
+}) {
   const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
   const [fiscalLoading, setFiscalLoading] = useState(false)
@@ -86,7 +92,7 @@ function OrderPrintButton({ orderId }: { orderId: string | number | undefined })
 
   const onFiscalPrint = async (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation()
-    if (orderId === undefined || orderId === null || String(orderId) === '') return
+    if (orderId === undefined || orderId === null || String(orderId) === '' || isReceiptPrinted) return
     setErr(null)
     setFiscalLoading(true)
     try {
@@ -115,7 +121,13 @@ function OrderPrintButton({ orderId }: { orderId: string | number | undefined })
           type="button"
           variant="default"
           size="sm"
-          disabled={loading || fiscalLoading || orderId == null || String(orderId) === ''}
+          disabled={
+            loading ||
+            fiscalLoading ||
+            isReceiptPrinted ||
+            orderId == null ||
+            String(orderId) === ''
+          }
           aria-label="Fiscal Print"
           onClick={onFiscalPrint}
         >
@@ -198,7 +210,7 @@ function OrderRow({
         </TableCell>
         <TableCell>
           <div className="flex justify-center items-start" onClick={(e) => e.stopPropagation()}>
-            <OrderPrintButton orderId={order.id} />
+            <OrderPrintButton orderId={order.id} isReceiptPrinted={Boolean(order.isReceiptPrinted)} />
           </div>
         </TableCell>
       </TableRow>
@@ -294,7 +306,7 @@ function OrderCard({
       </CardContent>
 
       <CardFooter className="flex justify-start items-center px-4 pb-4 pt-0" onClick={(e) => e.stopPropagation()}>
-        <OrderPrintButton orderId={order.id} />
+        <OrderPrintButton orderId={order.id} isReceiptPrinted={Boolean(order.isReceiptPrinted)} />
       </CardFooter>
 
       {isOpen && (

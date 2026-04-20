@@ -1,7 +1,6 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../components/ui/button'
-import { FiCheckCircle, FiSlash } from 'react-icons/fi'
 import { Card, CardContent } from '../components/ui/card'
 import Table, { TableBody, TableHead, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { Skeleton } from '../components/ui/skeleton'
@@ -15,6 +14,8 @@ import {
   getOrderStatuses,
   getPaymentStatuses,
   OrderStatus,
+  printFiscalOrder,
+  printOrder,
   PaymentStatus,
   updateOrder,
 } from '../utils/api'
@@ -242,7 +243,10 @@ export default function Dashboard() {
     setOpenRowId((prev) => (prev === String(id) ? null : String(id)))
   }
 
-  const patchOrderStatus = async (id: string, status: typeof OrderStatus.CONFIRMED | typeof OrderStatus.CANCELLED) => {
+  const patchOrderStatus = async (
+    id: string,
+    status: typeof OrderStatus.REJECTED
+  ) => {
     if (!id || patchingOrderId) return
     setPatchingOrderId(id)
     setOrderActionError(null)
@@ -335,9 +339,41 @@ export default function Dashboard() {
     }
   }
 
-  const confirmOrder = (id: string) => patchOrderStatus(id, OrderStatus.CONFIRMED)
+  const rejectOrder = (id: string) => patchOrderStatus(id, OrderStatus.REJECTED)
 
-  const cancelOrder = (id: string) => patchOrderStatus(id, OrderStatus.CANCELLED)
+  const confirmOrderWithKitchenPrint = async (id: string) => {
+    if (!id || patchingOrderId) return
+    setPatchingOrderId(id)
+    setOrderActionError(null)
+    try {
+      await printOrder(id)
+      await updateOrder(id, { status: OrderStatus.CONFIRMED })
+      setTodayOrders((prev) =>
+        prev.map((o) => (String(o.id) === id ? { ...o, status: OrderStatus.CONFIRMED } : o)),
+      )
+    } catch (e) {
+      setOrderActionError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setPatchingOrderId(null)
+    }
+  }
+
+  const confirmOrderWithKitchenAndFiscalPrint = async (id: string, isReceiptPrinted?: boolean) => {
+    if (!id || patchingOrderId || isReceiptPrinted) return
+    setPatchingOrderId(id)
+    setOrderActionError(null)
+    try {
+      await Promise.all([printOrder(id), printFiscalOrder(id)])
+      await updateOrder(id, { status: OrderStatus.CONFIRMED })
+      setTodayOrders((prev) =>
+        prev.map((o) => (String(o.id) === id ? { ...o, status: OrderStatus.CONFIRMED } : o)),
+      )
+    } catch (e) {
+      setOrderActionError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setPatchingOrderId(null)
+    }
+  }
 
   const showKitchenReady = canDashboardOrdersMarkReady()
   const showDeliveryActions = canDashboardOrdersDelivery()
@@ -753,19 +789,35 @@ export default function Dashboard() {
                                 <Button
                                   variant="primary"
                                   size="sm"
-                                  icon={<FiCheckCircle className="w-4 h-4" />}
+                                  disabled={!!patchingOrderId || Boolean(o.isReceiptPrinted)}
+                                  aria-label={t('dashboardPage.confirmWithKitchenAndFiscal')}
+                                  onClick={() =>
+                                    confirmOrderWithKitchenAndFiscalPrint(
+                                      String(o.id ?? ''),
+                                      Boolean(o.isReceiptPrinted),
+                                    )
+                                  }
+                                >
+                                  {t('dashboardPage.confirmWithKitchenAndFiscal')}
+                                </Button>
+                                <Button
+                                  variant="default"
+                                  size="sm"
                                   disabled={!!patchingOrderId}
-                                  aria-label={t('dashboardPage.confirmOrder')}
-                                  onClick={() => confirmOrder(String(o.id ?? ''))}
-                                />
+                                  aria-label={t('dashboardPage.confirmWithKitchen')}
+                                  onClick={() => confirmOrderWithKitchenPrint(String(o.id ?? ''))}
+                                >
+                                  {t('dashboardPage.confirmWithKitchen')}
+                                </Button>
                                 <Button
                                   variant="danger"
                                   size="sm"
-                                  icon={<FiSlash className="w-4 h-4" />}
                                   disabled={!!patchingOrderId}
-                                  aria-label={t('dashboardPage.cancelOrder')}
-                                  onClick={() => cancelOrder(String(o.id ?? ''))}
-                                />
+                                  aria-label={t('dashboardPage.rejectOrder')}
+                                  onClick={() => rejectOrder(String(o.id ?? ''))}
+                                >
+                                  {t('dashboardPage.rejectOrder')}
+                                </Button>
                               </>
                             ) : null}
                           </div>
@@ -942,19 +994,35 @@ export default function Dashboard() {
                                 <Button
                                   variant="primary"
                                   size="sm"
-                                  icon={<FiCheckCircle className="w-4 h-4" />}
+                                  disabled={!!patchingOrderId || Boolean(o.isReceiptPrinted)}
+                                  aria-label={t('dashboardPage.confirmWithKitchenAndFiscal')}
+                                  onClick={() =>
+                                    confirmOrderWithKitchenAndFiscalPrint(
+                                      String(o.id ?? ''),
+                                      Boolean(o.isReceiptPrinted),
+                                    )
+                                  }
+                                >
+                                  {t('dashboardPage.confirmWithKitchenAndFiscal')}
+                                </Button>
+                                <Button
+                                  variant="default"
+                                  size="sm"
                                   disabled={!!patchingOrderId}
-                                  aria-label={t('dashboardPage.confirmOrder')}
-                                  onClick={() => confirmOrder(String(o.id ?? ''))}
-                                />
+                                  aria-label={t('dashboardPage.confirmWithKitchen')}
+                                  onClick={() => confirmOrderWithKitchenPrint(String(o.id ?? ''))}
+                                >
+                                  {t('dashboardPage.confirmWithKitchen')}
+                                </Button>
                                 <Button
                                   variant="danger"
                                   size="sm"
-                                  icon={<FiSlash className="w-4 h-4" />}
                                   disabled={!!patchingOrderId}
-                                  aria-label={t('dashboardPage.cancelOrder')}
-                                  onClick={() => cancelOrder(String(o.id ?? ''))}
-                                />
+                                  aria-label={t('dashboardPage.rejectOrder')}
+                                  onClick={() => rejectOrder(String(o.id ?? ''))}
+                                >
+                                  {t('dashboardPage.rejectOrder')}
+                                </Button>
                               </>
                             ) : null}
                           </div>
