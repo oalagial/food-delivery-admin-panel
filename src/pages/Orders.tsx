@@ -1,4 +1,4 @@
-import { useEffect, useState, type MouseEvent } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../components/ui/button'
 import {
@@ -8,8 +8,6 @@ import {
   OrderStatus,
   PaymentStatus,
   getPaymentStatuses,
-  printFiscalOrder,
-  printOrder,
   updateOrder,
 } from '../utils/api'
 import type { OrderItem } from '../utils/api'
@@ -19,7 +17,7 @@ import {
 } from '../utils/orderStatusFilter'
 import { PAYMENT_STATUS_FILTER_FALLBACK, paymentStatusFilterOptionLabel } from '../utils/paymentStatusFilter'
 import { Skeleton } from '../components/ui/skeleton'
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '../components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Table, TableBody, TableHead, TableRow, TableCell, TableHeadCell } from '../components/ui/table'
 import { OrderTableSortHeadCell } from '../components/OrderTableSortHeadCell'
 import { OrderDetailsPanel } from '../components/OrderDetailsPanel'
@@ -64,80 +62,6 @@ type OrderRowProps = {
 
 type OrderCardProps = OrderRowProps
 
-function OrderPrintButton({
-  orderId,
-  isReceiptPrinted,
-}: {
-  orderId: string | number | undefined
-  isReceiptPrinted?: boolean
-}) {
-  const { t } = useTranslation()
-  const [loading, setLoading] = useState(false)
-  const [fiscalLoading, setFiscalLoading] = useState(false)
-  const [err, setErr] = useState<string | null>(null)
-
-  const onPrint = async (e: MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation()
-    if (orderId === undefined || orderId === null || String(orderId) === '') return
-    setErr(null)
-    setLoading(true)
-    try {
-      await printOrder(orderId)
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e))
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const onFiscalPrint = async (e: MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation()
-    if (orderId === undefined || orderId === null || String(orderId) === '' || isReceiptPrinted) return
-    setErr(null)
-    setFiscalLoading(true)
-    try {
-      await printFiscalOrder(orderId)
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e))
-    } finally {
-      setFiscalLoading(false)
-    }
-  }
-
-  return (
-    <div className="flex flex-col items-center gap-0.5 min-w-[4.5rem]">
-      <div className="flex items-center gap-2">
-        <Button
-          type="button"
-          variant="default"
-          size="sm"
-          disabled={loading || fiscalLoading || orderId == null || String(orderId) === ''}
-          aria-label={t('ordersPage.printAria')}
-          onClick={onPrint}
-        >
-          {loading ? t('ordersPage.printing') : t('ordersPage.print')}
-        </Button>
-        <Button
-          type="button"
-          variant="default"
-          size="sm"
-          disabled={
-            loading ||
-            fiscalLoading ||
-            isReceiptPrinted ||
-            orderId == null ||
-            String(orderId) === ''
-          }
-          aria-label="Fiscal Print"
-          onClick={onFiscalPrint}
-        >
-          {fiscalLoading ? 'Printing...' : 'Fiscal Print'}
-        </Button>
-      </div>
-      {err ? <p className="text-[10px] text-red-600 text-center leading-tight max-w-[9rem]">{err}</p> : null}
-    </div>
-  )
-}
 
 function OrderRow({
   order,
@@ -177,7 +101,6 @@ function OrderRow({
         <TableCell>
           <span className="text-sm">{formatOrderBusinessDate(order.orderDate)}</span>
         </TableCell>
-        <TableCell>{order.restaurant?.name ?? ''}</TableCell>
         <TableCell>{order.deliveryLocation?.name ?? ''}</TableCell>
         <TableCell>{order.customer?.name}</TableCell>
         <TableCell>
@@ -207,11 +130,6 @@ function OrderRow({
             saving={orderStatusPatchingId === rowId}
             onCommit={onStatusCommit}
           />
-        </TableCell>
-        <TableCell>
-          <div className="flex justify-center items-start" onClick={(e) => e.stopPropagation()}>
-            <OrderPrintButton orderId={order.id} isReceiptPrinted={Boolean(order.isReceiptPrinted)} />
-          </div>
         </TableCell>
       </TableRow>
 
@@ -258,9 +176,6 @@ function OrderCard({
               {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : ''}
             </span>
           </CardTitle>
-          <p className="text-xs">
-            {order.restaurant?.name ?? ''} • {order.deliveryLocation?.name ?? ''}
-          </p>
           <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
             {t('ordersPage.orderNumberLine', {
               num: order.orderNumber != null ? String(order.orderNumber) : dash,
@@ -305,10 +220,6 @@ function OrderCard({
         </p>
       </CardContent>
 
-      <CardFooter className="flex justify-start items-center px-4 pb-4 pt-0" onClick={(e) => e.stopPropagation()}>
-        <OrderPrintButton orderId={order.id} isReceiptPrinted={Boolean(order.isReceiptPrinted)} />
-      </CardFooter>
-
       {isOpen && (
         <div className="border-t border-gray-100">
           <OrderDetailsPanel order={order} />
@@ -328,6 +239,7 @@ export default function Orders() {
   const [limit, setLimit] = useState(DEFAULT_TABLE_PAGE_SIZE)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
+  const [paidOrdersTotalAmount, setPaidOrdersTotalAmount] = useState<number | null>(null)
   const [sortKey, setSortKey] = useState<OrderTableSortKey>('createdAt')
   const [sortDir, setSortDir] = useState<OrderTableSortDir>('desc')
   const [statusFilter, setStatusFilter] = useState('')
@@ -338,6 +250,7 @@ export default function Orders() {
   const [emailInput, setEmailInput] = useState('')
   const [debouncedName, setDebouncedName] = useState('')
   const [debouncedEmail, setDebouncedEmail] = useState('')
+  const [dateFilter, setDateFilter] = useState('')
   const [deliveryLocations, setDeliveryLocations] = useState<Array<{ id?: string | number; name?: string }>>([])
   const [locationFilter, setLocationFilter] = useState('')
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('')
@@ -364,10 +277,10 @@ export default function Orders() {
         prev.map((o) =>
           String(o.id) === id
             ? {
-                ...o,
-                status: status as OrderItem['status'],
-                ...(shouldAutoMarkPaid ? { paymentStatus: PaymentStatus.PAID } : {}),
-              }
+              ...o,
+              status: status as OrderItem['status'],
+              ...(shouldAutoMarkPaid ? { paymentStatus: PaymentStatus.PAID } : {}),
+            }
             : o,
         ),
       )
@@ -402,7 +315,7 @@ export default function Orders() {
         if (!mounted || !list.length) return
         setStatusFilterOptions(list)
       })
-      .catch(() => {})
+      .catch(() => { })
     return () => {
       mounted = false
     }
@@ -418,7 +331,7 @@ export default function Orders() {
         )
         setDeliveryLocations(sorted)
       })
-      .catch(() => {})
+      .catch(() => { })
     return () => {
       mounted = false
     }
@@ -431,7 +344,7 @@ export default function Orders() {
         if (!mounted || !list.length) return
         setPaymentStatusFilterOptions(list)
       })
-      .catch(() => {})
+      .catch(() => { })
     return () => {
       mounted = false
     }
@@ -449,7 +362,7 @@ export default function Orders() {
 
   useEffect(() => {
     setPage(1)
-  }, [statusFilter, debouncedName, debouncedEmail, locationFilter, paymentStatusFilter])
+  }, [statusFilter, debouncedName, debouncedEmail, dateFilter, locationFilter, paymentStatusFilter])
 
   useEffect(() => {
     setPage(1)
@@ -478,6 +391,7 @@ export default function Orders() {
         status: statusFilter || undefined,
         customerName: debouncedName || undefined,
         customerEmail: debouncedEmail || undefined,
+        orderDate: dateFilter || undefined,
         deliveryLocationId: locationFilter || undefined,
         paymentStatus: paymentStatusFilter || undefined,
       },
@@ -488,16 +402,24 @@ export default function Orders() {
         let totalItems: number
         let totalPagesVal: number
         if (res && typeof res === 'object' && 'data' in res && 'totalPages' in res) {
-          const r = res as { data: OrderItem[]; total: number; totalPages: number }
+          const r = res as {
+            data: OrderItem[]
+            total: number
+            totalPages: number
+            paidOrdersTotalAmount?: string | number | null
+          }
           data = r.data
           totalItems = r.total
           totalPagesVal = r.totalPages
+          const totalAmountNum = Number(r.paidOrdersTotalAmount)
+          setPaidOrdersTotalAmount(Number.isFinite(totalAmountNum) ? totalAmountNum : null)
         } else {
           data = Array.isArray(res)
             ? (res as OrderItem[])
             : (res as { data?: OrderItem[] })?.data ?? Object.values((res as object) ?? {})
           totalItems = data.length
           totalPagesVal = 1
+          setPaidOrdersTotalAmount(null)
         }
         setItems(data)
         setTotal(totalItems)
@@ -512,23 +434,40 @@ export default function Orders() {
     return () => {
       mounted = false
     }
-  }, [page, limit, sortKey, sortDir, statusFilter, debouncedName, debouncedEmail, locationFilter, paymentStatusFilter])
+  }, [page, limit, sortKey, sortDir, statusFilter, debouncedName, debouncedEmail, dateFilter, locationFilter, paymentStatusFilter])
 
   const hasActiveFilters = Boolean(
-    statusFilter || debouncedName || debouncedEmail || locationFilter || paymentStatusFilter,
+    statusFilter || debouncedName || debouncedEmail || dateFilter || locationFilter || paymentStatusFilter,
   )
+  const paidOrdersTotalAmountLabel =
+    paidOrdersTotalAmount == null
+      ? t('common.emDash')
+      : paidOrdersTotalAmount.toLocaleString(i18n.language, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })
 
   return (
     <div className="space-y-6">
       <div className="space-y-5">
-        <PageHeader
-          title={t('ordersPage.title')}
-          subtitle={t('ordersPage.subtitle')}
-          helpTooltip={t('common.toolbarHintOrdersSearch')}
-          helpAriaLabel={t('common.moreInfo')}
-        />
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <PageHeader
+            title={t('ordersPage.title')}
+            subtitle={t('ordersPage.subtitle')}
+            helpTooltip={t('common.toolbarHintOrdersSearch')}
+            helpAriaLabel={t('common.moreInfo')}
+          />
+          <div className="self-start rounded-lg border border-green-200 bg-green-50 px-4 py-2 shadow-sm dark:border-green-800/70 dark:bg-green-950/30">
+            <p className="text-xs font-medium uppercase tracking-wide text-green-700 dark:text-green-300">
+              Total amount
+            </p>
+            <p className="text-lg font-semibold text-green-800 dark:text-green-200">
+              €{paidOrdersTotalAmountLabel}
+            </p>
+          </div>
+        </div>
         <PageToolbarCard>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5 lg:items-end lg:gap-3 xl:gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6 lg:items-end lg:gap-3 xl:gap-4">
             <div className="min-w-0">
               <SearchFilterField
                 id="orders-search-customer-name"
@@ -565,6 +504,18 @@ export default function Orders() {
                   </option>
                 ))}
               </Select>
+            </div>
+            <div className="min-w-0">
+              <Label htmlFor="orders-date-filter" className="text-sm font-medium leading-none text-slate-700 dark:text-slate-200">
+                {t('ordersPage.orderDate')}
+              </Label>
+              <input
+                id="orders-date-filter"
+                type="date"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="mt-1.5 flex h-9 w-full rounded-md border border-input bg-zinc-100 px-3 py-2 text-sm text-slate-900 shadow-sm transition-colors focus:outline-none focus:ring-1 focus:ring-ring dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+              />
             </div>
             <div className="min-w-0">
               <Label htmlFor="orders-location-filter" className="text-sm font-medium leading-none text-slate-700 dark:text-slate-200">
@@ -627,13 +578,11 @@ export default function Orders() {
               <TableHeadCell>{t('ordersPage.orderId')}</TableHeadCell>
               <TableHeadCell>{t('ordersPage.orderNumber')}</TableHeadCell>
               <TableHeadCell>{t('ordersPage.orderDate')}</TableHeadCell>
-              <TableHeadCell>{t('ordersPage.restaurant')}</TableHeadCell>
               <TableHeadCell>{t('ordersPage.deliveryLocation')}</TableHeadCell>
               <TableHeadCell>{t('ordersPage.customer')}</TableHeadCell>
               <TableHeadCell>{t('ordersPage.price')}</TableHeadCell>
               <TableHeadCell>{t('common.paymentStatus')}</TableHeadCell>
               <TableHeadCell>{t('ordersPage.status')}</TableHeadCell>
-              <TableHeadCell>{t('ordersPage.print')}</TableHeadCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -705,13 +654,6 @@ export default function Orders() {
                     onSort={onSortColumn}
                   />
                   <OrderTableSortHeadCell
-                    label={t('ordersPage.restaurant')}
-                    colKey="restaurant"
-                    activeKey={sortKey}
-                    dir={sortDir}
-                    onSort={onSortColumn}
-                  />
-                  <OrderTableSortHeadCell
                     label={t('ordersPage.deliveryLocation')}
                     colKey="deliveryLocation"
                     activeKey={sortKey}
@@ -746,7 +688,6 @@ export default function Orders() {
                     dir={sortDir}
                     onSort={onSortColumn}
                   />
-                  <TableHeadCell>{t('ordersPage.print')}</TableHeadCell>
                 </TableRow>
               </TableHead>
               <TableBody>

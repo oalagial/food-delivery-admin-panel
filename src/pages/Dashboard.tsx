@@ -1,5 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { PiCashRegisterFill } from 'react-icons/pi'
+import { TiPrinter } from 'react-icons/ti'
 import { Button } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
 import Table, { TableBody, TableHead, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
@@ -234,6 +236,8 @@ export default function Dashboard() {
       }, [])
   }, [listPage, totalListPages])
 
+  const actionButtonClassName = 'h-8 min-w-[6.5rem] justify-center px-2 text-xs font-medium whitespace-nowrap'
+
   const onSortColumn = (k: OrderTableSortKey) => {
     const next = toggleOrderTableSort(sortKey, sortDir, k)
     setSortKey(next.key)
@@ -242,23 +246,6 @@ export default function Dashboard() {
 
   const toggleRow = (id: string | number) => {
     setOpenRowId((prev) => (prev === String(id) ? null : String(id)))
-  }
-
-  const patchOrderStatus = async (
-    id: string,
-    status: typeof OrderStatus.REJECTED
-  ) => {
-    if (!id || patchingOrderId) return
-    setPatchingOrderId(id)
-    setOrderActionError(null)
-    try {
-      await updateOrder(id, { status })
-      setTodayOrders((prev) => prev.map((o) => (String(o.id) === id ? { ...o, status } : o)))
-    } catch (e) {
-      setOrderActionError(e instanceof Error ? e.message : String(e))
-    } finally {
-      setPatchingOrderId(null)
-    }
   }
 
   const markOrderReady = async (id: string) => {
@@ -289,10 +276,10 @@ export default function Dashboard() {
         prev.map((o) =>
           String(o.id) === id
             ? {
-                ...o,
-                status: next,
-                ...(shouldAutoMarkPaid ? { paymentStatus: PaymentStatus.PAID } : {}),
-              }
+              ...o,
+              status: next,
+              ...(shouldAutoMarkPaid ? { paymentStatus: PaymentStatus.PAID } : {}),
+            }
             : o,
         ),
       )
@@ -340,8 +327,6 @@ export default function Dashboard() {
     }
   }
 
-  const rejectOrder = (id: string) => patchOrderStatus(id, OrderStatus.REJECTED)
-
   const confirmOrderWithKitchenPrint = async (id: string) => {
     if (!id || patchingOrderId) return
     setPatchingOrderId(id)
@@ -381,6 +366,7 @@ export default function Dashboard() {
   const showAdminOrderActions = canDashboardShowAdminOrderActions()
   const canEditOrderStatus = hasOrdersStatusMutationUiAccess()
   const canEditPaymentStatus = hasOrdersPaymentMutationUiAccess()
+  const actionsColumnLabel = showAdminOrderActions ? t('ordersPage.print') : t('dashboardPage.actions')
 
   const deliveryCanMarkOnTheWay = (status: string | undefined) => (status ?? '') === OrderStatus.READY
 
@@ -471,7 +457,7 @@ export default function Dashboard() {
         if (!mounted || !list.length) return
         setPaymentStatusFilterOptions(list)
       })
-      .catch(() => {})
+      .catch(() => { })
     return () => {
       mounted = false
     }
@@ -487,7 +473,7 @@ export default function Dashboard() {
         )
         setDeliveryLocations(sorted)
       })
-      .catch(() => {})
+      .catch(() => { })
     return () => {
       mounted = false
     }
@@ -511,7 +497,7 @@ export default function Dashboard() {
 
         const previousCount = previousTodayCountRef.current
         const nextCount = filtered.length
-         if (previousCount !== null && nextCount > previousCount) {
+        if (previousCount !== null && nextCount > previousCount) {
           playNewOrderSound()
         }
         previousTodayCountRef.current = nextCount
@@ -658,7 +644,7 @@ export default function Dashboard() {
                 <TableHeadCell>{t('ordersPage.price')}</TableHeadCell>
                 <TableHeadCell>{t('common.paymentStatus')}</TableHeadCell>
                 <TableHeadCell>{t('ordersPage.status')}</TableHeadCell>
-                <TableHeadCell>{t('dashboardPage.actions')}</TableHeadCell>
+                <TableHeadCell>{actionsColumnLabel}</TableHeadCell>
               </tr>
             </TableHead>
             <TableBody>
@@ -754,6 +740,7 @@ export default function Dashboard() {
                               <Button
                                 variant="primary"
                                 size="sm"
+                                className={actionButtonClassName}
                                 disabled={!!patchingOrderId || chefCannotMarkReady(status)}
                                 aria-label={t('dashboardPage.ariaReady')}
                                 onClick={() => markOrderReady(String(o.id ?? ''))}
@@ -765,6 +752,7 @@ export default function Dashboard() {
                                 <Button
                                   variant="primary"
                                   size="sm"
+                                  className={actionButtonClassName}
                                   disabled={!!patchingOrderId || !deliveryCanMarkOnTheWay(status)}
                                   aria-label={t('dashboardPage.ariaOnTheWay')}
                                   onClick={() =>
@@ -776,6 +764,7 @@ export default function Dashboard() {
                                 <Button
                                   variant="default"
                                   size="sm"
+                                  className={actionButtonClassName}
                                   disabled={!!patchingOrderId || !deliveryCanMarkDelivered(status)}
                                   aria-label={t('dashboardPage.ariaDelivered')}
                                   onClick={() =>
@@ -790,6 +779,13 @@ export default function Dashboard() {
                                 <Button
                                   variant="primary"
                                   size="sm"
+                                  className={actionButtonClassName}
+                                  icon={
+                                    <span className="inline-flex items-center gap-1" aria-hidden>
+                                      <PiCashRegisterFill className="h-4 w-4" />
+                                      <TiPrinter className="h-4 w-4" />
+                                    </span>
+                                  }
                                   disabled={!!patchingOrderId || Boolean(o.isReceiptPrinted)}
                                   aria-label={t('dashboardPage.confirmWithKitchenAndFiscal')}
                                   onClick={() =>
@@ -798,27 +794,16 @@ export default function Dashboard() {
                                       Boolean(o.isReceiptPrinted),
                                     )
                                   }
-                                >
-                                  {t('dashboardPage.confirmWithKitchenAndFiscal')}
-                                </Button>
+                                />
                                 <Button
                                   variant="default"
                                   size="sm"
+                                  className={actionButtonClassName}
+                                  icon={<TiPrinter className="h-4 w-4" aria-hidden />}
                                   disabled={!!patchingOrderId}
                                   aria-label={t('dashboardPage.confirmWithKitchen')}
                                   onClick={() => confirmOrderWithKitchenPrint(String(o.id ?? ''))}
-                                >
-                                  {t('dashboardPage.confirmWithKitchen')}
-                                </Button>
-                                <Button
-                                  variant="danger"
-                                  size="sm"
-                                  disabled={!!patchingOrderId}
-                                  aria-label={t('dashboardPage.rejectOrder')}
-                                  onClick={() => rejectOrder(String(o.id ?? ''))}
-                                >
-                                  {t('dashboardPage.rejectOrder')}
-                                </Button>
+                                />
                               </>
                             ) : null}
                           </div>
@@ -884,7 +869,7 @@ export default function Dashboard() {
                       dir={sortDir}
                       onSort={onSortColumn}
                     />
-                    <TableHeadCell>{t('dashboardPage.actions')}</TableHeadCell>
+                    <TableHeadCell>{actionsColumnLabel}</TableHeadCell>
                   </tr>
                 </TableHead>
                 <TableBody>
@@ -959,6 +944,7 @@ export default function Dashboard() {
                               <Button
                                 variant="primary"
                                 size="sm"
+                                className={actionButtonClassName}
                                 disabled={!!patchingOrderId || chefCannotMarkReady(o.status)}
                                 aria-label={t('dashboardPage.ariaReady')}
                                 onClick={() => markOrderReady(String(o.id ?? ''))}
@@ -970,6 +956,7 @@ export default function Dashboard() {
                                 <Button
                                   variant="primary"
                                   size="sm"
+                                  className={actionButtonClassName}
                                   disabled={!!patchingOrderId || !deliveryCanMarkOnTheWay(o.status)}
                                   aria-label={t('dashboardPage.ariaOnTheWay')}
                                   onClick={() =>
@@ -981,6 +968,7 @@ export default function Dashboard() {
                                 <Button
                                   variant="default"
                                   size="sm"
+                                  className={actionButtonClassName}
                                   disabled={!!patchingOrderId || !deliveryCanMarkDelivered(o.status)}
                                   aria-label={t('dashboardPage.ariaDelivered')}
                                   onClick={() =>
@@ -995,6 +983,13 @@ export default function Dashboard() {
                                 <Button
                                   variant="primary"
                                   size="sm"
+                                  className={actionButtonClassName}
+                                  icon={
+                                    <span className="inline-flex items-center gap-1" aria-hidden>
+                                      <PiCashRegisterFill className="h-4 w-4" />
+                                      <TiPrinter className="h-4 w-4" />
+                                    </span>
+                                  }
                                   disabled={!!patchingOrderId || Boolean(o.isReceiptPrinted)}
                                   aria-label={t('dashboardPage.confirmWithKitchenAndFiscal')}
                                   onClick={() =>
@@ -1003,27 +998,16 @@ export default function Dashboard() {
                                       Boolean(o.isReceiptPrinted),
                                     )
                                   }
-                                >
-                                  {t('dashboardPage.confirmWithKitchenAndFiscal')}
-                                </Button>
+                                />
                                 <Button
                                   variant="default"
                                   size="sm"
+                                  className={actionButtonClassName}
+                                  icon={<TiPrinter className="h-4 w-4" aria-hidden />}
                                   disabled={!!patchingOrderId}
                                   aria-label={t('dashboardPage.confirmWithKitchen')}
                                   onClick={() => confirmOrderWithKitchenPrint(String(o.id ?? ''))}
-                                >
-                                  {t('dashboardPage.confirmWithKitchen')}
-                                </Button>
-                                <Button
-                                  variant="danger"
-                                  size="sm"
-                                  disabled={!!patchingOrderId}
-                                  aria-label={t('dashboardPage.rejectOrder')}
-                                  onClick={() => rejectOrder(String(o.id ?? ''))}
-                                >
-                                  {t('dashboardPage.rejectOrder')}
-                                </Button>
+                                />
                               </>
                             ) : null}
                           </div>

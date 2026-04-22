@@ -1034,6 +1034,8 @@ export type CreateProductPayload = {
 export type ProductsListParams = {
   page?: number;
   limit?: number;
+  name?: string;
+  typeId?: number | string;
   sortField?: string;
   sortDir?: "asc" | "desc";
 };
@@ -1044,6 +1046,8 @@ export async function getProductsList(
   const search = new URLSearchParams();
   if (params?.page != null) search.set("page", String(params.page));
   if (params?.limit != null) search.set("limit", String(params.limit));
+  if (params?.name) search.set("name", params.name);
+  if (params?.typeId != null && String(params.typeId) !== "") search.set("typeId", String(params.typeId));
   if (params?.sortField) search.set("sortField", params.sortField);
   if (params?.sortDir) search.set("sortDir", params.sortDir);
   const query = search.toString();
@@ -1064,6 +1068,8 @@ export async function getProductsListPaginated(
   const search = new URLSearchParams();
   if (params?.page != null) search.set("page", String(params.page));
   if (params?.limit != null) search.set("limit", String(params.limit));
+  if (params?.name) search.set("name", params.name);
+  if (params?.typeId != null && String(params.typeId) !== "") search.set("typeId", String(params.typeId));
   if (params?.sortField) search.set("sortField", params.sortField);
   if (params?.sortDir) search.set("sortDir", params.sortDir);
   const res = await authFetch(`/products?${search}`);
@@ -2723,6 +2729,8 @@ export async function getOrdersList(
     customerName?: string;
     /** Customer email partial match — query: `customerEmail`. */
     customerEmail?: string;
+    /** Order date exact match — query: `orderDate` (YYYY-MM-DD). */
+    orderDate?: string;
     deliveryLocationId?: string | number;
     paymentStatus?: string;
   },
@@ -2738,6 +2746,8 @@ export async function getOrdersList(
   const customerEmail = filters?.customerEmail?.trim();
   if (customerName) params.set("customerName", customerName);
   if (customerEmail) params.set("customerEmail", customerEmail);
+  const orderDate = filters?.orderDate?.trim();
+  if (orderDate) params.set("orderDate", orderDate);
   const locId = filters?.deliveryLocationId;
   if (locId !== undefined && locId !== null && String(locId).trim() !== "") {
     params.set("deliveryLocationId", String(locId).trim());
