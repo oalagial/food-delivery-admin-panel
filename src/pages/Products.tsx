@@ -1,20 +1,20 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { Button } from '../components/ui/button'
 import { FiPlus, FiEdit, FiTrash, FiCheckCircle, FiXCircle, FiRotateCw, FiAlertCircle } from 'react-icons/fi'
-import { getProductsListPaginated, restoreProduct, deleteProduct, updateProduct } from '../utils/api'
+import { getProductsListPaginated, getTypesList, restoreProduct, deleteProduct, updateProduct } from '../utils/api'
 import { perm } from '../utils/permissions'
-import type { Product } from '../utils/api'
+import type { Product, TypeItem } from '../utils/api'
 import { Skeleton } from '../components/ui/skeleton'
 import { API_BASE } from '../config'
-import { Input } from '../components/ui/input'
 import { Card, CardContent, CardDescription, CardTitle, CardHeader, CardFooter } from '../components/ui/card'
 import { Alert, AlertTitle, AlertDescription } from '../components/ui/alert'
 import { TableItemsPerPageSelect, DEFAULT_TABLE_PAGE_SIZE } from '../components/TableItemsPerPageSelect'
 import { PageHeader, PageToolbarCard } from '../components/page-layout'
-import { Label } from '../components/ui/label'
+import { SearchFilterField, SEARCH_FILTER_DEBOUNCE_MS } from '../components/SearchFilterField'
+import { Select } from '../components/ui/select'
 
 type ProductRowProps = {
   product: Product;
@@ -209,7 +209,11 @@ export default function Products() {
   const [items, setItems] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [search, setSearch] = useState('')
+  const [nameInput, setNameInput] = useState('')
+  const [debouncedName, setDebouncedName] = useState('')
+  const [selectedTypeId, setSelectedTypeId] = useState('')
+  const [types, setTypes] = useState<TypeItem[]>([])
+  const filterRef = useRef({ name: '', typeId: '' })
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_TABLE_PAGE_SIZE)
   const [totalItems, setTotalItems] = useState(0)
@@ -231,9 +235,9 @@ export default function Products() {
     setOpenRowId(prev => (prev === id ? null : id));
   }
 
-  const loadProducts = () => {
+  const loadProducts = (name?: string, typeId?: number) => {
     setLoading(true)
-    getProductsListPaginated({ page, limit: pageSize })
+    getProductsListPaginated({ page, limit: pageSize, name, typeId })
       .then((res) => {
         setItems(res.data)
         setTotalItems(res.total)
@@ -248,8 +252,40 @@ export default function Products() {
   }
 
   useEffect(() => {
-    loadProducts()
-  }, [page, pageSize])
+    const id = window.setTimeout(() => {
+      setDebouncedName(nameInput.trim())
+    }, SEARCH_FILTER_DEBOUNCE_MS)
+    return () => window.clearTimeout(id)
+  }, [nameInput])
+
+  useEffect(() => {
+    let cancelled = false
+    getTypesList()
+      .then((rows) => {
+        if (!cancelled) setTypes(rows)
+      })
+      .catch(() => {
+        if (!cancelled) setTypes([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    const filterChanged =
+      filterRef.current.name !== debouncedName ||
+      filterRef.current.typeId !== selectedTypeId
+    if (filterChanged) {
+      filterRef.current = { name: debouncedName, typeId: selectedTypeId }
+      if (page !== 1) {
+        setPage(1)
+        return
+      }
+    }
+    const resolvedTypeId = selectedTypeId ? Number(selectedTypeId) : undefined
+    loadProducts(debouncedName || undefined, Number.isNaN(resolvedTypeId) ? undefined : resolvedTypeId)
+  }, [page, pageSize, debouncedName, selectedTypeId])
 
   const openConfirmDialog = (type: 'delete' | 'restore', id: string | number, name: string) => {
     setConfirmDialog({
@@ -279,7 +315,11 @@ export default function Products() {
         await restoreProduct(confirmDialog.id)
       }
       // Reload the products list after successful action
-      loadProducts()
+      const resolvedTypeId = selectedTypeId ? Number(selectedTypeId) : undefined
+      loadProducts(
+        debouncedName || undefined,
+        Number.isNaN(resolvedTypeId) ? undefined : resolvedTypeId,
+      )
       closeConfirmDialog()
     } catch (err) {
       setError(err instanceof Error ? err.message : (confirmDialog.type === 'delete' ? t('common.failedDeleteProduct') : t('common.failedRestoreProduct')))
@@ -321,20 +361,6 @@ export default function Products() {
   })
   const canSeeDeletedProducts = perm('products', 'restore')
 
-  const filteredItems = useMemo(() => {
-    const q = search.trim().toLowerCase()
-
-    if (!q) return activeProducts
-
-    return activeProducts.filter(p =>
-      p.name?.toLowerCase().includes(q)
-    )
-  }, [activeProducts, search])
-
-  useEffect(() => {
-    setPage(1)
-  }, [search])
-
   useEffect(() => {
     setPage(1)
   }, [pageSize])
@@ -343,7 +369,7 @@ export default function Products() {
     setPage((p) => Math.min(p, totalPages))
   }, [totalPages])
 
-  const paginatedItems = filteredItems
+  const paginatedItems = activeProducts
 
   const pageNumbers = useMemo(() => {
     return Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -410,16 +436,34 @@ export default function Products() {
           />
           <PageToolbarCard>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
-              <div className="flex min-w-0 flex-1 flex-col gap-1.5 sm:max-w-md">
-                <Label htmlFor="products-search" className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                  {t('common.search')}
-                </Label>
-                <Input
-                  id="products-search"
+              <div className="grid min-w-0 flex-1 grid-cols-1 gap-3 sm:max-w-3xl sm:grid-cols-2">
+                <SearchFilterField
+                  id="products-search-name"
+                  label={t('common.name')}
+                  value={nameInput}
+                  onChange={setNameInput}
                   placeholder={t('productsPage.searchPh')}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
                 />
+                <div className="flex min-w-0 flex-col gap-1.5">
+                  <label
+                    htmlFor="products-filter-type"
+                    className="text-sm font-medium leading-none text-slate-700 dark:text-slate-200"
+                  >
+                    {t('common.type')}
+                  </label>
+                  <Select
+                    id="products-filter-type"
+                    value={selectedTypeId}
+                    onChange={(e) => setSelectedTypeId(e.target.value)}
+                  >
+                    <option value="">{t('common.all')}</option>
+                    {types.map((type) => (
+                      <option key={String(type.id ?? '')} value={String(type.id ?? '')}>
+                        {String(type.name ?? type.id ?? '')}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
               </div>
               {perm('products', 'create') ? (
                 <div className="flex w-full shrink-0 flex-col gap-1.5 sm:w-auto">
@@ -477,7 +521,7 @@ export default function Products() {
 
               {/* Mobile: cards */}
               <div className="space-y-3 md:hidden">
-                {filteredItems.length === 0 ? (
+                {activeProducts.length === 0 ? (
                   <p className="text-sm text-gray-500 dark:text-slate-400">{t('productsPage.noActive')}</p>
                 ) : (
                   paginatedItems.map((p) => {
@@ -615,7 +659,7 @@ export default function Products() {
                     </tr>
                   </TableHead>
                   <TableBody>
-                    {filteredItems.length === 0 && (
+                    {activeProducts.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={8} className="text-gray-500 dark:text-slate-400">
                           {t('productsPage.noActive')}
@@ -637,7 +681,7 @@ export default function Products() {
                 </Table>
               </div>
 
-              {filteredItems.length > 0 && (
+              {activeProducts.length > 0 && (
                 <div className="flex flex-col sm:flex-row justify-between items-center mt-4 gap-2">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
                     <div className="text-gray-600 dark:text-slate-400 text-sm">

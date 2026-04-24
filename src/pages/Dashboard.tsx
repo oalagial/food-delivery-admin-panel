@@ -1,7 +1,8 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { PiCashRegisterFill } from 'react-icons/pi'
+import { TiPrinter } from 'react-icons/ti'
 import { Button } from '../components/ui/button'
-import { FiCheckCircle, FiSlash } from 'react-icons/fi'
 import { Card, CardContent } from '../components/ui/card'
 import Table, { TableBody, TableHead, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { Skeleton } from '../components/ui/skeleton'
@@ -9,12 +10,15 @@ import { OrderDetailsPanel } from '../components/OrderDetailsPanel'
 import { OrderRowPaymentStatusSelect } from '../components/OrderRowPaymentStatusSelect'
 import { OrderRowStatusSelect } from '../components/OrderRowStatusSelect'
 
-import { API_BASE } from '../config'
 import {
   getDeliveryLocationsList,
+  getOrdersList,
   getOrderStatuses,
   getPaymentStatuses,
   OrderStatus,
+  printFiscalOrder,
+  printOrder,
+  PaymentStatus,
   updateOrder,
 } from '../utils/api'
 import {
@@ -37,7 +41,6 @@ import {
   type OrderTableSortKey,
 } from '../utils/orderTableSort'
 import i18n from '../i18n'
-import { TableItemsPerPageSelect, DEFAULT_TABLE_PAGE_SIZE } from '../components/TableItemsPerPageSelect'
 import { PageHeader, PageToolbarCard } from '../components/page-layout'
 import { SearchFilterField, SEARCH_FILTER_DEBOUNCE_MS } from '../components/SearchFilterField'
 import { Label } from '../components/ui/label'
@@ -87,6 +90,7 @@ type DashboardOrder = {
   total?: number | string | null
   amount?: number | string | null
   status?: string
+  isReceiptPrinted?: boolean
   createdAt?: string
   orderNumber?: number
   orderDate?: string
@@ -101,16 +105,12 @@ function normalizeOrders(payload: unknown): DashboardOrder[] {
   return []
 }
 
-function isToday(value?: string): boolean {
-  if (!value) return false
-  const d = new Date(value)
-  if (Number.isNaN(d.getTime())) return false
+function todayIsoDateLocal(): string {
   const now = new Date()
-  return (
-    d.getFullYear() === now.getFullYear() &&
-    d.getMonth() === now.getMonth() &&
-    d.getDate() === now.getDate()
-  )
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 function formatMoney(value?: number | string | null): string {
@@ -119,11 +119,13 @@ function formatMoney(value?: number | string | null): string {
   return Number.isFinite(n) ? `€${n.toFixed(2)}` : '-'
 }
 
-function formatOrderBusinessDate(value: string | number | undefined | null): string {
+function formatDeliveryTime(value: string | undefined | null): string {
   const dash = i18n.t('common.emDash')
-  if (value == null || value === '') return dash
-  const d = new Date(String(value))
-  return Number.isNaN(d.getTime()) ? dash : d.toLocaleDateString()
+  if (!value) return dash
+  const trimmed = value.trim()
+  if (!trimmed) return dash
+  const d = new Date(trimmed)
+  return Number.isNaN(d.getTime()) ? trimmed : d.toLocaleTimeString()
 }
 
 function orderDeliveryLocationId(o: DashboardOrder): string {
@@ -159,8 +161,6 @@ export default function Dashboard() {
   const [paymentStatusFilterOptions, setPaymentStatusFilterOptions] = useState<string[]>(() => [
     ...PAYMENT_STATUS_FILTER_FALLBACK,
   ])
-  const [listPage, setListPage] = useState(1)
-  const [listPageSize, setListPageSize] = useState(DEFAULT_TABLE_PAGE_SIZE)
   const previousTodayCountRef = useRef<number | null>(null)
   const audioCtxRef = useRef<AudioContext | null>(null)
   const refreshTodayOrdersRef = useRef<() => Promise<void>>(() => Promise.resolve())
@@ -185,8 +185,6 @@ export default function Dashboard() {
     [filteredTodayOrders, sortKey, sortDir]
   )
 
-  const totalListPages = Math.max(1, Math.ceil(displayedOrders.length / listPageSize))
-
   useEffect(() => {
     const id = window.setTimeout(() => setDebouncedName(nameInput.trim()), SEARCH_FILTER_DEBOUNCE_MS)
     return () => window.clearTimeout(id)
@@ -197,37 +195,8 @@ export default function Dashboard() {
     return () => window.clearTimeout(id)
   }, [emailInput])
 
-  useEffect(() => {
-    setListPage(1)
-  }, [statusFilter, debouncedName, debouncedEmail, locationFilter, paymentStatusFilter])
 
-  useEffect(() => {
-    setListPage(1)
-  }, [listPageSize])
-
-  useEffect(() => {
-    setListPage((p) => Math.min(p, totalListPages))
-  }, [totalListPages])
-
-  const paginatedOrders = useMemo(() => {
-    const start = (listPage - 1) * listPageSize
-    return displayedOrders.slice(start, start + listPageSize)
-  }, [displayedOrders, listPage, listPageSize])
-
-  const listPageNumbers = useMemo(() => {
-    return Array.from({ length: totalListPages }, (_, i) => i + 1)
-      .filter(
-        (pn) =>
-          pn === 1 ||
-          pn === totalListPages ||
-          (pn >= listPage - 2 && pn <= listPage + 2)
-      )
-      .reduce((arr: (number | 'ellipsis')[], pn, idx, src) => {
-        if (idx > 0 && pn - (src[idx - 1] as number) > 1) arr.push('ellipsis')
-        arr.push(pn)
-        return arr
-      }, [])
-  }, [listPage, totalListPages])
+  const actionButtonClassName = 'h-8 min-w-[6.5rem] justify-center px-2 text-xs font-medium whitespace-nowrap'
 
   const onSortColumn = (k: OrderTableSortKey) => {
     const next = toggleOrderTableSort(sortKey, sortDir, k)
@@ -237,20 +206,6 @@ export default function Dashboard() {
 
   const toggleRow = (id: string | number) => {
     setOpenRowId((prev) => (prev === String(id) ? null : String(id)))
-  }
-
-  const patchOrderStatus = async (id: string, status: typeof OrderStatus.CONFIRMED | typeof OrderStatus.CANCELLED) => {
-    if (!id || patchingOrderId) return
-    setPatchingOrderId(id)
-    setOrderActionError(null)
-    try {
-      await updateOrder(id, { status })
-      setTodayOrders((prev) => prev.map((o) => (String(o.id) === id ? { ...o, status } : o)))
-    } catch (e) {
-      setOrderActionError(e instanceof Error ? e.message : String(e))
-    } finally {
-      setPatchingOrderId(null)
-    }
   }
 
   const markOrderReady = async (id: string) => {
@@ -271,9 +226,23 @@ export default function Dashboard() {
     if (!id) return
     setPatchingOrderId(id)
     setOrderActionError(null)
+    const shouldAutoMarkPaid = next === OrderStatus.DELIVERED
     try {
-      await updateOrder(id, { status: next })
-      setTodayOrders((prev) => prev.map((o) => (String(o.id) === id ? { ...o, status: next } : o)))
+      await updateOrder(id, {
+        status: next,
+        ...(shouldAutoMarkPaid ? { paymentStatus: PaymentStatus.PAID } : {}),
+      })
+      setTodayOrders((prev) =>
+        prev.map((o) =>
+          String(o.id) === id
+            ? {
+              ...o,
+              status: next,
+              ...(shouldAutoMarkPaid ? { paymentStatus: PaymentStatus.PAID } : {}),
+            }
+            : o,
+        ),
+      )
     } catch (e) {
       setOrderActionError(e instanceof Error ? e.message : String(e))
     } finally {
@@ -304,8 +273,12 @@ export default function Dashboard() {
     if (!id || patchingOrderId) return
     setPatchingOrderId(id)
     setOrderActionError(null)
+    const shouldAutoMarkPaid = status === OrderStatus.DELIVERED
     try {
-      await updateOrder(id, { status })
+      await updateOrder(id, {
+        status,
+        ...(shouldAutoMarkPaid ? { paymentStatus: PaymentStatus.PAID } : {}),
+      })
       await refreshTodayOrdersRef.current()
     } catch (e) {
       setOrderActionError(e instanceof Error ? e.message : String(e))
@@ -314,15 +287,46 @@ export default function Dashboard() {
     }
   }
 
-  const confirmOrder = (id: string) => patchOrderStatus(id, OrderStatus.CONFIRMED)
+  const confirmOrderWithKitchenPrint = async (id: string) => {
+    if (!id || patchingOrderId) return
+    setPatchingOrderId(id)
+    setOrderActionError(null)
+    try {
+      await printOrder(id)
+      await updateOrder(id, { status: OrderStatus.CONFIRMED })
+      setTodayOrders((prev) =>
+        prev.map((o) => (String(o.id) === id ? { ...o, status: OrderStatus.CONFIRMED } : o)),
+      )
+    } catch (e) {
+      setOrderActionError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setPatchingOrderId(null)
+    }
+  }
 
-  const cancelOrder = (id: string) => patchOrderStatus(id, OrderStatus.CANCELLED)
+  const confirmOrderWithKitchenAndFiscalPrint = async (id: string, isReceiptPrinted?: boolean) => {
+    if (!id || patchingOrderId || isReceiptPrinted) return
+    setPatchingOrderId(id)
+    setOrderActionError(null)
+    try {
+      await Promise.all([printOrder(id), printFiscalOrder(id)])
+      await updateOrder(id, { status: OrderStatus.CONFIRMED })
+      setTodayOrders((prev) =>
+        prev.map((o) => (String(o.id) === id ? { ...o, status: OrderStatus.CONFIRMED } : o)),
+      )
+    } catch (e) {
+      setOrderActionError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setPatchingOrderId(null)
+    }
+  }
 
   const showKitchenReady = canDashboardOrdersMarkReady()
   const showDeliveryActions = canDashboardOrdersDelivery()
   const showAdminOrderActions = canDashboardShowAdminOrderActions()
   const canEditOrderStatus = hasOrdersStatusMutationUiAccess()
   const canEditPaymentStatus = hasOrdersPaymentMutationUiAccess()
+  const actionsColumnLabel = showAdminOrderActions ? t('ordersPage.print') : t('dashboardPage.actions')
 
   const deliveryCanMarkOnTheWay = (status: string | undefined) => (status ?? '') === OrderStatus.READY
 
@@ -413,7 +417,7 @@ export default function Dashboard() {
         if (!mounted || !list.length) return
         setPaymentStatusFilterOptions(list)
       })
-      .catch(() => {})
+      .catch(() => { })
     return () => {
       mounted = false
     }
@@ -429,7 +433,7 @@ export default function Dashboard() {
         )
         setDeliveryLocations(sorted)
       })
-      .catch(() => {})
+      .catch(() => { })
     return () => {
       mounted = false
     }
@@ -440,20 +444,24 @@ export default function Dashboard() {
 
     const refreshTodayOrders = async () => {
       try {
-        const r = await fetch(`${API_BASE}/orders`)
-        if (!r.ok) {
-          throw new Error(i18n.t('dashboardPage.fetchFailed', { status: r.status }))
-        }
-
-        const payload = await r.json()
+        const payload = await getOrdersList(
+          1,
+          500,
+          undefined,
+          {
+            orderDate: todayIsoDateLocal(),
+          } as {
+            orderDate?: string
+          },
+        )
         if (!mounted) return
 
         const orders = normalizeOrders(payload)
-        const filtered = orders.filter((o) => isToday(o.createdAt))
+        const filtered = orders
 
         const previousCount = previousTodayCountRef.current
         const nextCount = filtered.length
-         if (previousCount !== null && nextCount > previousCount) {
+        if (previousCount !== null && nextCount > previousCount) {
           playNewOrderSound()
         }
         previousTodayCountRef.current = nextCount
@@ -595,18 +603,19 @@ export default function Dashboard() {
             <TableHead>
               <tr>
                 <TableHeadCell>{t('ordersPage.orderNumber')}</TableHeadCell>
-                <TableHeadCell>{t('ordersPage.orderDate')}</TableHeadCell>
+                <TableHeadCell>{t('common.name')}</TableHeadCell>
+                <TableHeadCell>{t('ordersPage.deliveryTime')}</TableHeadCell>
                 <TableHeadCell>{t('ordersPage.deliveryLocation')}</TableHeadCell>
                 <TableHeadCell>{t('ordersPage.price')}</TableHeadCell>
                 <TableHeadCell>{t('common.paymentStatus')}</TableHeadCell>
                 <TableHeadCell>{t('ordersPage.status')}</TableHeadCell>
-                <TableHeadCell>{t('dashboardPage.actions')}</TableHeadCell>
+                <TableHeadCell>{actionsColumnLabel}</TableHeadCell>
               </tr>
             </TableHead>
             <TableBody>
               {Array.from({ length: 5 }).map((_, r) => (
                 <TableRow key={r} className="animate-pulse">
-                  {Array.from({ length: 7 }).map((__, c) => (
+                  {Array.from({ length: 8 }).map((__, c) => (
                     <TableCell key={c}>
                       <Skeleton className="h-4 w-full bg-gray-200" />
                     </TableCell>
@@ -623,7 +632,7 @@ export default function Dashboard() {
               {displayedOrders.length === 0 ? (
                 <div className="p-4 text-sm text-slate-500 dark:text-slate-400">{noOrdersLabel}</div>
               ) : (
-                paginatedOrders.map((o, i) => {
+                displayedOrders.map((o, i) => {
                   const deliveryLocation = o.deliveryLocation?.name ?? '-'
                   const total = formatMoney(o.total ?? o.amount)
                   const subtotal = formatMoney(o.subtotal)
@@ -633,8 +642,13 @@ export default function Dashboard() {
                   return (
                     <Card
                       key={String(o.id ?? i)}
-                      className="rounded-none border-0 border-b last:border-b-0 bg-white dark:bg-slate-900"
+                      className="relative overflow-hidden rounded-none border-0 border-b last:border-b-0 bg-white dark:bg-slate-900"
                     >
+                      {status === OrderStatus.PENDING ? (
+                        <span className="pointer-events-none absolute left-[-22px] top-[10px] z-10 -rotate-45 bg-orange-500 px-6 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white shadow-sm">
+                          NEW
+                        </span>
+                      ) : null}
                       <CardContent className="p-4 flex flex-col gap-2">
                         <div
                           className="flex flex-col gap-2 cursor-pointer rounded-md -m-1 p-1 hover:bg-slate-50 dark:hover:bg-slate-800/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
@@ -680,7 +694,7 @@ export default function Dashboard() {
                           </div>
                           <div className="text-xs text-slate-600 dark:text-slate-300">{deliveryLocation}</div>
                           <div className="text-xs text-slate-600 dark:text-slate-400">
-                            {formatOrderBusinessDate(o.orderDate)}
+                            {formatDeliveryTime(o.deliveryTime)}
                           </div>
                           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                             <span className="font-medium text-slate-900 dark:text-slate-100">
@@ -696,6 +710,7 @@ export default function Dashboard() {
                               <Button
                                 variant="primary"
                                 size="sm"
+                                className={actionButtonClassName}
                                 disabled={!!patchingOrderId || chefCannotMarkReady(status)}
                                 aria-label={t('dashboardPage.ariaReady')}
                                 onClick={() => markOrderReady(String(o.id ?? ''))}
@@ -707,6 +722,7 @@ export default function Dashboard() {
                                 <Button
                                   variant="primary"
                                   size="sm"
+                                  className={actionButtonClassName}
                                   disabled={!!patchingOrderId || !deliveryCanMarkOnTheWay(status)}
                                   aria-label={t('dashboardPage.ariaOnTheWay')}
                                   onClick={() =>
@@ -718,6 +734,7 @@ export default function Dashboard() {
                                 <Button
                                   variant="default"
                                   size="sm"
+                                  className={actionButtonClassName}
                                   disabled={!!patchingOrderId || !deliveryCanMarkDelivered(status)}
                                   aria-label={t('dashboardPage.ariaDelivered')}
                                   onClick={() =>
@@ -732,18 +749,30 @@ export default function Dashboard() {
                                 <Button
                                   variant="primary"
                                   size="sm"
-                                  icon={<FiCheckCircle className="w-4 h-4" />}
-                                  disabled={!!patchingOrderId}
-                                  aria-label={t('dashboardPage.confirmOrder')}
-                                  onClick={() => confirmOrder(String(o.id ?? ''))}
+                                  className={actionButtonClassName}
+                                  icon={
+                                    <span className="inline-flex items-center gap-1" aria-hidden>
+                                      <PiCashRegisterFill className="h-4 w-4" />
+                                      <TiPrinter className="h-4 w-4" />
+                                    </span>
+                                  }
+                                  disabled={!!patchingOrderId || Boolean(o.isReceiptPrinted)}
+                                  aria-label={t('dashboardPage.confirmWithKitchenAndFiscal')}
+                                  onClick={() =>
+                                    confirmOrderWithKitchenAndFiscalPrint(
+                                      String(o.id ?? ''),
+                                      Boolean(o.isReceiptPrinted),
+                                    )
+                                  }
                                 />
                                 <Button
-                                  variant="danger"
+                                  variant="default"
                                   size="sm"
-                                  icon={<FiSlash className="w-4 h-4" />}
+                                  className={actionButtonClassName}
+                                  icon={<TiPrinter className="h-4 w-4" aria-hidden />}
                                   disabled={!!patchingOrderId}
-                                  aria-label={t('dashboardPage.cancelOrder')}
-                                  onClick={() => cancelOrder(String(o.id ?? ''))}
+                                  aria-label={t('dashboardPage.confirmWithKitchen')}
+                                  onClick={() => confirmOrderWithKitchenPrint(String(o.id ?? ''))}
                                 />
                               </>
                             ) : null}
@@ -776,12 +805,13 @@ export default function Dashboard() {
                       onSort={onSortColumn}
                     />
                     <OrderTableSortHeadCell
-                      label={t('ordersPage.orderDate')}
+                      label={t('ordersPage.deliveryTime')}
                       colKey="orderDate"
                       activeKey={sortKey}
                       dir={sortDir}
                       onSort={onSortColumn}
                     />
+                    <TableHeadCell>{t('common.name')}</TableHeadCell>
                     <OrderTableSortHeadCell
                       label={t('ordersPage.deliveryLocation')}
                       colKey="deliveryLocation"
@@ -810,16 +840,16 @@ export default function Dashboard() {
                       dir={sortDir}
                       onSort={onSortColumn}
                     />
-                    <TableHeadCell>{t('dashboardPage.actions')}</TableHeadCell>
+                    <TableHeadCell>{actionsColumnLabel}</TableHeadCell>
                   </tr>
                 </TableHead>
                 <TableBody>
                   {displayedOrders.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={7}>{noOrdersLabel}</TableCell>
+                      <TableCell colSpan={8}>{noOrdersLabel}</TableCell>
                     </TableRow>
                   )}
-                  {paginatedOrders.map((o, i) => (
+                  {displayedOrders.map((o, i) => (
                     <Fragment key={String(o.id ?? i)}>
                       <TableRow
                         onClick={() => toggleRow(o.id ?? '')}
@@ -833,7 +863,12 @@ export default function Dashboard() {
                         aria-expanded={openRowId === String(o.id ?? '')}
                         className="cursor-pointer hover:bg-blue-50 dark:hover:bg-slate-700/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
                       >
-                        <TableCell>
+                        <TableCell className="relative overflow-visible pl-7">
+                          {o.status === OrderStatus.PENDING ? (
+                            <span className="pointer-events-none absolute left-[-21px] top-[8px] z-10 -rotate-45 bg-orange-500 px-5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white shadow-sm">
+                              NEW
+                            </span>
+                          ) : null}
                           <span className="text-sm font-semibold tabular-nums">
                             {o.orderNumber != null ? o.orderNumber : dash}
                           </span>
@@ -842,8 +877,9 @@ export default function Dashboard() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <span className="text-sm">{formatOrderBusinessDate(o.orderDate)}</span>
+                          <span className="text-sm">{formatDeliveryTime(o.deliveryTime)}</span>
                         </TableCell>
+                        <TableCell>{o.customer?.name ?? o.customerName ?? dash}</TableCell>
                         <TableCell>{o.deliveryLocation?.name ?? '-'}</TableCell>
                         <TableCell>
                           <p className="font-semibold">{formatMoney(o.total ?? o.amount)}</p>
@@ -885,6 +921,7 @@ export default function Dashboard() {
                               <Button
                                 variant="primary"
                                 size="sm"
+                                className={actionButtonClassName}
                                 disabled={!!patchingOrderId || chefCannotMarkReady(o.status)}
                                 aria-label={t('dashboardPage.ariaReady')}
                                 onClick={() => markOrderReady(String(o.id ?? ''))}
@@ -896,6 +933,7 @@ export default function Dashboard() {
                                 <Button
                                   variant="primary"
                                   size="sm"
+                                  className={actionButtonClassName}
                                   disabled={!!patchingOrderId || !deliveryCanMarkOnTheWay(o.status)}
                                   aria-label={t('dashboardPage.ariaOnTheWay')}
                                   onClick={() =>
@@ -907,6 +945,7 @@ export default function Dashboard() {
                                 <Button
                                   variant="default"
                                   size="sm"
+                                  className={actionButtonClassName}
                                   disabled={!!patchingOrderId || !deliveryCanMarkDelivered(o.status)}
                                   aria-label={t('dashboardPage.ariaDelivered')}
                                   onClick={() =>
@@ -921,18 +960,30 @@ export default function Dashboard() {
                                 <Button
                                   variant="primary"
                                   size="sm"
-                                  icon={<FiCheckCircle className="w-4 h-4" />}
-                                  disabled={!!patchingOrderId}
-                                  aria-label={t('dashboardPage.confirmOrder')}
-                                  onClick={() => confirmOrder(String(o.id ?? ''))}
+                                  className={actionButtonClassName}
+                                  icon={
+                                    <span className="inline-flex items-center gap-1" aria-hidden>
+                                      <PiCashRegisterFill className="h-4 w-4" />
+                                      <TiPrinter className="h-4 w-4" />
+                                    </span>
+                                  }
+                                  disabled={!!patchingOrderId || Boolean(o.isReceiptPrinted)}
+                                  aria-label={t('dashboardPage.confirmWithKitchenAndFiscal')}
+                                  onClick={() =>
+                                    confirmOrderWithKitchenAndFiscalPrint(
+                                      String(o.id ?? ''),
+                                      Boolean(o.isReceiptPrinted),
+                                    )
+                                  }
                                 />
                                 <Button
-                                  variant="danger"
+                                  variant="default"
                                   size="sm"
-                                  icon={<FiSlash className="w-4 h-4" />}
+                                  className={actionButtonClassName}
+                                  icon={<TiPrinter className="h-4 w-4" aria-hidden />}
                                   disabled={!!patchingOrderId}
-                                  aria-label={t('dashboardPage.cancelOrder')}
-                                  onClick={() => cancelOrder(String(o.id ?? ''))}
+                                  aria-label={t('dashboardPage.confirmWithKitchen')}
+                                  onClick={() => confirmOrderWithKitchenPrint(String(o.id ?? ''))}
                                 />
                               </>
                             ) : null}
@@ -941,7 +992,7 @@ export default function Dashboard() {
                       </TableRow>
                       {openRowId === String(o.id ?? '') && (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-left align-top">
+                          <TableCell colSpan={8} className="text-left align-top">
                             <OrderDetailsPanel order={o} />
                           </TableCell>
                         </TableRow>
@@ -952,80 +1003,6 @@ export default function Dashboard() {
               </Table>
             </div>
 
-            {displayedOrders.length > 0 && (
-              <div className="flex flex-col sm:flex-row justify-between items-center gap-2 border-t border-slate-200 px-3 py-3 dark:border-slate-700">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
-                  <div className="text-slate-600 dark:text-slate-400 text-sm">
-                    {t('common.paginationSummary', {
-                      page: listPage,
-                      totalPages: totalListPages,
-                      total: displayedOrders.length,
-                    })}
-                  </div>
-                  <TableItemsPerPageSelect
-                    id="dashboard-orders-page-size"
-                    value={listPageSize}
-                    onChange={setListPageSize}
-                  />
-                </div>
-                <div className="flex items-center gap-1 flex-wrap justify-center">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setListPage(1)}
-                    disabled={listPage === 1}
-                    aria-label={t('common.firstPage')}
-                  >
-                    «
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setListPage((p) => Math.max(1, p - 1))}
-                    disabled={listPage === 1}
-                    aria-label={t('common.prevPage')}
-                  >
-                    ‹
-                  </Button>
-                  {listPageNumbers.map((pn, idx) =>
-                    pn === 'ellipsis' ? (
-                      <span key={`dash-ellipsis-${idx}`} className="px-2 text-slate-400 dark:text-slate-500">
-                        …
-                      </span>
-                    ) : (
-                      <Button
-                        key={pn}
-                        variant={pn === listPage ? 'primary' : 'default'}
-                        size="sm"
-                        onClick={() => setListPage(pn as number)}
-                        disabled={pn === listPage}
-                        aria-current={pn === listPage ? 'page' : undefined}
-                      >
-                        {pn}
-                      </Button>
-                    )
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setListPage((p) => Math.min(totalListPages, p + 1))}
-                    disabled={listPage === totalListPages}
-                    aria-label={t('common.nextPage')}
-                  >
-                    ›
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setListPage(totalListPages)}
-                    disabled={listPage === totalListPages}
-                    aria-label={t('common.lastPage')}
-                  >
-                    »
-                  </Button>
-                </div>
-              </div>
-            )}
           </>
         )}
       </div>
