@@ -161,8 +161,10 @@ export default function Dashboard() {
   const [paymentStatusFilterOptions, setPaymentStatusFilterOptions] = useState<string[]>(() => [
     ...PAYMENT_STATUS_FILTER_FALLBACK,
   ])
+  const [audioReady, setAudioReady] = useState(false)
   const previousTodayCountRef = useRef<number | null>(null)
   const audioCtxRef = useRef<AudioContext | null>(null)
+  const audioUnlockedRef = useRef(false)
   const refreshTodayOrdersRef = useRef<() => Promise<void>>(() => Promise.resolve())
 
   const filteredTodayOrders = useMemo(() => {
@@ -344,18 +346,46 @@ export default function Dashboard() {
     )
   }
 
+  const ensureAudioContext = () => {
+    if (typeof window === 'undefined') return null
+    const AudioCtx = window.AudioContext ?? (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+    if (!AudioCtx) return null
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = new AudioCtx()
+    }
+    return audioCtxRef.current
+  }
+
+  const unlockAudio = async (): Promise<boolean> => {
+    try {
+      const ctx = ensureAudioContext()
+      if (!ctx) return false
+      if (ctx.state !== 'running') {
+        await ctx.resume()
+      }
+
+      const t = ctx.currentTime
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      gain.gain.setValueAtTime(0.0001, t)
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.start(t)
+      osc.stop(t + 0.01)
+
+      audioUnlockedRef.current = true
+      setAudioReady(true)
+      return true
+    } catch {
+      return false
+    }
+  }
+
   const playNewOrderSound = () => {
     try {
-      if (typeof window === 'undefined' || !window.AudioContext) return
-
-      if (!audioCtxRef.current) {
-        audioCtxRef.current = new window.AudioContext()
-      }
-
-      const ctx = audioCtxRef.current
-      if (ctx.state === 'suspended') {
-        void ctx.resume()
-      }
+      const ctx = ensureAudioContext()
+      if (!ctx) return
+      if (!audioUnlockedRef.current || ctx.state !== 'running') return
 
       const start = ctx.currentTime
       const ringDuration = 1
@@ -378,7 +408,7 @@ export default function Dashboard() {
         gain.gain.exponentialRampToValueAtTime(0.0001, baseTime + decaySeconds)
 
         osc.connect(gain)
-        gain.connect(ctx.destination)
+        gain.connect(master)
 
         osc.start(baseTime)
         osc.stop(baseTime + ringDuration)
@@ -394,6 +424,27 @@ export default function Dashboard() {
       // Ignore audio errors; polling should continue even if sound fails.
     }
   }
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const onFirstInteraction = () => {
+      void unlockAudio()
+      window.removeEventListener('pointerdown', onFirstInteraction)
+      window.removeEventListener('touchstart', onFirstInteraction)
+      window.removeEventListener('keydown', onFirstInteraction)
+    }
+
+    window.addEventListener('pointerdown', onFirstInteraction, { passive: true })
+    window.addEventListener('touchstart', onFirstInteraction, { passive: true })
+    window.addEventListener('keydown', onFirstInteraction)
+
+    return () => {
+      window.removeEventListener('pointerdown', onFirstInteraction)
+      window.removeEventListener('touchstart', onFirstInteraction)
+      window.removeEventListener('keydown', onFirstInteraction)
+    }
+  }, [])
 
   useEffect(() => {
     let mounted = true
@@ -487,6 +538,8 @@ export default function Dashboard() {
         void audioCtxRef.current.close()
         audioCtxRef.current = null
       }
+      audioUnlockedRef.current = false
+      setAudioReady(false)
     }
   }, [])
 
@@ -505,6 +558,23 @@ export default function Dashboard() {
           helpAriaLabel={t('common.moreInfo')}
         />
         <PageToolbarCard>
+          {!audioReady ? (
+            <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span>Enable sound notifications on this device.</span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="default"
+                  onClick={() => {
+                    void unlockAudio()
+                  }}
+                >
+                  Enable sound
+                </Button>
+              </div>
+            </div>
+          ) : null}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5 lg:items-end lg:gap-3 xl:gap-4">
             <div className="min-w-0">
               <SearchFilterField
