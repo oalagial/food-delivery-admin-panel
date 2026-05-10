@@ -2986,6 +2986,12 @@ export type CreateDeliveryLocationPayload = {
   [k: string]: unknown;
 };
 
+export type ReorderRestaurantDeliveryLocationItem = {
+  deliveryLocationId: number;
+  sortOrder: number;
+  isActive?: boolean;
+};
+
 export async function createDeliveryLocation(
   payload: CreateDeliveryLocationPayload,
 ) {
@@ -3073,6 +3079,40 @@ export async function updateDeliveryLocation(
 
   const data = await res.json().catch(() => null);
   return data;
+}
+
+export async function reorderRestaurantDeliveryLocations(
+  restaurantId: string | number,
+  items: ReorderRestaurantDeliveryLocationItem[],
+) {
+  if (restaurantId === undefined || restaurantId === null || String(restaurantId) === "")
+    throw new Error("restaurantId is required");
+  const res = await authFetch(
+    `/restaurants/${encodeURIComponent(String(restaurantId))}/delivery-locations/reorder`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items }),
+    },
+  );
+  if (!res.ok) {
+    let bodyText = "";
+    try {
+      const json = await res.json();
+      bodyText = parseErrorJson(json);
+    } catch {
+      try {
+        bodyText = await res.text();
+      } catch {
+        bodyText = "";
+      }
+    }
+    throw new Error(
+      bodyText ||
+      `PUT /restaurants/${restaurantId}/delivery-locations/reorder failed (${res.status})`,
+    );
+  }
+  return res.json().catch(() => null);
 }
 
 export async function deleteDeliveryLocation(id: string | number) {

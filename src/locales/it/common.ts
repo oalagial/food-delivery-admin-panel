@@ -443,6 +443,13 @@ export const common = {
   pickerHintAddRemove: 'Clicca «Aggiungi» per selezionare, «Rimuovi» per deselezionare.',
   pickerHintAddRemoveReorder:
     'Clicca «Aggiungi» per selezionare, usa le frecce per riordinare e «Rimuovi» per deselezionare.',
+  pickerHintReorderOnly:
+    'Usa le frecce per riordinare. Questa lista contiene le zone di consegna gia collegate a questo ristorante.',
+  deliveryLocationsOrderTitle: 'Ordine zone di consegna',
+  deliveryLocationsOrderDesc:
+    'Imposta l ordine di visualizzazione delle zone di consegna collegate a questo ristorante.',
+  noLocationsLinkedForRestaurant: 'Nessuna zona di consegna collegata a questo ristorante',
+  noMoreLocations: 'Nessun altra zona',
   menuNameRequired: 'Il nome è obbligatorio',
   idDisplay: 'ID {{id}}',
   restaurantWithId: 'Ristorante {{id}}',

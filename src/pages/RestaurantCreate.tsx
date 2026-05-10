@@ -3,11 +3,13 @@ import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   createRestaurant,
+  getDeliveryLocationsList,
   getRestaurantsList,
   getRestaurantById,
   updateRestaurant,
   updateRestaurantImage,
   getMenusList,
+  reorderRestaurantDeliveryLocations,
   updateMenu,
   PaymentMethod,
   PAYMENT_METHODS,
@@ -26,6 +28,7 @@ import { AlertCircle, CheckCircle } from 'lucide-react'
 import { Select } from '../components/ui/select'
 import { MultiSelectDropdown } from '../components/ui/multi-select-dropdown'
 import { Checkbox } from '../components/ui/checkbox'
+import { TransferList } from '../components/ui/transfer-list'
 import { canSubmitResourceForm } from '../utils/permissions'
 import { FormSaveBarrier } from '../components/FormSaveBarrier'
 
@@ -38,6 +41,12 @@ const OPENING_HOUR_DAYS = [
   ['Saturday', 'weekdaySat'],
   ['Sunday', 'weekdaySun'],
 ] as const
+
+type RestaurantDeliveryLocationLink = {
+  deliveryLocationId: number
+  label: string
+  isActive?: boolean
+}
 
 function parseRestaurantConfig(raw: unknown): RestaurantConfig {
   if (raw == null || raw === '') return {}
@@ -120,7 +129,9 @@ export default function RestaurantCreate() {
   const imageInputRef = useRef<HTMLInputElement>(null)
   const [openingHours, setOpeningHours] = useState<Array<{ day: string; open: string; close: string }>>([])
   const [menus, setMenus] = useState<MenuItem[]>([])
+  const [deliveryLocationLinks, setDeliveryLocationLinks] = useState<RestaurantDeliveryLocationLink[]>([])
   const [loadingMenus, setLoadingMenus] = useState(false)
+  const [loadingDeliveryLocations, setLoadingDeliveryLocations] = useState(false)
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
   const [removeProductIngredients, setRemoveProductIngredients] = useState(false)
   const [kitchenPrinterIp, setKitchenPrinterIp] = useState('')
@@ -274,6 +285,13 @@ export default function RestaurantCreate() {
 
       if (id) {
         await updateRestaurant(id, payload)
+        if (deliveryLocationLinks.length > 0) {
+          await reorderRestaurantDeliveryLocations(id, deliveryLocationLinks.map((entry, index) => ({
+            deliveryLocationId: entry.deliveryLocationId,
+            sortOrder: index,
+            isActive: entry.isActive,
+          })))
+        }
         if (selectedFile) {
           await updateRestaurantImage(id, selectedFile)
         }
@@ -305,12 +323,14 @@ export default function RestaurantCreate() {
     if (!id) return
     let mounted = true
     setLoadingMenus(true)
+    setLoadingDeliveryLocations(true)
 
     Promise.all([
       getRestaurantById(id),
-      getMenusList(id)
+      getMenusList(id),
+      getDeliveryLocationsList({ page: 1, limit: 500 }).catch(() => []),
     ])
-      .then(([data, menusData]) => {
+      .then(([data, menusData, deliveryLocationsData]) => {
         if (!mounted) return
         if (data) {
           const cfg = parseRestaurantConfig((data as { config?: unknown }).config)
@@ -362,12 +382,59 @@ export default function RestaurantCreate() {
           setCreateError(t('common.restaurantNotFound'))
         }
         setMenus(menusData || [])
+        const linkedRows: Array<RestaurantDeliveryLocationLink & { sortOrder: number }> = []
+        const locations = Array.isArray(deliveryLocationsData) ? deliveryLocationsData : []
+        locations.forEach((location) => {
+          const locationAny = location as unknown as Record<string, unknown>
+          const deliveredByRaw =
+            (Array.isArray(locationAny.deliveredBy) && locationAny.deliveredBy) ||
+            (Array.isArray(locationAny.deliveredByRestaurants) && locationAny.deliveredByRestaurants) ||
+            (Array.isArray(locationAny.delivedByRestaurants) && locationAny.delivedByRestaurants) ||
+            []
+          const matched = deliveredByRaw.find((d) => {
+            const dAny = d as Record<string, unknown>
+            const directRestaurantId = dAny.restaurantId
+            const nestedRestaurantId =
+              dAny.restaurant && typeof dAny.restaurant === 'object'
+                ? (dAny.restaurant as Record<string, unknown>).id
+                : undefined
+            const bareId = dAny.id
+            const candidateRestaurantId =
+              directRestaurantId ?? nestedRestaurantId ?? bareId
+            return String(candidateRestaurantId ?? '') === String(id)
+          }) as Record<string, unknown> | undefined
+          if (!matched) return
+          const locationId = Number(String(locationAny.id ?? ''))
+          if (!Number.isFinite(locationId)) return
+          const sortOrderRaw = Number(matched.sortOrder)
+          const sortOrder = Number.isFinite(sortOrderRaw) ? sortOrderRaw : Number.MAX_SAFE_INTEGER
+          linkedRows.push({
+            deliveryLocationId: locationId,
+            label: String(locationAny.name ?? locationId),
+            isActive: matched.isActive === undefined ? undefined : Boolean(matched.isActive),
+            sortOrder,
+          })
+        })
+        linkedRows.sort((a, b) => {
+          if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder
+          return a.label.localeCompare(b.label)
+        })
+        setDeliveryLocationLinks(
+          linkedRows.map(({ deliveryLocationId, label, isActive }) => ({
+            deliveryLocationId,
+            label,
+            isActive,
+          })),
+        )
       })
       .catch((err) => {
         setCreateError(err?.message || t('common.failedLoadRestaurant'))
       })
       .finally(() => {
-        if (mounted) setLoadingMenus(false)
+        if (mounted) {
+          setLoadingMenus(false)
+          setLoadingDeliveryLocations(false)
+        }
       })
 
     return () => {
@@ -386,6 +453,7 @@ export default function RestaurantCreate() {
     setFiscalPrinterPort('')
     setCompanyName('')
     setCompanyAfm('')
+    setDeliveryLocationLinks([])
     setSelectedFile(null)
     setImagePreview(null)
   }, [id])
@@ -720,6 +788,54 @@ export default function RestaurantCreate() {
             )}
           </CardContent>
         </Card>
+
+        {id && (
+          <Card className="shadow-sm lg:col-span-2">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">{t('common.deliveryLocationsOrderTitle')}</CardTitle>
+              <CardDescription>{t('common.deliveryLocationsOrderDesc')}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {loadingDeliveryLocations ? (
+                <div className="text-sm text-gray-500">{t('common.loading')}</div>
+              ) : deliveryLocationLinks.length === 0 ? (
+                <div className="text-sm text-gray-500">{t('common.noLocationsLinkedForRestaurant')}</div>
+              ) : (
+                <TransferList
+                  items={deliveryLocationLinks.map((entry) => ({
+                    id: entry.deliveryLocationId,
+                    label: entry.label,
+                  }))}
+                  selectedIds={deliveryLocationLinks.map((entry) => entry.deliveryLocationId)}
+                  onChange={(ids) => {
+                    const normalizedIds = ids.map((v) => Number(v))
+                    const prevIds = deliveryLocationLinks.map((entry) => entry.deliveryLocationId)
+                    if (normalizedIds.length !== prevIds.length) return
+                    const prevSet = new Set(prevIds)
+                    if (!normalizedIds.every((idValue) => prevSet.has(idValue))) return
+                    const byId = new Map(
+                      deliveryLocationLinks.map((entry) => [entry.deliveryLocationId, entry]),
+                    )
+                    setDeliveryLocationLinks(
+                      normalizedIds
+                        .map((idValue) => byId.get(idValue))
+                        .filter((entry): entry is RestaurantDeliveryLocationLink => Boolean(entry)),
+                    )
+                  }}
+                  availableTitle={t('common.available')}
+                  selectedTitle={t('common.selected')}
+                  availableEmptyText={t('common.noMoreLocations')}
+                  selectedEmptyText={t('common.noLocationsLinkedForRestaurant')}
+                  searchPlaceholder={t('common.search')}
+                  noDataText={t('common.noData')}
+                  hintText={t('common.pickerHintReorderOnly')}
+                  reorder
+                  reorderOnly
+                />
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Config (e.g. payment methods) — same form for create & edit */}
         <Card className="shadow-sm lg:col-span-2">
@@ -1121,6 +1237,7 @@ export default function RestaurantCreate() {
             )}
           </CardContent>
         </Card>
+
         </FormSaveBarrier>
         <div className="flex justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-700 lg:col-span-2">
           <Link to="/restaurant">
