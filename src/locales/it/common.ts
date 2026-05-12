@@ -33,6 +33,8 @@ export const common = {
   searchOrdersPh: 'Cliente, ristorante, n. ordine…',
   day: 'Giorno',
   open: 'Apertura',
+  openWhatsappAria: 'Chatta con il cliente su WhatsApp',
+  whatsappContact: 'WhatsApp',
   closeHours: 'Chiusura',
   more: 'altri',
   unknown: 'Sconosciuto',
