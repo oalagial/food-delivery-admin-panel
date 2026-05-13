@@ -33,6 +33,8 @@ export const common = {
   searchOrdersPh: 'Customer, restaurant, order #…',
   day: 'Day',
   open: 'Open',
+  openWhatsappAria: 'Chat with customer on WhatsApp',
+  whatsappContact: 'WhatsApp',
   closeHours: 'Close',
   more: 'more',
   unknown: 'Unknown',
@@ -441,6 +443,12 @@ export const common = {
   pickerHintAddRemove: 'Click “Add” to select, “Remove” to unselect.',
   pickerHintAddRemoveReorder:
     'Click “Add” to select, use arrows to reorder, and “Remove” to unselect.',
+  pickerHintReorderOnly:
+    'Use arrows to reorder. This list contains delivery locations already linked to this restaurant.',
+  deliveryLocationsOrderTitle: 'Delivery locations order',
+  deliveryLocationsOrderDesc: 'Set display order of linked delivery locations for this restaurant.',
+  noLocationsLinkedForRestaurant: 'No delivery locations linked to this restaurant',
+  noMoreLocations: 'No more locations',
   menuNameRequired: 'Name is required',
   idDisplay: 'ID {{id}}',
   restaurantWithId: 'Restaurant {{id}}',

@@ -7,6 +7,7 @@ import { Card, CardContent } from '../components/ui/card'
 import Table, { TableBody, TableHead, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { Skeleton } from '../components/ui/skeleton'
 import { OrderDetailsPanel } from '../components/OrderDetailsPanel'
+import { OrderWhatsappLink } from '../components/OrderWhatsappLink'
 import { OrderRowPaymentStatusSelect } from '../components/OrderRowPaymentStatusSelect'
 import { OrderRowStatusSelect } from '../components/OrderRowStatusSelect'
 
@@ -774,6 +775,7 @@ export default function Dashboard() {
                             <span>{created}</span>
                           </div>
                         </div>
+                        <OrderWhatsappLink phone={o.customer?.phone} variant="inline" />
                         <div>
                           <div className="flex flex-nowrap items-center gap-1" onClick={(e) => e.stopPropagation()}>
                             {showKitchenReady ? (
@@ -949,7 +951,12 @@ export default function Dashboard() {
                         <TableCell>
                           <span className="text-sm">{formatDeliveryTime(o.deliveryTime)}</span>
                         </TableCell>
-                        <TableCell>{o.customer?.name ?? o.customerName ?? dash}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span className="min-w-0 flex-1">{o.customer?.name ?? o.customerName ?? dash}</span>
+                            <OrderWhatsappLink phone={o.customer?.phone} className="shrink-0" />
+                          </div>
+                        </TableCell>
                         <TableCell>{o.deliveryLocation?.name ?? '-'}</TableCell>
                         <TableCell>
                           <p className="font-semibold">{formatMoney(o.total ?? o.amount)}</p>

@@ -22,6 +22,7 @@ type TransferListProps = {
   noDataText: string
   hintText?: string
   reorder?: boolean
+  reorderOnly?: boolean
   clearLabel?: string
   addLabel?: string
 }
@@ -40,6 +41,7 @@ export function TransferList({
   noDataText,
   hintText,
   reorder = false,
+  reorderOnly = false,
   clearLabel,
   addLabel = '+',
 }: TransferListProps) {
@@ -91,42 +93,44 @@ export function TransferList({
   }
 
   return (
-    <div className="mt-2 grid gap-3 xl:grid-cols-2">
-      <div className="min-w-0 rounded-lg border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-700 dark:bg-slate-900/40">
-        <div className="mb-2 flex items-center justify-between">
-          <div className="font-semibold text-sm">{availableTitle}</div>
-        </div>
-        <div className="relative mb-2">
-          <Input
-            value={availableQuery}
-            onChange={(e) => setAvailableQuery(e.target.value)}
-            placeholder={searchPlaceholder}
-            className="h-8 pl-8 text-sm"
-          />
-        </div>
-        <div className="h-52 overflow-y-auto rounded-md border border-slate-200 bg-white p-2 dark:border-slate-700 dark:bg-slate-900 sm:h-56">
-          {filteredAvailableItems.length === 0 && (
-            <div className="text-xs text-gray-400">{availableEmptyText}</div>
-          )}
-          {filteredAvailableItems.map((item) => (
-            <div
-              key={toKey(item.id)}
-              className="mb-1 flex items-center justify-between rounded-md px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800/70"
-            >
-              <span className="line-clamp-1 text-sm">{item.label}</span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="ml-2 h-7 px-2 text-emerald-600 hover:text-emerald-700 text-xs font-semibold"
-                onClick={() => addItem(item.id)}
+    <div className={`mt-2 grid gap-3 ${reorderOnly ? '' : 'xl:grid-cols-2'}`}>
+      {!reorderOnly ? (
+        <div className="min-w-0 rounded-lg border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-700 dark:bg-slate-900/40">
+          <div className="mb-2 flex items-center justify-between">
+            <div className="font-semibold text-sm">{availableTitle}</div>
+          </div>
+          <div className="relative mb-2">
+            <Input
+              value={availableQuery}
+              onChange={(e) => setAvailableQuery(e.target.value)}
+              placeholder={searchPlaceholder}
+              className="h-8 pl-8 text-sm"
+            />
+          </div>
+          <div className="h-52 overflow-y-auto rounded-md border border-slate-200 bg-white p-2 dark:border-slate-700 dark:bg-slate-900 sm:h-56">
+            {filteredAvailableItems.length === 0 && (
+              <div className="text-xs text-gray-400">{availableEmptyText}</div>
+            )}
+            {filteredAvailableItems.map((item) => (
+              <div
+                key={toKey(item.id)}
+                className="mb-1 flex items-center justify-between rounded-md px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800/70"
               >
-                {addLabel}
-              </Button>
-            </div>
-          ))}
+                <span className="line-clamp-1 text-sm">{item.label}</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="ml-2 h-7 px-2 text-emerald-600 hover:text-emerald-700 text-xs font-semibold"
+                  onClick={() => addItem(item.id)}
+                >
+                  {addLabel}
+                </Button>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      ) : null}
 
       <div className="min-w-0 rounded-lg border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-700 dark:bg-slate-900/40">
         <div className="mb-2 flex items-center justify-between">
@@ -189,15 +193,17 @@ export function TransferList({
                       </Button>
                     </>
                   ) : null}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-red-600 hover:text-red-700 text-xs font-semibold"
-                    onClick={() => removeItem(item.id)}
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </Button>
+                  {!reorderOnly ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-red-600 hover:text-red-700 text-xs font-semibold"
+                      onClick={() => removeItem(item.id)}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  ) : null}
                 </div>
               </div>
             )
