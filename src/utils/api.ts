@@ -2766,6 +2766,94 @@ export async function getOrdersList(
   return data;
 }
 
+export type OrdersExportPdfParams = {
+  from: string;
+  to: string;
+  restaurantId?: string | number;
+  deliveryLocationId?: string | number;
+  lang?: string;
+  /** When set, sends PDF by email and returns JSON (no browser download). */
+  email?: string;
+};
+
+export type OrdersExportPdfEmailResult = {
+  sent: boolean;
+  email: string;
+  orderCount: number;
+};
+
+/** Export orders PDF: download locally, or send by email when `email` is set. */
+export async function exportOrdersPdf(
+  params: OrdersExportPdfParams,
+): Promise<OrdersExportPdfEmailResult | void> {
+  const lang = (params.lang ?? "en").split(/[-_]/)[0] ?? "en";
+  const search = new URLSearchParams({
+    from: params.from,
+    to: params.to,
+    lang,
+  });
+  const restaurantId = params.restaurantId;
+  if (
+    restaurantId !== undefined &&
+    restaurantId !== null &&
+    String(restaurantId).trim() !== ""
+  ) {
+    search.set("restaurantId", String(restaurantId).trim());
+  }
+  const deliveryLocationId = params.deliveryLocationId;
+  if (
+    deliveryLocationId !== undefined &&
+    deliveryLocationId !== null &&
+    String(deliveryLocationId).trim() !== ""
+  ) {
+    search.set("deliveryLocationId", String(deliveryLocationId).trim());
+  }
+  const email = params.email?.trim();
+  if (email) search.set("email", email);
+
+  const res = await authFetch(`/orders/export-pdf?${search}`);
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(text || `GET /orders/export-pdf failed (${res.status})`);
+  }
+
+  if (email) {
+    const data = (await res.json().catch(() => null)) as OrdersExportPdfEmailResult | null;
+    if (!data?.sent || !data.email) {
+      throw new Error("Invalid export-pdf email response");
+    }
+    return data;
+  }
+
+  const blob = await res.blob();
+  const disposition = res.headers.get("Content-Disposition");
+  let filename = "orders.pdf";
+  const match =
+    disposition && /filename\*?=(?:UTF-8''|"?)([^";\n]+)/i.exec(disposition);
+  if (match) {
+    try {
+      filename = decodeURIComponent(match[1].replace(/^"|"$/g, ""));
+    } catch {
+      filename = match[1].replace(/^"|"$/g, "");
+    }
+  }
+  const url = URL.createObjectURL(blob);
+  try {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+/** @deprecated Use `exportOrdersPdf` */
+export const downloadOrdersExportPdf = exportOrdersPdf;
+
 /** Item from GET /orders/statuses (e.g. `{ slug: "pending", status: "PENDING" }`). */
 export type OrderStatusDescriptor = {
   slug: string;

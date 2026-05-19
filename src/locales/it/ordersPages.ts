@@ -44,6 +44,13 @@ export const ordersPage = {
   subtotalParen: '(Subtotale €{{amount}})',
   pagination: 'Pagina {{page}} di {{totalPages}} | Totale: {{total}}',
   noOrdersMatchFilters: 'Nessun ordine corrisponde alla ricerca o al filtro stato',
+  exportOrdersPdf: 'Scarica PDF',
+  exportOrdersPdfSend: 'Invia PDF',
+  exportOrdersPdfBusy: 'Download in corso…',
+  exportOrdersPdfSending: 'Invio in corso…',
+  exportOrdersPdfEmail: 'Email (opzionale)',
+  exportOrdersPdfEmailPh: 'manager@ristorante.it',
+  exportOrdersPdfSent: 'Report inviato a {{email}} ({{count}} ordini)',
 } as const
 
 export const dashboardPage = {

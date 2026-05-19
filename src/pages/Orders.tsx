@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { FiDownload } from 'react-icons/fi'
 import { Button } from '../components/ui/button'
 import {
+  exportOrdersPdf,
   getDeliveryLocationsList,
   getOrderStatuses,
   getOrdersList,
@@ -31,6 +33,7 @@ import {
 import {
   hasOrdersPaymentMutationUiAccess,
   hasOrdersStatusMutationUiAccess,
+  perm,
 } from '../utils/permissions'
 import i18n from '../i18n'
 import { TableItemsPerPageSelect, DEFAULT_TABLE_PAGE_SIZE } from '../components/TableItemsPerPageSelect'
@@ -38,6 +41,20 @@ import { PageHeader, PageToolbarCard } from '../components/page-layout'
 import { SearchFilterField, SEARCH_FILTER_DEBOUNCE_MS } from '../components/SearchFilterField'
 import { Label } from '../components/ui/label'
 import { Select } from '../components/ui/select'
+import { Input } from '../components/ui/input'
+import { Alert, AlertDescription } from '../components/ui/alert'
+
+function getPdfExportDateRange(orderDate: string) {
+  const day = orderDate.trim()
+  if (day) return { from: day, to: day }
+  const to = new Date()
+  const from = new Date()
+  from.setMonth(from.getMonth() - 1)
+  return {
+    from: from.toISOString().split('T')[0],
+    to: to.toISOString().split('T')[0],
+  }
+}
 
 function formatOrderBusinessDate(value: string | number | undefined | null): string {
   const dash = i18n.t('common.emDash')
@@ -230,7 +247,7 @@ function OrderCard({
 }
 
 export default function Orders() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [items, setItems] = useState<OrderItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -260,9 +277,14 @@ export default function Orders() {
   const [orderStatusPatchingId, setOrderStatusPatchingId] = useState<string | null>(null)
   const [paymentStatusPatchingId, setPaymentStatusPatchingId] = useState<string | null>(null)
   const [orderStatusError, setOrderStatusError] = useState<string | null>(null)
+  const [exportEmail, setExportEmail] = useState('')
+  const [exportingPdf, setExportingPdf] = useState(false)
+  const [pdfExportError, setPdfExportError] = useState<string | null>(null)
+  const [pdfExportSuccess, setPdfExportSuccess] = useState<string | null>(null)
 
   const canEditOrderStatus = hasOrdersStatusMutationUiAccess()
   const canEditPaymentStatus = hasOrdersPaymentMutationUiAccess()
+  const canExportPdf = perm('orders', 'read')
 
   const commitOrderListStatus = async (id: string, status: string) => {
     setOrderStatusPatchingId(id)
@@ -447,6 +469,38 @@ export default function Orders() {
         maximumFractionDigits: 2,
       })
 
+  const exportEmailTrimmed = exportEmail.trim()
+  const exportPdfByEmail = exportEmailTrimmed.length > 0
+
+  async function handleExportPdf() {
+    if (!canExportPdf) return
+    const { from, to } = getPdfExportDateRange(dateFilter)
+    setExportingPdf(true)
+    setPdfExportError(null)
+    setPdfExportSuccess(null)
+    try {
+      const result = await exportOrdersPdf({
+        from,
+        to,
+        deliveryLocationId: locationFilter || undefined,
+        lang: i18n.language,
+        email: exportEmailTrimmed || undefined,
+      })
+      if (result) {
+        setPdfExportSuccess(
+          t('ordersPage.exportOrdersPdfSent', {
+            email: result.email,
+            count: result.orderCount,
+          }),
+        )
+      }
+    } catch (e) {
+      setPdfExportError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setExportingPdf(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="space-y-5">
@@ -467,7 +521,9 @@ export default function Orders() {
           </div>
         </div>
         <PageToolbarCard>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6 lg:items-end lg:gap-3 xl:gap-4">
+          <div
+            className={`grid grid-cols-1 gap-4 sm:grid-cols-2 lg:items-end lg:gap-3 xl:gap-4 ${canExportPdf ? 'lg:grid-cols-8' : 'lg:grid-cols-6'}`}
+          >
             <div className="min-w-0">
               <SearchFilterField
                 id="orders-search-customer-name"
@@ -558,9 +614,63 @@ export default function Orders() {
                 ))}
               </Select>
             </div>
+            {canExportPdf ? (
+              <>
+                <div className="min-w-0">
+                  <Label htmlFor="orders-export-email" className="text-sm font-medium leading-none text-slate-700 dark:text-slate-200">
+                    {t('ordersPage.exportOrdersPdfEmail')}
+                  </Label>
+                  <Input
+                    id="orders-export-email"
+                    type="email"
+                    value={exportEmail}
+                    onChange={(e) => setExportEmail(e.target.value)}
+                    placeholder={t('ordersPage.exportOrdersPdfEmailPh')}
+                    autoComplete="email"
+                    className="mt-1.5"
+                  />
+                </div>
+                <div className="min-w-0">
+                  <span className="invisible block text-sm font-medium leading-none select-none" aria-hidden>
+                    .
+                  </span>
+                  <Button
+                    type="button"
+                    variant="default"
+                    disabled={exportingPdf}
+                    onClick={() => void handleExportPdf()}
+                    className="mt-1.5 h-9 w-full shrink-0 justify-center gap-2 px-3 text-sm font-medium"
+                    icon={<FiDownload className="h-4 w-4" aria-hidden />}
+                  >
+                    {exportingPdf
+                      ? exportPdfByEmail
+                        ? t('ordersPage.exportOrdersPdfSending')
+                        : t('ordersPage.exportOrdersPdfBusy')
+                      : exportPdfByEmail
+                        ? t('ordersPage.exportOrdersPdfSend')
+                        : t('ordersPage.exportOrdersPdf')}
+                  </Button>
+                </div>
+              </>
+            ) : null}
           </div>
         </PageToolbarCard>
       </div>
+
+      {pdfExportSuccess ? (
+        <Alert variant="success">
+          <AlertDescription>{pdfExportSuccess}</AlertDescription>
+        </Alert>
+      ) : null}
+
+      {pdfExportError ? (
+        <div
+          role="alert"
+          className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/50 dark:text-red-200"
+        >
+          {pdfExportError}
+        </div>
+      ) : null}
 
       {orderStatusError ? (
         <div

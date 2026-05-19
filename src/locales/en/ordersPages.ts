@@ -44,6 +44,13 @@ export const ordersPage = {
   subtotalParen: '(Subtotal €{{amount}})',
   pagination: 'Page {{page}} of {{totalPages}} | Total: {{total}}',
   noOrdersMatchFilters: 'No orders match your search or status filter',
+  exportOrdersPdf: 'Download PDF',
+  exportOrdersPdfSend: 'Send PDF',
+  exportOrdersPdfBusy: 'Downloading…',
+  exportOrdersPdfSending: 'Sending…',
+  exportOrdersPdfEmail: 'Email (optional)',
+  exportOrdersPdfEmailPh: 'manager@restaurant.com',
+  exportOrdersPdfSent: 'Report sent to {{email}} ({{count}} orders)',
 } as const
 
 export const dashboardPage = {
