@@ -424,7 +424,7 @@ export const common = {
   toolbarHintCustomers:
     'Filtra i clienti per nome e/o email (corrispondenza parziale). L\'esportazione scarica l\'elenco completo in CSV. La ricerca attende un attimo dopo la digitazione per evitare richieste in eccesso.',
   toolbarHintOrdersSearch:
-    'Filtra per nome e/o email del cliente (parziale). Restringi anche per stato ordine, sede di consegna e stato pagamento. La ricerca attende un attimo dopo la digitazione.',
+    'Filtra per nome e/o email del cliente (parziale). Restringi per stato ordine, sede di consegna e stato pagamento. La ricerca attende un attimo dopo la digitazione.',
   exportCustomersCsv: 'Scarica CSV',
   paginationSummary: 'Pagina {{page}} di {{totalPages}} | Totale: {{total}}',
   itemsPerPage: 'Righe per pagina',
