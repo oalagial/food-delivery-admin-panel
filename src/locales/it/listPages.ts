@@ -1,3 +1,18 @@
+export const nfcTagsPage = {
+  title: "Tag NFC",
+  subtitle: "Gestisci i tag NFC delle buste di consegna",
+  create: "Crea tag",
+  mac: "MAC",
+  label: "Etichetta",
+  order: "Ordine",
+  actions: "Azioni",
+  noTags: "Nessun tag NFC trovato.",
+  deleteTitle: "Elimina tag NFC",
+  deleteConfirm: 'Eliminare "{{name}}"?',
+  macRequired: "Il MAC è obbligatorio.",
+  orderIdInvalid: "L'ID ordine deve essere un numero intero positivo.",
+} as const;
+
 export const typesPage = {
   title: "Tipi di prodotto",
   subtitle: "Gestisci le categorie di prodotto",

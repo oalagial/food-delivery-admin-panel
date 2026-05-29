@@ -36,6 +36,11 @@ import OfferCreate from './pages/OfferCreate'
 import CustomerCollection from './pages/CustomerCollection'
 import Coupons from './pages/Coupons'
 import CouponCreate from './pages/CouponCreate'
+import NfcTags from './pages/NfcTags'
+import NfcTagCreate from './pages/NfcTagCreate'
+import NfcScan from './pages/NfcScan'
+import NfcBind from './pages/NfcBind'
+import NfcDeliver from './pages/NfcDeliver'
 
 type RouteConfig = {
   path: string
@@ -80,13 +85,21 @@ const routes: RouteConfig[] = [
   { path: '/coupons', element: <Coupons />, protected: true },
   { path: '/coupons/creation', element: <CouponCreate />, protected: true },
   { path: '/coupons/creation/:id', element: <CouponCreate />, protected: true },
+  { path: '/nfc-tags', element: <NfcTags />, protected: true },
+  { path: '/nfc-tags/creation', element: <NfcTagCreate />, protected: true },
+  { path: '/nfc-tags/creation/:id', element: <NfcTagCreate />, protected: true },
   { path: '/', element: <Dashboard />, protected: true },
 ]
 
 const PUBLIC_AUTH_PATHS = ['/set-password', '/reset-password', '/forgot-password'] as const
+const PUBLIC_NFC_PREFIX = '/nfc'
 
 function isPublicAuthPath(pathname: string): boolean {
   return (PUBLIC_AUTH_PATHS as readonly string[]).includes(pathname)
+}
+
+function isPublicNfcPath(pathname: string): boolean {
+  return pathname === PUBLIC_NFC_PREFIX || pathname.startsWith(`${PUBLIC_NFC_PREFIX}/`)
 }
 
 function AuthenticatedLayout() {
@@ -174,6 +187,7 @@ function AppRoutes(): ReactElement {
   const location = useLocation()
   const [token, setToken] = useState<string | null>(getToken())
   const onPublicAuthPage = isPublicAuthPath(location.pathname)
+  const onPublicNfcPage = isPublicNfcPath(location.pathname)
 
   useEffect(() => {
     const update = () => setToken(getToken())
@@ -217,6 +231,17 @@ function AppRoutes(): ReactElement {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    )
+  }
+
+  if (onPublicNfcPage) {
+    return (
+      <Routes>
+        <Route path="/nfc/scan" element={<NfcScan />} />
+        <Route path="/nfc/bind" element={<NfcBind />} />
+        <Route path="/nfc/deliver" element={<NfcDeliver />} />
+        <Route path="*" element={<Navigate to="/nfc/scan" replace />} />
       </Routes>
     )
   }

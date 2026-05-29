@@ -11,6 +11,7 @@ import { productsPage } from './products'
 import { restaurantPage } from './restaurant'
 import {
   typesPage,
+  nfcTagsPage,
   rolesPage,
   permissionsPage,
   menusPage,
@@ -21,6 +22,7 @@ import {
 } from './listPages'
 import { createForms } from './createForms'
 import { statsPage } from './statsPage'
+import { nfcFlow } from './nfcFlow'
 
 export const en = {
   common,
@@ -37,6 +39,7 @@ export const en = {
   productsPage,
   restaurantPage,
   typesPage,
+  nfcTagsPage,
   rolesPage,
   permissionsPage,
   menusPage,
@@ -46,4 +49,5 @@ export const en = {
   deliveryLocationsPage,
   createForms,
   statsPage,
+  nfcFlow,
 } as const

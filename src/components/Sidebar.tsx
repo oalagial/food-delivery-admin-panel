@@ -15,6 +15,7 @@ import {
   FiBarChart2,
   FiPercent,
   FiKey,
+  FiLink,
 } from 'react-icons/fi'
 import { canSeeNavPath } from '../utils/permissions'
 
@@ -57,6 +58,7 @@ const SIDEBAR_SECTIONS: NavSectionConfig[] = [
     items: [
       { to: '/dashboard', labelKey: 'nav.dashboard', icon: <FiHome className="w-5 h-5" /> },
       { to: '/orders', labelKey: 'nav.orders', icon: <FiShoppingCart className="w-5 h-5" /> },
+      { to: '/nfc-tags', labelKey: 'nav.nfcTags', icon: <FiLink className="w-5 h-5" /> },
       { to: '/stats', labelKey: 'nav.statistics', icon: <FiBarChart2 className="w-5 h-5" /> },
     ],
   },

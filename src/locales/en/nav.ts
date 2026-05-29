@@ -7,6 +7,7 @@ export const nav = {
   userManagement: 'User management',
   dashboard: 'Dashboard',
   orders: 'Orders',
+  nfcTags: 'NFC tags',
   statistics: 'Statistics',
   restaurant: 'Restaurant',
   deliveryLocations: 'Delivery locations',

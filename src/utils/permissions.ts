@@ -74,6 +74,7 @@ const PATH_FIRST_SEGMENT_TO_RESOURCE: Record<string, string> = {
   offers: 'offers',
   customers: 'customers',
   coupons: 'coupons',
+  'nfc-tags': 'nfc_tags',
 }
 
 function resourceKeyFromAdminPath(pathname: string): string | null {
@@ -203,6 +204,7 @@ const PANEL_PATH_PRIORITY: readonly string[] = [
   '/sections',
   '/offers',
   '/coupons',
+  '/nfc-tags',
   '/customers',
   '/users',
   '/roles',

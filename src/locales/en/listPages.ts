@@ -1,3 +1,18 @@
+export const nfcTagsPage = {
+  title: "NFC tags",
+  subtitle: "Manage delivery bag NFC tags",
+  create: "Create tag",
+  mac: "MAC",
+  label: "Label",
+  order: "Order",
+  actions: "Actions",
+  noTags: "No NFC tags found.",
+  deleteTitle: "Delete NFC tag",
+  deleteConfirm: 'Are you sure you want to delete "{{name}}"?',
+  macRequired: "MAC is required.",
+  orderIdInvalid: "Order ID must be a positive whole number.",
+} as const;
+
 export const typesPage = {
   title: "Product types",
   subtitle: "Manage product categories",

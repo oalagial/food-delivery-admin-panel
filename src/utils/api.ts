@@ -967,6 +967,228 @@ export async function deleteType(id: string | number) {
   return data;
 }
 
+export type NfcTagOrderSummary = {
+  id?: number;
+  orderNumber?: number;
+  orderDate?: string;
+  status?: string;
+};
+
+export type NfcTagItem = {
+  id?: string | number;
+  mac?: string;
+  label?: string | null;
+  orderId?: number | null;
+  createdAt?: string | number;
+  updatedAt?: string | number;
+  order?: NfcTagOrderSummary | null;
+  [k: string]: unknown;
+};
+
+export async function getNfcTagsListPaginated(
+  params?: ListFetchParams,
+): Promise<PaginatedListResponse<NfcTagItem>> {
+  const search = new URLSearchParams();
+  if (params?.page != null) search.set("page", String(params.page));
+  if (params?.limit != null) search.set("limit", String(params.limit));
+  const query = search.toString();
+  const res = await authFetch(`/nfc-tags${query ? `?${query}` : ""}`);
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(text || `GET /nfc-tags failed (${res.status})`);
+  }
+  const json = await res.json().catch(() => null);
+  const rows = Array.isArray(json?.data)
+    ? json.data
+    : Array.isArray(json?.items)
+      ? json.items
+      : Array.isArray(json)
+        ? json
+        : [];
+  return {
+    data: rows as NfcTagItem[],
+    total: Number(json?.total) || rows.length,
+    page: Number(json?.page) || Number(params?.page) || 1,
+    limit: Number(json?.limit) || Number(params?.limit) || rows.length || 1,
+    totalPages: Number(json?.totalPages) || 1,
+  };
+}
+
+export type CreateNfcTagPayload = {
+  mac: string;
+  label?: string | null;
+  orderId?: number | null;
+};
+
+export async function createNfcTag(payload: CreateNfcTagPayload) {
+  const res = await authFetch("/nfc-tags/create", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    let bodyText = "";
+    try {
+      const json = await res.json();
+      bodyText = parseErrorJson(json);
+    } catch {
+      try {
+        bodyText = await res.text();
+      } catch {
+        bodyText = "";
+      }
+    }
+
+    throw new Error(bodyText || `POST /nfc-tags/create failed (${res.status})`);
+  }
+
+  const data = await res.json().catch(() => null);
+  return data;
+}
+
+export async function getNfcTagById(
+  id: string | number,
+): Promise<NfcTagItem | null> {
+  if (id === undefined || id === null || String(id) === "")
+    throw new Error("id is required");
+  const res = await authFetch(`/nfc-tags/${encodeURIComponent(String(id))}`);
+
+  if (res.status === 404) return null;
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(text || `GET /nfc-tags/${id} failed (${res.status})`);
+  }
+
+  const data = await res.json().catch(() => null);
+  return data ?? null;
+}
+
+export async function updateNfcTag(
+  id: string | number,
+  payload: Partial<CreateNfcTagPayload>,
+) {
+  if (id === undefined || id === null || String(id) === "")
+    throw new Error("id is required");
+  const res = await authFetch(`/nfc-tags/${encodeURIComponent(String(id))}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    let bodyText = "";
+    try {
+      const json = await res.json();
+      bodyText = parseErrorJson(json);
+    } catch {
+      try {
+        bodyText = await res.text();
+      } catch {
+        bodyText = "";
+      }
+    }
+
+    throw new Error(bodyText || `PUT /nfc-tags/${id} failed (${res.status})`);
+  }
+
+  const data = await res.json().catch(() => null);
+  return data;
+}
+
+export async function deleteNfcTag(id: string | number) {
+  if (id === undefined || id === null || String(id) === "")
+    throw new Error("id is required");
+  const res = await authFetch(`/nfc-tags/${encodeURIComponent(String(id))}`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+  });
+
+  if (!res.ok) {
+    let bodyText = "";
+    try {
+      const json = await res.json();
+      bodyText = parseErrorJson(json);
+    } catch {
+      try {
+        bodyText = await res.text();
+      } catch {
+        bodyText = "";
+      }
+    }
+
+    throw new Error(bodyText || `DELETE /nfc-tags/${id} failed (${res.status})`);
+  }
+}
+
+export type NfcTagScanTagInfo = {
+  id: number;
+  mac: string;
+  label?: string | null;
+};
+
+export type NfcTagScanOrderInfo = {
+  id: number;
+  orderNumber: number;
+  orderDate: string;
+  status: string;
+};
+
+export type NfcTagScanResult = {
+  empty: boolean;
+  tag: NfcTagScanTagInfo;
+  order?: NfcTagScanOrderInfo;
+};
+
+async function publicNfcJson<T>(
+  path: string,
+  init?: RequestInit,
+): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, init);
+  if (!res.ok) {
+    let bodyText = "";
+    try {
+      const json = await res.json();
+      bodyText = parseErrorJson(json);
+    } catch {
+      try {
+        bodyText = await res.text();
+      } catch {
+        bodyText = "";
+      }
+    }
+    throw new Error(bodyText || `Request failed (${res.status})`);
+  }
+  return (await res.json()) as T;
+}
+
+export async function scanNfcTag(mac: string): Promise<NfcTagScanResult> {
+  const q = new URLSearchParams({ mac: mac.trim() });
+  return publicNfcJson<NfcTagScanResult>(`/nfc-tags/scan?${q.toString()}`);
+}
+
+export async function bindNfcTag(payload: {
+  mac: string;
+  orderNumber: number;
+  orderDate?: string;
+}): Promise<NfcTagScanResult> {
+  return publicNfcJson<NfcTagScanResult>("/nfc-tags/bind", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deliverNfcTag(payload: {
+  mac: string;
+}): Promise<NfcTagScanResult> {
+  return publicNfcJson<NfcTagScanResult>("/nfc-tags/deliver", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
 // Product types + APIs
 export const ProductAllergy = {
   GLUTINE: "GLUTINE",
