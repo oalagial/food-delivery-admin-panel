@@ -17,6 +17,7 @@ import {
   ComposedChart,
 } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
+import Table, { TableHead, TableBody, TableRow, TableHeadCell, TableCell } from '../components/ui/table'
 import { Select } from '../components/ui/select'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
@@ -26,18 +27,103 @@ import {
   getStatsOverview,
   getStatsRevenue,
   getStatsProducts,
+  getStatsProductsByLocation,
   getStatsPaymentMethods,
   getStatsTopCustomers,
   getRestaurantsList,
+  getDeliveryLocationsList,
   type StatsParams,
   type StatsOverviewResponse,
   type StatsRevenueItem,
   type StatsProductItem,
+  type StatsProductByLocationItem,
   type StatsPaymentMethodItem,
   type StatsTopCustomerItem,
   type Restaurant,
 } from '../utils/api'
-import { FiTrendingUp, FiShoppingCart, FiUsers, FiPercent, FiDollarSign } from 'react-icons/fi'
+import { FiTrendingUp, FiShoppingCart, FiUsers, FiPercent, FiDollarSign, FiBarChart2, FiPackage } from 'react-icons/fi'
+import type { ReactNode } from 'react'
+
+type StatsTab = 'revenue' | 'products'
+
+function StatsTabBar({
+  active,
+  onChange,
+  labels,
+}: {
+  active: StatsTab
+  onChange: (tab: StatsTab) => void
+  labels: { revenue: string; products: string }
+}) {
+  const tabs: { id: StatsTab; label: string; icon: ReactNode }[] = [
+    { id: 'revenue', label: labels.revenue, icon: <FiBarChart2 className="w-4 h-4" /> },
+    { id: 'products', label: labels.products, icon: <FiPackage className="w-4 h-4" /> },
+  ]
+  return (
+    <div
+      className="border-b border-gray-200 dark:border-slate-700"
+      role="tablist"
+      aria-label={labels.revenue}
+    >
+      <nav className="flex gap-1 -mb-px">
+        {tabs.map((tab) => {
+          const selected = active === tab.id
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={selected}
+              aria-controls={`stats-panel-${tab.id}`}
+              id={`stats-tab-${tab.id}`}
+              onClick={() => onChange(tab.id)}
+              className={[
+                'inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors',
+                selected
+                  ? 'border-amber-500 text-amber-700 dark:text-amber-400'
+                  : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300 dark:text-slate-400 dark:hover:text-slate-200',
+              ].join(' ')}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          )
+        })}
+      </nav>
+    </div>
+  )
+}
+
+function StatsSection({
+  title,
+  description,
+  children,
+}: {
+  title: string
+  description?: string
+  children: ReactNode
+}) {
+  return (
+    <section className="space-y-4">
+      <div className="px-0.5">
+        <h2 className="text-lg font-bold text-gray-900 dark:text-slate-100">{title}</h2>
+        {description ? (
+          <p className="text-sm text-gray-600 dark:text-slate-400 mt-0.5">{description}</p>
+        ) : null}
+      </div>
+      {children}
+    </section>
+  )
+}
+
+function StatsSubheading({ title, hint }: { title: string; hint?: string }) {
+  return (
+    <div className="mb-3">
+      <h3 className="text-sm font-semibold text-gray-800 dark:text-slate-200">{title}</h3>
+      {hint ? <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{hint}</p> : null}
+    </div>
+  )
+}
 
 const CHART_COLORS = ['#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#6366f1']
 const PAYMENT_COLORS = {
@@ -109,13 +195,17 @@ export default function Stats() {
   const [from, setFrom] = useState(defaultFrom)
   const [to, setTo] = useState(defaultTo)
   const [restaurantId, setRestaurantId] = useState<string>('')
+  const [deliveryLocationId, setDeliveryLocationId] = useState<string>('')
   const [groupBy, setGroupBy] = useState<'day' | 'week' | 'month'>('week')
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
+  const [deliveryLocations, setDeliveryLocations] = useState<Array<{ id?: string | number; name?: string }>>([])
   const [overview, setOverview] = useState<StatsOverviewResponse | null>(null)
   const [revenue, setRevenue] = useState<StatsRevenueItem[]>([])
   const [products, setProducts] = useState<StatsProductItem[]>([])
+  const [productsByLocation, setProductsByLocation] = useState<StatsProductByLocationItem[]>([])
   const [paymentMethods, setPaymentMethods] = useState<StatsPaymentMethodItem[]>([])
   const [topCustomers, setTopCustomers] = useState<StatsTopCustomerItem[]>([])
+  const [activeTab, setActiveTab] = useState<StatsTab>('revenue')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -124,16 +214,19 @@ export default function Stats() {
       from,
       to,
       restaurantId: restaurantId ? Number(restaurantId) : undefined,
+      deliveryLocationId: deliveryLocationId ? Number(deliveryLocationId) : undefined,
       groupBy,
     }),
-    [from, to, restaurantId, groupBy]
+    [from, to, restaurantId, deliveryLocationId, groupBy]
   )
 
   useEffect(() => {
     let mounted = true
-    getRestaurantsList()
-      .then((list) => {
-        if (mounted) setRestaurants(list)
+    Promise.all([getRestaurantsList(), getDeliveryLocationsList()])
+      .then(([restaurantList, locationList]) => {
+        if (!mounted) return
+        setRestaurants(restaurantList)
+        setDeliveryLocations(locationList)
       })
       .catch(() => {})
     return () => { mounted = false }
@@ -148,14 +241,16 @@ export default function Stats() {
       getStatsOverview(params),
       getStatsRevenue(params),
       getStatsProducts(params),
+      getStatsProductsByLocation(params),
       getStatsPaymentMethods(params),
       getStatsTopCustomers(params),
     ])
-      .then(([overviewRes, revenueRes, productsRes, paymentRes, customersRes]) => {
+      .then(([overviewRes, revenueRes, productsRes, byLocationRes, paymentRes, customersRes]) => {
         if (!mounted) return
         setOverview(overviewRes)
         setRevenue(revenueRes)
         setProducts(productsRes)
+        setProductsByLocation(byLocationRes)
         setPaymentMethods(paymentRes)
         setTopCustomers(customersRes)
       })
@@ -190,8 +285,42 @@ export default function Stats() {
     [products]
   )
 
+  const productsByLocationGrouped = useMemo(() => {
+    const map = new Map<
+      number,
+      { name: string; products: StatsProductByLocationItem[] }
+    >()
+    for (const row of productsByLocation) {
+      const group = map.get(row.deliveryLocationId)
+      if (group) {
+        group.products.push(row)
+      } else {
+        map.set(row.deliveryLocationId, {
+          name: row.deliveryLocationName,
+          products: [row],
+        })
+      }
+    }
+    return Array.from(map.entries()).map(([id, data]) => {
+      const totalQty = data.products.reduce((s, p) => s + p.quantity, 0)
+      const totalRev = data.products.reduce((s, p) => s + p.revenue, 0)
+      return {
+        id,
+        name: data.name,
+        products: data.products,
+        totalQty,
+        totalRev,
+      }
+    })
+  }, [productsByLocation])
+
+  const selectLocationFilter = useCallback((id: number) => {
+    const idStr = String(id)
+    setDeliveryLocationId((prev) => (prev === idStr ? '' : idStr))
+  }, [])
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       <div className="space-y-5">
         <PageHeader
           title={t('common.statistics')}
@@ -201,57 +330,86 @@ export default function Stats() {
         />
         <PageToolbarCard>
           <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-end gap-3">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="from" className="text-xs font-semibold text-gray-700 dark:text-slate-100">{t('common.from')}</Label>
-            <Input
-              id="from"
-              type="date"
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-              className="w-full sm:w-36 text-sm"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="to" className="text-xs font-semibold text-gray-700 dark:text-slate-100">{t('common.to')}</Label>
-            <Input
-              id="to"
-              type="date"
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-              className="w-full sm:w-36 text-sm"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="restaurant" className="text-xs font-semibold text-gray-700 dark:text-slate-100">{t('common.restaurant')}</Label>
-            <Select
-              id="restaurant"
-              value={restaurantId}
-              onChange={(e) => setRestaurantId(e.target.value)}
-              className="w-full sm:w-44 text-sm"
-            >
-              <option value="">{t('common.allRestaurantsFilter')}</option>
-              {restaurants.map((r) => (
-                <option key={String(r.id)} value={String(r.id)}>
-                  {r.name ?? r.id}
-                </option>
-              ))}
-            </Select>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="groupBy" className="text-xs font-semibold text-gray-700 dark:text-slate-100">{t('common.groupBy')}</Label>
-            <Select
-              id="groupBy"
-              value={groupBy}
-              onChange={(e) => setGroupBy(e.target.value as 'day' | 'week' | 'month')}
-              className="w-full sm:w-28 text-sm"
-            >
-              <option value="day">{t('common.groupDay')}</option>
-              <option value="week">{t('common.groupWeek')}</option>
-              <option value="month">{t('common.groupMonth')}</option>
-            </Select>
-          </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="from" className="text-xs font-semibold text-gray-700 dark:text-slate-100">{t('common.from')}</Label>
+              <Input
+                id="from"
+                type="date"
+                value={from}
+                onChange={(e) => setFrom(e.target.value)}
+                className="w-full sm:w-36 text-sm"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="to" className="text-xs font-semibold text-gray-700 dark:text-slate-100">{t('common.to')}</Label>
+              <Input
+                id="to"
+                type="date"
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+                className="w-full sm:w-36 text-sm"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="restaurant" className="text-xs font-semibold text-gray-700 dark:text-slate-100">{t('common.restaurant')}</Label>
+              <Select
+                id="restaurant"
+                value={restaurantId}
+                onChange={(e) => setRestaurantId(e.target.value)}
+                className="w-full sm:w-44 text-sm"
+              >
+                <option value="">{t('common.allRestaurantsFilter')}</option>
+                {restaurants.map((r) => (
+                  <option key={String(r.id)} value={String(r.id)}>
+                    {r.name ?? r.id}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="deliveryLocation" className="text-xs font-semibold text-gray-700 dark:text-slate-100">{t('common.filterByLocation')}</Label>
+              <Select
+                id="deliveryLocation"
+                value={deliveryLocationId}
+                onChange={(e) => setDeliveryLocationId(e.target.value)}
+                className="w-full sm:w-44 text-sm"
+              >
+                <option value="">{t('common.allLocations')}</option>
+                {deliveryLocations
+                  .filter((loc) => loc.id != null && String(loc.id) !== '')
+                  .map((loc) => (
+                    <option key={String(loc.id)} value={String(loc.id)}>
+                      {loc.name ?? loc.id}
+                    </option>
+                  ))}
+              </Select>
+            </div>
+            {activeTab === 'revenue' && (
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="groupBy" className="text-xs font-semibold text-gray-700 dark:text-slate-100">{t('common.groupBy')}</Label>
+                <Select
+                  id="groupBy"
+                  value={groupBy}
+                  onChange={(e) => setGroupBy(e.target.value as 'day' | 'week' | 'month')}
+                  className="w-full sm:w-28 text-sm"
+                >
+                  <option value="day">{t('common.groupDay')}</option>
+                  <option value="week">{t('common.groupWeek')}</option>
+                  <option value="month">{t('common.groupMonth')}</option>
+                </Select>
+              </div>
+            )}
           </div>
         </PageToolbarCard>
+
+        <StatsTabBar
+          active={activeTab}
+          onChange={setActiveTab}
+          labels={{
+            revenue: t('statsPage.tabRevenue'),
+            products: t('statsPage.tabProducts'),
+          }}
+        />
       </div>
 
       {error && (
@@ -260,8 +418,14 @@ export default function Stats() {
         </div>
       )}
 
-      {/* Overview KPI Cards */}
-      <section>
+      {activeTab === 'revenue' && (
+      <div
+        id="stats-panel-revenue"
+        role="tabpanel"
+        aria-labelledby="stats-tab-revenue"
+        className="space-y-10"
+      >
+      <StatsSection title={t('statsPage.sectionOverview')}>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {loading ? (
             Array.from({ length: 5 }).map((_, i) => (
@@ -334,11 +498,14 @@ export default function Stats() {
             </>
           ) : null}
         </div>
-      </section>
+      </StatsSection>
 
-      {/* Revenue Chart */}
-      <section>
-        <Card className="shadow-lg border-0">
+      <StatsSection
+        title={t('statsPage.sectionRevenue')}
+        description={t('statsPage.sectionRevenueDesc')}
+      >
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <Card className="shadow-lg border-0 xl:col-span-2">
           <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-200">
             <CardTitle className="text-xl font-bold text-gray-900">{t('common.revenueOverTime')}</CardTitle>
             <p className="text-sm text-gray-600 mt-1">{t('common.revenueOverTimeDesc')}</p>
@@ -427,105 +594,25 @@ export default function Stats() {
             )}
           </CardContent>
         </Card>
-      </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Top Products */}
-        <Card className="shadow-lg border-0">
+        <Card className="shadow-lg border-0 xl:col-span-1">
           <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-200">
-            <CardTitle className="text-xl font-bold text-gray-900">{t('common.topProducts')}</CardTitle>
-            <p className="text-sm text-gray-600 mt-1">{t('common.topProductsDesc')}</p>
-          </CardHeader>
-          <CardContent className="pt-6">
-            {loading ? (
-              <Skeleton className="h-96 w-full rounded-lg" />
-            ) : productChartData.length === 0 ? (
-              <div className="h-96 flex items-center justify-center text-gray-500 bg-gray-50 rounded-lg">
-                <div className="text-center">
-                  <p className="text-lg font-medium">{t('common.noProductData')}</p>
-                  <p className="text-sm text-gray-400 mt-1">{t('common.noProductsSold')}</p>
-                </div>
-              </div>
-            ) : (
-              <div className="h-64 md:h-96">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={productChartData}
-                    layout="vertical"
-                    margin={{ top: 10, right: 8, left: 8, bottom: 10 }}
-                  >
-                  <defs>
-                    <linearGradient id="productGradient" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.9}/>
-                      <stop offset="95%" stopColor="#34d399" stopOpacity={0.7}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={true} vertical={false} />
-                  <XAxis 
-                    type="number" 
-                    tick={{ fontSize: 11, fill: '#6b7280' }} 
-                    tickFormatter={(v) => v.toString()}
-                    stroke="#9ca3af"
-                  />
-                  <YAxis
-                    type="category"
-                    dataKey="name"
-                    width={70}
-                    tick={{ fontSize: 11, fill: '#6b7280' }}
-                    stroke="#9ca3af"
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'white',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                    }}
-                    formatter={(value: any) => [value ?? 0, t('statsPage.quantity')]}
-                    labelFormatter={(_, payload) => {
-                      const data = payload?.[0]?.payload as { fullName?: string; revenue?: number } | undefined
-                      return (
-                        <div>
-                          <p className="font-semibold">{data?.fullName ?? ''}</p>
-                          {data?.revenue != null && (
-                            <p className="text-xs text-gray-500">{t('statsPage.revenueLine', { value: fmtMoney(data.revenue) })}</p>
-                          )}
-                        </div>
-                      )
-                    }}
-                  />
-                    <Bar 
-                      dataKey="quantity" 
-                      fill="url(#productGradient)" 
-                      radius={[0, 8, 8, 0]} 
-                      name={t('statsPage.quantity')}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Payment Methods Pie */}
-        <Card className="shadow-lg border-0">
-          <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-200">
-            <CardTitle className="text-xl font-bold text-gray-900">{t('common.paymentMethods')}</CardTitle>
+            <CardTitle className="text-lg font-bold text-gray-900">{t('common.paymentMethods')}</CardTitle>
             <p className="text-sm text-gray-600 mt-1">{t('common.paymentMethodsDesc')}</p>
           </CardHeader>
           <CardContent className="pt-6">
             {loading ? (
-              <Skeleton className="h-96 w-full rounded-lg" />
+              <Skeleton className="h-80 w-full rounded-lg" />
             ) : pieData.length === 0 ? (
-              <div className="h-96 flex items-center justify-center text-gray-500 bg-gray-50 rounded-lg">
+              <div className="h-80 flex items-center justify-center text-gray-500 bg-gray-50 rounded-lg">
                 <div className="text-center">
-                  <p className="text-lg font-medium">{t('common.noPaymentData')}</p>
+                  <p className="text-base font-medium">{t('common.noPaymentData')}</p>
                   <p className="text-sm text-gray-400 mt-1">{t('common.noPaymentsRecorded')}</p>
                 </div>
               </div>
             ) : (
-              <div className="space-y-6">
-                <div className="h-64 md:h-80">
+              <div className="space-y-4">
+                <div className="h-52">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                     <defs>
@@ -543,8 +630,8 @@ export default function Stats() {
                         data={pieData}
                         cx="50%"
                         cy="50%"
-                        innerRadius={70}
-                        outerRadius={120}
+                        innerRadius={50}
+                        outerRadius={85}
                         paddingAngle={3}
                         dataKey="value"
                         nameKey="name"
@@ -575,19 +662,19 @@ export default function Stats() {
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+                <div className="space-y-2">
                   {pieData.map((item, index) => {
                     const itemColor = PAYMENT_COLORS[item.name as keyof typeof PAYMENT_COLORS] || CHART_COLORS[index % CHART_COLORS.length]
                     const total = pieData.reduce((sum, p) => sum + p.value, 0)
                     const percentage = total > 0 ? ((item.value / total) * 100).toFixed(1) : '0'
                     return (
-                      <div key={item.name} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                        <div className="w-4 h-4 rounded-full" style={{ backgroundColor: itemColor }} />
+                      <div key={item.name} className="flex items-center gap-2 p-2.5 bg-gray-50 rounded-lg">
+                        <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: itemColor }} />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-gray-900 truncate">{item.name}</p>
-                          <p className="text-xs text-gray-600">{fmtMoney(item.value)}</p>
                           <p className="text-xs text-gray-500">{t('common.pctAndOrders', { pct: percentage, count: item.count })}</p>
                         </div>
+                        <p className="text-sm font-medium text-gray-900 shrink-0">{fmtMoney(item.value)}</p>
                       </div>
                     )
                   })}
@@ -596,15 +683,14 @@ export default function Stats() {
             )}
           </CardContent>
         </Card>
-      </div>
+        </div>
+      </StatsSection>
 
-      {/* Top Customers */}
-      <section>
+      <StatsSection
+        title={t('statsPage.sectionCustomers')}
+        description={t('statsPage.sectionCustomersDesc')}
+      >
         <Card className="shadow-lg border-0">
-          <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-200">
-            <CardTitle className="text-xl font-bold text-gray-900">{t('common.topCustomers')}</CardTitle>
-            <p className="text-sm text-gray-600 mt-1">{t('common.topCustomersDesc')}</p>
-          </CardHeader>
           <CardContent className="pt-6">
             {loading ? (
               <div className="space-y-4">
@@ -658,7 +744,185 @@ export default function Stats() {
             )}
           </CardContent>
         </Card>
-      </section>
+      </StatsSection>
+      </div>
+      )}
+
+      {activeTab === 'products' && (
+      <div
+        id="stats-panel-products"
+        role="tabpanel"
+        aria-labelledby="stats-tab-products"
+        className="space-y-10"
+      >
+      <StatsSection
+        title={t('statsPage.sectionProducts')}
+        description={t('statsPage.sectionProductsDesc')}
+      >
+        <Card className="shadow-lg border-0 overflow-hidden">
+          <CardContent className="p-0 divide-y divide-gray-200">
+            <div className="p-4 sm:p-6">
+              <StatsSubheading
+                title={t('statsPage.topProductsOverall')}
+                hint={t('common.topProductsDesc')}
+              />
+              {loading ? (
+                <Skeleton className="h-72 w-full rounded-lg mt-3" />
+              ) : productChartData.length === 0 ? (
+                <div className="h-48 flex items-center justify-center text-gray-500 bg-gray-50 rounded-lg mt-3">
+                  <div className="text-center">
+                    <p className="text-base font-medium">{t('common.noProductData')}</p>
+                    <p className="text-sm text-gray-400 mt-1">{t('common.noProductsSold')}</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="h-64 md:h-80 mt-3">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={productChartData}
+                      layout="vertical"
+                      margin={{ top: 10, right: 8, left: 8, bottom: 10 }}
+                    >
+                    <defs>
+                      <linearGradient id="productGradient" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.9}/>
+                        <stop offset="95%" stopColor="#34d399" stopOpacity={0.7}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={true} vertical={false} />
+                    <XAxis
+                      type="number"
+                      tick={{ fontSize: 11, fill: '#6b7280' }}
+                      tickFormatter={(v) => v.toString()}
+                      stroke="#9ca3af"
+                    />
+                    <YAxis
+                      type="category"
+                      dataKey="name"
+                      width={70}
+                      tick={{ fontSize: 11, fill: '#6b7280' }}
+                      stroke="#9ca3af"
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'white',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                      }}
+                      formatter={(value: any) => [value ?? 0, t('statsPage.quantity')]}
+                      labelFormatter={(_, payload) => {
+                        const data = payload?.[0]?.payload as { fullName?: string; revenue?: number } | undefined
+                        return (
+                          <div>
+                            <p className="font-semibold">{data?.fullName ?? ''}</p>
+                            {data?.revenue != null && (
+                              <p className="text-xs text-gray-500">{t('statsPage.revenueLine', { value: fmtMoney(data.revenue) })}</p>
+                            )}
+                          </div>
+                        )
+                      }}
+                    />
+                      <Bar
+                        dataKey="quantity"
+                        fill="url(#productGradient)"
+                        radius={[0, 8, 8, 0]}
+                        name={t('statsPage.quantity')}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 sm:p-6 border-t border-gray-200 bg-gray-50/50">
+              <StatsSubheading
+                title={t('statsPage.productsByLocation')}
+                hint={t('statsPage.productsByLocationHint')}
+              />
+              {loading ? (
+                <Skeleton className="h-56 w-full rounded-lg mt-3" />
+              ) : productsByLocationGrouped.length === 0 ? (
+                <div className="h-32 flex items-center justify-center text-gray-500 bg-white rounded-lg border border-gray-200 mt-3">
+                  <p className="text-sm font-medium">{t('statsPage.noProductsByLocation')}</p>
+                </div>
+              ) : (
+                <div className="mt-3 space-y-4">
+                  <div className="flex flex-wrap gap-2">
+                    {productsByLocationGrouped.map((location) => {
+                      const selected = deliveryLocationId === String(location.id)
+                      return (
+                        <button
+                          key={location.id}
+                          type="button"
+                          title={t('statsPage.filterByThisLocation', { name: location.name })}
+                          onClick={() => selectLocationFilter(location.id)}
+                          className={[
+                            'inline-flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-2 rounded-lg border px-3 py-2 text-left transition-colors',
+                            selected
+                              ? 'border-amber-400 bg-amber-50 ring-1 ring-amber-400/50'
+                              : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50',
+                          ].join(' ')}
+                        >
+                          <span className="text-sm font-semibold text-gray-900">{location.name}</span>
+                          <span className="text-xs text-gray-600">
+                            {t('statsPage.locationTotals', {
+                              qty: location.totalQty,
+                              revenue: fmtMoney(location.totalRev),
+                            })}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  <Table className="shadow-sm">
+                    <TableHead>
+                      <TableRow className="hover:bg-transparent odd:bg-transparent even:bg-transparent">
+                        <TableHeadCell className="w-[28%] !text-left">{t('statsPage.location')}</TableHeadCell>
+                        <TableHeadCell className="!text-left">{t('statsPage.product')}</TableHeadCell>
+                        <TableHeadCell className="!text-right w-24">{t('statsPage.quantity')}</TableHeadCell>
+                        <TableHeadCell className="!text-right w-28">{t('statsPage.revenue')}</TableHeadCell>
+                      </TableRow>
+                    </TableHead>
+                    {productsByLocationGrouped.map((location) => (
+                      <TableBody key={location.id}>
+                        {location.products.map((row, rowIdx) => (
+                          <TableRow key={`${location.id}-${row.productId}`}>
+                            {rowIdx === 0 ? (
+                              <TableCell
+                                rowSpan={location.products.length}
+                                className="!text-left align-top font-semibold text-gray-900 bg-slate-50/80 border-r border-gray-100"
+                              >
+                                <div className="space-y-0.5">
+                                  <p>{location.name}</p>
+                                  <p className="text-xs font-normal text-gray-500">
+                                    {t('statsPage.locationTotals', {
+                                      qty: location.totalQty,
+                                      revenue: fmtMoney(location.totalRev),
+                                    })}
+                                  </p>
+                                </div>
+                              </TableCell>
+                            ) : null}
+                            <TableCell className="!text-left">{row.productName}</TableCell>
+                            <TableCell className="!text-right font-medium text-emerald-700 tabular-nums">
+                              {row.quantity}
+                            </TableCell>
+                            <TableCell className="!text-right tabular-nums">{fmtMoney(row.revenue)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    ))}
+                  </Table>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </StatsSection>
+      </div>
+      )}
     </div>
   )
 }

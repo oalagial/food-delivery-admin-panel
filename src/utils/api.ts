@@ -3374,6 +3374,15 @@ export type StatsProductItem = {
   revenue: number;
 };
 
+export type StatsProductByLocationItem = {
+  deliveryLocationId: number;
+  deliveryLocationName: string;
+  productId: number;
+  productName: string;
+  quantity: number;
+  revenue: number;
+};
+
 export type StatsPaymentMethodItem = {
   method: string;
   count: number;
@@ -3394,6 +3403,7 @@ export type StatsParams = {
   from?: string;
   to?: string;
   restaurantId?: number;
+  deliveryLocationId?: number;
   groupBy?: "day" | "week" | "month";
 };
 
@@ -3405,6 +3415,8 @@ export async function getStatsOverview(
   if (params?.to) search.set("to", params.to);
   if (params?.restaurantId != null)
     search.set("restaurantId", String(params.restaurantId));
+  if (params?.deliveryLocationId != null)
+    search.set("deliveryLocationId", String(params.deliveryLocationId));
   if (params?.groupBy) search.set("groupBy", params.groupBy);
   const res = await authFetch(`/stats/overview?${search}`);
   if (!res.ok) {
@@ -3422,6 +3434,8 @@ export async function getStatsRevenue(
   if (params?.to) search.set("to", params.to);
   if (params?.restaurantId != null)
     search.set("restaurantId", String(params.restaurantId));
+  if (params?.deliveryLocationId != null)
+    search.set("deliveryLocationId", String(params.deliveryLocationId));
   if (params?.groupBy) search.set("groupBy", params.groupBy);
   const res = await authFetch(`/stats/revenue?${search}`);
   if (!res.ok) {
@@ -3440,11 +3454,34 @@ export async function getStatsProducts(
   if (params?.to) search.set("to", params.to);
   if (params?.restaurantId != null)
     search.set("restaurantId", String(params.restaurantId));
+  if (params?.deliveryLocationId != null)
+    search.set("deliveryLocationId", String(params.deliveryLocationId));
   if (params?.groupBy) search.set("groupBy", params.groupBy);
   const res = await authFetch(`/stats/products/top?${search}`);
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(text || `GET /stats/products/top failed (${res.status})`);
+  }
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+export async function getStatsProductsByLocation(
+  params?: StatsParams,
+): Promise<StatsProductByLocationItem[]> {
+  const search = new URLSearchParams();
+  if (params?.from) search.set("from", params.from);
+  if (params?.to) search.set("to", params.to);
+  if (params?.restaurantId != null)
+    search.set("restaurantId", String(params.restaurantId));
+  if (params?.deliveryLocationId != null)
+    search.set("deliveryLocationId", String(params.deliveryLocationId));
+  const res = await authFetch(`/stats/products/by-location?${search}`);
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(
+      text || `GET /stats/products/by-location failed (${res.status})`,
+    );
   }
   const data = await res.json();
   return Array.isArray(data) ? data : [];
@@ -3458,6 +3495,8 @@ export async function getStatsPaymentMethods(
   if (params?.to) search.set("to", params.to);
   if (params?.restaurantId != null)
     search.set("restaurantId", String(params.restaurantId));
+  if (params?.deliveryLocationId != null)
+    search.set("deliveryLocationId", String(params.deliveryLocationId));
   const res = await authFetch(`/stats/payment-methods?${search}`);
   if (!res.ok) {
     const text = await res.text().catch(() => "");
@@ -3477,6 +3516,8 @@ export async function getStatsTopCustomers(
   if (params?.to) search.set("to", params.to);
   if (params?.restaurantId != null)
     search.set("restaurantId", String(params.restaurantId));
+  if (params?.deliveryLocationId != null)
+    search.set("deliveryLocationId", String(params.deliveryLocationId));
   const res = await authFetch(`/stats/customers/top?${search}`);
   if (!res.ok) {
     const text = await res.text().catch(() => "");
