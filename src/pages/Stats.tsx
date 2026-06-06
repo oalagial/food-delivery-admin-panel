@@ -2,7 +2,6 @@ import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import {
-  BarChart,
   Bar,
   XAxis,
   YAxis,
@@ -274,16 +273,11 @@ export default function Stats() {
     [paymentMethods]
   )
 
-  const productChartData = useMemo(
-    () =>
-      products.slice(0, 10).map((p) => ({
-        name: p.productName.length > 15 ? p.productName.slice(0, 15) + '…' : p.productName,
-        fullName: p.productName,
-        quantity: p.quantity,
-        revenue: p.revenue,
-      })),
-    [products]
-  )
+  const productsTotals = useMemo(() => {
+    const totalQty = products.reduce((s, p) => s + p.quantity, 0)
+    const totalRev = products.reduce((s, p) => s + p.revenue, 0)
+    return { totalQty, totalRev }
+  }, [products])
 
   const productsByLocationGrouped = useMemo(() => {
     const map = new Map<
@@ -762,76 +756,52 @@ export default function Stats() {
         <Card className="shadow-lg border-0 overflow-hidden">
           <CardContent className="p-0 divide-y divide-gray-200">
             <div className="p-4 sm:p-6">
-              <StatsSubheading
-                title={t('statsPage.topProductsOverall')}
-                hint={t('common.topProductsDesc')}
-              />
+              <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 mb-3">
+                <StatsSubheading
+                  title={t('statsPage.allProducts')}
+                  hint={t('statsPage.allProductsDesc')}
+                />
+                {!loading && products.length > 0 && (
+                  <p className="text-sm font-medium text-gray-600 shrink-0">
+                    {t('statsPage.locationTotals', {
+                      qty: productsTotals.totalQty,
+                      revenue: fmtMoney(productsTotals.totalRev),
+                    })}
+                  </p>
+                )}
+              </div>
               {loading ? (
-                <Skeleton className="h-72 w-full rounded-lg mt-3" />
-              ) : productChartData.length === 0 ? (
-                <div className="h-48 flex items-center justify-center text-gray-500 bg-gray-50 rounded-lg mt-3">
+                <Skeleton className="h-56 w-full rounded-lg" />
+              ) : products.length === 0 ? (
+                <div className="h-40 flex items-center justify-center text-gray-500 bg-gray-50 rounded-lg">
                   <div className="text-center">
                     <p className="text-base font-medium">{t('common.noProductData')}</p>
                     <p className="text-sm text-gray-400 mt-1">{t('common.noProductsSold')}</p>
                   </div>
                 </div>
               ) : (
-                <div className="h-64 md:h-80 mt-3">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={productChartData}
-                      layout="vertical"
-                      margin={{ top: 10, right: 8, left: 8, bottom: 10 }}
-                    >
-                    <defs>
-                      <linearGradient id="productGradient" x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.9}/>
-                        <stop offset="95%" stopColor="#34d399" stopOpacity={0.7}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={true} vertical={false} />
-                    <XAxis
-                      type="number"
-                      tick={{ fontSize: 11, fill: '#6b7280' }}
-                      tickFormatter={(v) => v.toString()}
-                      stroke="#9ca3af"
-                    />
-                    <YAxis
-                      type="category"
-                      dataKey="name"
-                      width={70}
-                      tick={{ fontSize: 11, fill: '#6b7280' }}
-                      stroke="#9ca3af"
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'white',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                      }}
-                      formatter={(value: any) => [value ?? 0, t('statsPage.quantity')]}
-                      labelFormatter={(_, payload) => {
-                        const data = payload?.[0]?.payload as { fullName?: string; revenue?: number } | undefined
-                        return (
-                          <div>
-                            <p className="font-semibold">{data?.fullName ?? ''}</p>
-                            {data?.revenue != null && (
-                              <p className="text-xs text-gray-500">{t('statsPage.revenueLine', { value: fmtMoney(data.revenue) })}</p>
-                            )}
-                          </div>
-                        )
-                      }}
-                    />
-                      <Bar
-                        dataKey="quantity"
-                        fill="url(#productGradient)"
-                        radius={[0, 8, 8, 0]}
-                        name={t('statsPage.quantity')}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                <Table className="shadow-sm max-h-[28rem] overflow-y-auto">
+                  <TableHead className="sticky top-0 z-10">
+                    <TableRow className="hover:bg-transparent odd:bg-transparent even:bg-transparent">
+                      <TableHeadCell className="!text-left w-12">#</TableHeadCell>
+                      <TableHeadCell className="!text-left">{t('statsPage.product')}</TableHeadCell>
+                      <TableHeadCell className="!text-right w-24">{t('statsPage.quantity')}</TableHeadCell>
+                      <TableHeadCell className="!text-right w-28">{t('statsPage.revenue')}</TableHeadCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {products.map((row, index) => (
+                      <TableRow key={row.productId}>
+                        <TableCell className="!text-left text-gray-500 tabular-nums">{index + 1}</TableCell>
+                        <TableCell className="!text-left font-medium">{row.productName}</TableCell>
+                        <TableCell className="!text-right font-medium text-emerald-700 tabular-nums">
+                          {row.quantity}
+                        </TableCell>
+                        <TableCell className="!text-right tabular-nums">{fmtMoney(row.revenue)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               )}
             </div>
 

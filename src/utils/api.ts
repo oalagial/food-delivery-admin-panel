@@ -3457,10 +3457,10 @@ export async function getStatsProducts(
   if (params?.deliveryLocationId != null)
     search.set("deliveryLocationId", String(params.deliveryLocationId));
   if (params?.groupBy) search.set("groupBy", params.groupBy);
-  const res = await authFetch(`/stats/products/top?${search}`);
+  const res = await authFetch(`/stats/products?${search}`);
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    throw new Error(text || `GET /stats/products/top failed (${res.status})`);
+    throw new Error(text || `GET /stats/products failed (${res.status})`);
   }
   const data = await res.json();
   return Array.isArray(data) ? data : [];
