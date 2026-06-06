@@ -290,16 +290,18 @@ export default function Dashboard() {
     }
   }
 
-  const confirmOrderWithKitchenPrint = async (id: string) => {
+  const confirmOrderWithKitchenPrint = async (id: string, currentStatus?: string) => {
     if (!id || patchingOrderId) return
     setPatchingOrderId(id)
     setOrderActionError(null)
     try {
       await printOrder(id)
-      await updateOrder(id, { status: OrderStatus.CONFIRMED })
-      setTodayOrders((prev) =>
-        prev.map((o) => (String(o.id) === id ? { ...o, status: OrderStatus.CONFIRMED } : o)),
-      )
+      if (currentStatus === OrderStatus.PENDING) {
+        await updateOrder(id, { status: OrderStatus.CONFIRMED })
+        setTodayOrders((prev) =>
+          prev.map((o) => (String(o.id) === id ? { ...o, status: OrderStatus.CONFIRMED } : o)),
+        )
+      }
     } catch (e) {
       setOrderActionError(e instanceof Error ? e.message : String(e))
     } finally {
@@ -307,16 +309,22 @@ export default function Dashboard() {
     }
   }
 
-  const confirmOrderWithKitchenAndFiscalPrint = async (id: string, isReceiptPrinted?: boolean) => {
+  const confirmOrderWithKitchenAndFiscalPrint = async (
+    id: string,
+    isReceiptPrinted?: boolean,
+    currentStatus?: string,
+  ) => {
     if (!id || patchingOrderId || isReceiptPrinted) return
     setPatchingOrderId(id)
     setOrderActionError(null)
     try {
       await Promise.all([printOrder(id), printFiscalOrder(id)])
-      await updateOrder(id, { status: OrderStatus.CONFIRMED })
-      setTodayOrders((prev) =>
-        prev.map((o) => (String(o.id) === id ? { ...o, status: OrderStatus.CONFIRMED } : o)),
-      )
+      if (currentStatus === OrderStatus.PENDING) {
+        await updateOrder(id, { status: OrderStatus.CONFIRMED })
+        setTodayOrders((prev) =>
+          prev.map((o) => (String(o.id) === id ? { ...o, status: OrderStatus.CONFIRMED } : o)),
+        )
+      }
     } catch (e) {
       setOrderActionError(e instanceof Error ? e.message : String(e))
     } finally {
@@ -834,6 +842,7 @@ export default function Dashboard() {
                                     confirmOrderWithKitchenAndFiscalPrint(
                                       String(o.id ?? ''),
                                       Boolean(o.isReceiptPrinted),
+                                      o.status,
                                     )
                                   }
                                 />
@@ -844,7 +853,7 @@ export default function Dashboard() {
                                   icon={<TiPrinter className="h-4 w-4" aria-hidden />}
                                   disabled={!!patchingOrderId}
                                   aria-label={t('dashboardPage.confirmWithKitchen')}
-                                  onClick={() => confirmOrderWithKitchenPrint(String(o.id ?? ''))}
+                                  onClick={() => confirmOrderWithKitchenPrint(String(o.id ?? ''), o.status)}
                                 />
                               </>
                             ) : null}
@@ -1050,6 +1059,7 @@ export default function Dashboard() {
                                     confirmOrderWithKitchenAndFiscalPrint(
                                       String(o.id ?? ''),
                                       Boolean(o.isReceiptPrinted),
+                                      o.status,
                                     )
                                   }
                                 />
@@ -1060,7 +1070,7 @@ export default function Dashboard() {
                                   icon={<TiPrinter className="h-4 w-4" aria-hidden />}
                                   disabled={!!patchingOrderId}
                                   aria-label={t('dashboardPage.confirmWithKitchen')}
-                                  onClick={() => confirmOrderWithKitchenPrint(String(o.id ?? ''))}
+                                  onClick={() => confirmOrderWithKitchenPrint(String(o.id ?? ''), o.status)}
                                 />
                               </>
                             ) : null}
