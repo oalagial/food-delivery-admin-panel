@@ -887,7 +887,7 @@ export default function Dashboard() {
                     />
                     <OrderTableSortHeadCell
                       label={t('ordersPage.deliveryTime')}
-                      colKey="orderDate"
+                      colKey="deliveryTime"
                       activeKey={sortKey}
                       dir={sortDir}
                       onSort={onSortColumn}

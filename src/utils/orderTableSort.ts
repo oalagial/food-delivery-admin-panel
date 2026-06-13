@@ -2,6 +2,7 @@ export type OrderTableSortKey =
   | 'createdAt'
   | 'orderNumber'
   | 'orderDate'
+  | 'deliveryTime'
   | 'restaurant'
   | 'deliveryLocation'
   | 'customer'
@@ -14,6 +15,7 @@ export type OrderTableSortDir = 'asc' | 'desc'
 const DEFAULT_DESC: OrderTableSortKey[] = [
   'createdAt',
   'orderDate',
+  'deliveryTime',
   'orderNumber',
   'price',
 ]
@@ -37,6 +39,7 @@ type SortableOrder = {
   createdAt?: string | number
   orderNumber?: number | string
   orderDate?: string | number
+  deliveryTime?: string | number
   restaurant?: { name?: string }
   deliveryLocation?: { name?: string }
   customer?: { name?: string }
@@ -65,9 +68,9 @@ function timeCmp(a: SortableOrder, b: SortableOrder): number {
   return da < db ? -1 : da > db ? 1 : 0
 }
 
-function orderDateCmp(a: SortableOrder, b: SortableOrder): number {
-  const ta = new Date(String(a.orderDate ?? '')).getTime()
-  const tb = new Date(String(b.orderDate ?? '')).getTime()
+function dateFieldCmp(a: unknown, b: unknown): number {
+  const ta = new Date(String(a ?? '')).getTime()
+  const tb = new Date(String(b ?? '')).getTime()
   const da = Number.isFinite(ta) ? ta : 0
   const db = Number.isFinite(tb) ? tb : 0
   return da < db ? -1 : da > db ? 1 : 0
@@ -93,7 +96,10 @@ export function sortOrdersByColumn<T extends SortableOrder>(
         c = num(a.orderNumber) - num(b.orderNumber)
         break
       case 'orderDate':
-        c = orderDateCmp(a, b)
+        c = dateFieldCmp(a.orderDate, b.orderDate)
+        break
+      case 'deliveryTime':
+        c = dateFieldCmp(a.deliveryTime, b.deliveryTime)
         break
       case 'restaurant':
         c = lc(a.restaurant?.name).localeCompare(lc(b.restaurant?.name))
