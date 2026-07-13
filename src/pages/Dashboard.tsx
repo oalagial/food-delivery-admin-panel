@@ -16,6 +16,7 @@ import {
   getOrdersList,
   getOrderStatuses,
   getPaymentStatuses,
+  mergeOrderWithUpdateResponse,
   OrderStatus,
   printFiscalOrder,
   printOrder,
@@ -95,6 +96,8 @@ type DashboardOrder = {
   createdAt?: string
   orderNumber?: number
   orderDate?: string
+  assignedUser?: { id?: number; username?: string } | null
+  assignedAt?: string | null
 }
 
 function normalizeOrders(payload: unknown): DashboardOrder[] {
@@ -162,6 +165,7 @@ export default function Dashboard() {
   const [paymentStatusFilterOptions, setPaymentStatusFilterOptions] = useState<string[]>(() => [
     ...PAYMENT_STATUS_FILTER_FALLBACK,
   ])
+  const [scopeFilter, setScopeFilter] = useState('')
   const [audioReady, setAudioReady] = useState(false)
   const previousTodayCountRef = useRef<number | null>(null)
   const audioCtxRef = useRef<AudioContext | null>(null)
@@ -231,18 +235,17 @@ export default function Dashboard() {
     setOrderActionError(null)
     const shouldAutoMarkPaid = next === OrderStatus.DELIVERED
     try {
-      await updateOrder(id, {
+      const updated = await updateOrder(id, {
         status: next,
         ...(shouldAutoMarkPaid ? { paymentStatus: PaymentStatus.PAID } : {}),
       })
       setTodayOrders((prev) =>
         prev.map((o) =>
           String(o.id) === id
-            ? {
-              ...o,
+            ? mergeOrderWithUpdateResponse(o, updated, {
               status: next,
               ...(shouldAutoMarkPaid ? { paymentStatus: PaymentStatus.PAID } : {}),
-            }
+            })
             : o,
         ),
       )
@@ -510,8 +513,7 @@ export default function Dashboard() {
           undefined,
           {
             orderDate: todayIsoDateLocal(),
-          } as {
-            orderDate?: string
+            mine: scopeFilter === 'mine',
           },
         )
         if (!mounted) return
@@ -550,7 +552,7 @@ export default function Dashboard() {
       audioUnlockedRef.current = false
       setAudioReady(false)
     }
-  }, [])
+  }, [scopeFilter])
 
   const noOrdersLabel =
     todayOrders.length === 0
@@ -584,7 +586,21 @@ export default function Dashboard() {
               </div>
             </div>
           ) : null}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5 lg:items-end lg:gap-3 xl:gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6 lg:items-end lg:gap-3 xl:gap-4">
+            <div className="min-w-0">
+              <Label htmlFor="dashboard-scope-filter" className="text-sm font-medium leading-none text-slate-700 dark:text-slate-200">
+                {t('dashboardPage.filterByScope')}
+              </Label>
+              <Select
+                id="dashboard-scope-filter"
+                value={scopeFilter}
+                onChange={(e) => setScopeFilter(e.target.value)}
+                className="mt-1.5 h-9 w-full"
+              >
+                <option value="">{t('dashboardPage.scopeAllOrders')}</option>
+                <option value="mine">{t('dashboardPage.scopeMyOrders')}</option>
+              </Select>
+            </div>
             <div className="min-w-0">
               <SearchFilterField
                 id="dashboard-order-search-name"

@@ -2683,6 +2683,11 @@ export type OrderCustomer = {
   [k: string]: unknown;
 };
 
+export type OrderAssignedUser = {
+  id?: number;
+  username?: string;
+} | null;
+
 export type OrderItem = {
   id?: number | string;
   orderNumber?: number;
@@ -2702,10 +2707,33 @@ export type OrderItem = {
   products?: any[];
   offers?: any[];
   createdAt?: string | number;
+  assignedUserId?: number | null;
+  assignedAt?: string | null;
+  assignedUser?: OrderAssignedUser;
   restaurant: Restaurant;
   deliveryLocation: any;
   [k: string]: unknown;
 };
+
+export function mergeOrderWithUpdateResponse<T extends Record<string, unknown>>(
+  order: T,
+  updated: unknown,
+  patches?: { status?: string; paymentStatus?: string },
+): T {
+  const next = { ...order, ...patches } as T;
+  if (!updated || typeof updated !== "object") return next;
+  const u = updated as Record<string, unknown>;
+  if ("assignedUser" in u) {
+    (next as Record<string, unknown>).assignedUser = u.assignedUser;
+  }
+  if ("assignedAt" in u) {
+    (next as Record<string, unknown>).assignedAt = u.assignedAt;
+  }
+  if ("assignedUserId" in u) {
+    (next as Record<string, unknown>).assignedUserId = u.assignedUserId;
+  }
+  return next;
+}
 
 export type CreateOrderPayload = {
   restaurantId: number | string;
@@ -2733,6 +2761,8 @@ export async function getOrdersList(
     orderDate?: string;
     deliveryLocationId?: string | number;
     paymentStatus?: string;
+    /** When true, only orders assigned to the current user. */
+    mine?: boolean;
   },
 ): Promise<any> {
   const params = new URLSearchParams({
@@ -2754,6 +2784,7 @@ export async function getOrdersList(
   }
   const ps = filters?.paymentStatus?.trim();
   if (ps) params.set("paymentStatus", ps);
+  if (filters?.mine) params.set("mine", "true");
   const q = filters?.search?.trim();
   if (q) params.set("search", q);
   const res = await authFetch(`/orders?${params}`);
