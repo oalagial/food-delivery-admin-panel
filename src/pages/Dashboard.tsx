@@ -29,6 +29,10 @@ import {
 } from '../utils/orderStatusFilter'
 import { PAYMENT_STATUS_FILTER_FALLBACK, paymentStatusFilterOptionLabel } from '../utils/paymentStatusFilter'
 import {
+  PAYMENT_METHOD_FILTER_OPTIONS,
+  paymentMethodFilterOptionLabel,
+} from '../utils/paymentMethodFilter'
+import {
   canDashboardOrdersDelivery,
   canDashboardOrdersMarkReady,
   canDashboardShowAdminOrderActions,
@@ -165,6 +169,7 @@ export default function Dashboard() {
   const [paymentStatusFilterOptions, setPaymentStatusFilterOptions] = useState<string[]>(() => [
     ...PAYMENT_STATUS_FILTER_FALLBACK,
   ])
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState('')
   const [scopeFilter, setScopeFilter] = useState('')
   const [audioReady, setAudioReady] = useState(false)
   const previousTodayCountRef = useRef<number | null>(null)
@@ -179,13 +184,22 @@ export default function Dashboard() {
       if (statusFilter && String(o.status ?? '') !== statusFilter) return false
       if (locationFilter && orderDeliveryLocationId(o) !== locationFilter) return false
       if (paymentStatusFilter && String(o.paymentStatus ?? '') !== paymentStatusFilter) return false
+      if (paymentMethodFilter && String(o.paymentMethod ?? '') !== paymentMethodFilter) return false
       const custName = String(o.customer?.name ?? o.customerName ?? '').toLowerCase()
       const custEmail = String(o.customer?.email ?? o.email ?? '').toLowerCase()
       if (nameQ && !custName.includes(nameQ)) return false
       if (emailQ && !custEmail.includes(emailQ)) return false
       return true
     })
-  }, [todayOrders, statusFilter, debouncedName, debouncedEmail, locationFilter, paymentStatusFilter])
+  }, [
+    todayOrders,
+    statusFilter,
+    debouncedName,
+    debouncedEmail,
+    locationFilter,
+    paymentStatusFilter,
+    paymentMethodFilter,
+  ])
 
   const displayedOrders = useMemo(
     () => sortOrdersByColumn(filteredTodayOrders, sortKey, sortDir),
@@ -586,7 +600,7 @@ export default function Dashboard() {
               </div>
             </div>
           ) : null}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6 lg:items-end lg:gap-3 xl:gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 lg:items-end lg:gap-3 xl:gap-4">
             <div className="min-w-0">
               <Label htmlFor="dashboard-scope-filter" className="text-sm font-medium leading-none text-slate-700 dark:text-slate-200">
                 {t('dashboardPage.filterByScope')}
@@ -675,6 +689,24 @@ export default function Dashboard() {
                 {paymentStatusFilterOptions.map((ps) => (
                   <option key={ps} value={ps}>
                     {paymentStatusFilterOptionLabel(ps, t)}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="min-w-0">
+              <Label htmlFor="dashboard-payment-method-filter" className="text-sm font-medium leading-none text-slate-700 dark:text-slate-200">
+                {t('common.paymentMethod')}
+              </Label>
+              <Select
+                id="dashboard-payment-method-filter"
+                value={paymentMethodFilter}
+                onChange={(e) => setPaymentMethodFilter(e.target.value)}
+                className="mt-1.5 h-9 w-full"
+              >
+                <option value="">{t('dashboardPage.statusAll')}</option>
+                {PAYMENT_METHOD_FILTER_OPTIONS.map((pm) => (
+                  <option key={pm} value={pm}>
+                    {paymentMethodFilterOptionLabel(pm, t)}
                   </option>
                 ))}
               </Select>
